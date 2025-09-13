@@ -1,0 +1,51 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build output
+*.test
+*.out
+*.o
+*.a
+
+# Built application binary
+initflow
+initflow.exe
+
+# Test binary, coverage reports
+*.cover
+*.cov
+*.prof
+*.test
+coverage.*
+
+# Go vendor directory (if you ever use vendoring)
+vendor/
+
+# Dependency directories (if vendored manually)
+Godeps/
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.local
+
+# Go workspace files
+go.work
+go.work.sum
