@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -39,7 +39,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 
 	// Prompt for password
 	fmt.Print("Password: ")
-	passwordBytes, err := term.ReadPassword(syscall.Stdin)
+	passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to read password: %w", err)
 	}
