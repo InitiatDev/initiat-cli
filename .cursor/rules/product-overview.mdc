@@ -1,0 +1,192 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# **Product Requirements Document (PRD)**
+
+**Product Name (working):** *init.Flow* (or chosen brand)
+**Version:** Draft v2
+
+---
+
+## 1. Vision & Goal
+
+Developers lose precious time during onboarding: setting up environments, configuring access, managing secrets, and piecing together scattered instructions. This slows productivity, creates security risks, and frustrates new hires.
+
+**init.Flow** is a developer-first onboarding platform designed to remove that friction. Starting with secure secret sharing as the foundation, it evolves into a complete workflow for onboarding and enabling developers. The goal is to reduce *time-to-first-commit* from days to minutes, while ensuring teams onboard securely, consistently, and with a great developer experience.
+
+---
+
+## 2. Objectives
+
+* Provide immediate value through secure, simple secret sharing.
+* Expand into full onboarding workflows that accelerate developer ramp-up.
+* Offer developer-native interfaces (CLI, API, web UI) with polished DX.
+* Keep pricing developer-friendly while preventing abuse (e.g., seat rotations).
+* Build trust through security, transparency, and strong documentation.
+
+---
+
+## 3. Key Features
+
+### 3.1 Secret Sharing & Access (MVP) - 'KeySync'
+
+* Secure vault for API keys, tokens, environment variables.
+* CLI/API commands (`init.flow secrets add/fetch`).
+* Export to `.env` files and integrate with GitHub Actions, Docker, etc.
+* Free tier for small teams (limited seats/workspace).
+* Guardrails: seats are non-rotatable.
+
+### 3.2 Developer Onboarding Flows (Phase 2)
+
+* Prebuilt workspace templates for popular stacks (Node, Elixir, Python, etc.).
+* One-command setup (`init.flow setup myapp`).
+* Guided runbooks embedded into the flow (self-service onboarding).
+* Extendable for team-specific onboarding.
+
+### 3.3 Access & Permissions
+
+* Role-based access controls (RBAC).
+* Team invites with controlled permissions.
+* Basic audit logging.
+
+### 3.4 Collaboration & Team Dashboard
+
+* Dashboard showing team onboarding progress.
+* Access visibility (who has which secrets).
+* Usage analytics (time saved, flows completed).
+
+### 3.5 Enterprise Expansion (Future)
+
+* SSO / SAML, SCIM provisioning.
+* Advanced audit logs, compliance exports.
+* Dedicated support & SLAs.
+* Marketplace for onboarding templates.
+
+---
+
+## 4. Pricing Model
+
+### 🎟 Free Tier (Launch-ready)
+
+* 1 workspace
+* Up to 3 members
+* **Secret Sharing** (vault + CLI/API + .env export)
+* **Quickstart Onboarding Flow** (basic project setup)
+* Community support
+
+*“Get your team started safely and quickly — no credit card required.”*
+
+---
+
+### ⚡ Pro Tier (Coming Soon)
+
+* Unlimited workspaces & members
+* **Onboarding Templates** (customizable flows for new hires, CI/CD, dev envs)
+* **Access Controls** (RBAC, team invites)
+* Workflow integrations (GitHub, GitLab, Docker, Kubernetes)
+* Priority support
+
+*“Scale your team with confidence — onboard new devs in minutes, not days.”*
+
+---
+
+### 🏢 Team / Enterprise Tier (Future)
+
+* All Pro features
+* **SSO / SAML, SCIM**
+* **Advanced Audit Logs** & compliance reporting
+* **Custom Runbooks**
+* Dedicated support & SLAs
+
+*“Enterprise-grade onboarding with compliance and control built in.”*
+
+---
+
+### 🚫 Abuse Mitigation
+
+* Seats are **non-rotatable** (once assigned, not reusable).
+* Free tier limits enforced.
+* Paid tiers priced per member/month for fairness.
+
+---
+
+## 5. Target Audience
+
+* **Primary:** Developers and DevOps engineers who onboard frequently or manage secrets.
+* **Secondary:** Engineering managers responsible for productivity and compliance.
+* **Initial ICP:** Small startup teams (3–10 devs) who feel onboarding pain most acutely.
+
+---
+
+## 6. Success Metrics
+
+* **Time to First Commit (TTFC):** Average reduction compared to baseline.
+* **Activation Rate:** % of invited devs who complete onboarding.
+* **Secret Usage:** Frequency of CLI/API secret fetches.
+* **Retention:** Teams active at 30/90 days.
+
+---
+
+## 7. Roadmap
+
+### 🚀 MVP — Secret Sharing (Foundation)
+
+* Secure vault (CLI/API)
+* `.env` export & CI/CD integration
+* Free tier signup, seat-locking
+* Docs + landing page
+
+**Outcome:** Build trust, attract early users.
+
+---
+
+### ⚡ v1 — Onboarding Flows (First Paid Unlock)
+
+* Workspace templates for popular stacks
+* One-command project setup
+* Basic runbooks & guides
+* Team invites & permissions
+
+**Outcome:** Transition from “secret tool” → **onboarding accelerator**.
+
+---
+
+### 🛠 v2 — Collaboration & Controls
+
+* Role-based access (RBAC)
+* Workflow integrations (GitHub, GitLab, Docker, K8s)
+* Team dashboard with onboarding visibility
+* Audit logs for compliance
+
+**Outcome:** Adoption by managers + growing teams.
+
+---
+
+### 🏢 v3 — Enterprise DX Hub
+
+* SSO / SAML, SCIM
+* Compliance reporting & exports
+* Custom onboarding runbooks
+* Template marketplace
+* Productivity analytics
+
+**Outcome:** Evolution into a **developer experience platform**.
+
+---
+
+## 8. Risks & Mitigations
+
+* **Overlap with “vault” competitors:** Differentiate via DX + onboarding workflows.
+* **Free tier abuse:** Seat-locking and workspace limits.
+* **Branding confusion (locker.io, Runway, etc.):** Lean into DX-first positioning with a distinct name (e.g., *init.Flow*).
+* **Trust concerns:** Publish security details, open docs, audits.
+
+---
+
+✨ In this framing, **secret sharing is the hook** — but the **story** is developer onboarding and workflow acceleration.
+
+---
+

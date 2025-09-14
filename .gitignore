@@ -49,3 +49,6 @@ Godeps/
 # Go workspace files
 go.work
 go.work.sum
+
+.DS_Store
+.lexical/

@@ -5,12 +5,40 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/DylanBlakemore/initflow-cli/internal/config"
+)
+
+var (
+	cfgFile string
+	apiURL  string
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "initflow",
 	Short: "InitFlow CLI",
 	Long:  `InitFlow CLI — secure secrets, onboarding, and policy tooling.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Initialize configuration
+		if err := config.InitConfig(); err != nil {
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+
+		// Override API URL if provided via flag
+		if apiURL != "" {
+			if err := config.Set("api_base_url", apiURL); err != nil {
+				return fmt.Errorf("failed to set API URL: %w", err)
+			}
+		}
+
+		return nil
+	},
+}
+
+func init() {
+	// Global flags
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.initflow/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://api.initflow.com)")
 }
 
 // Execute is the entry point called by main.go
