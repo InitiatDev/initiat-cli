@@ -100,3 +100,27 @@ func (s *Storage) HasEncryptionPrivateKey() bool {
 	_, err := s.GetEncryptionPrivateKey()
 	return err == nil
 }
+
+func (s *Storage) StoreWorkspaceKey(workspaceSlug string, key []byte) error {
+	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
+	return keyring.Set(serviceName, keyName, string(key))
+}
+
+func (s *Storage) GetWorkspaceKey(workspaceSlug string) ([]byte, error) {
+	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
+	keyStr, err := keyring.Get(serviceName, keyName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspace key for %s: %w", workspaceSlug, err)
+	}
+	return []byte(keyStr), nil
+}
+
+func (s *Storage) DeleteWorkspaceKey(workspaceSlug string) error {
+	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
+	return keyring.Delete(serviceName, keyName)
+}
+
+func (s *Storage) HasWorkspaceKey(workspaceSlug string) bool {
+	_, err := s.GetWorkspaceKey(workspaceSlug)
+	return err == nil
+}
