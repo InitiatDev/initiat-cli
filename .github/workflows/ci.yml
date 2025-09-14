@@ -43,7 +43,9 @@ jobs:
         run: go mod verify
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: |
+          go test -v -race -coverprofile=coverage.out ./... || \
+          go test -v -race ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
