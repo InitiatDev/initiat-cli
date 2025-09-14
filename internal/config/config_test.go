@@ -24,8 +24,8 @@ func TestInitConfig_WithDefaults(t *testing.T) {
 
 	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	err := InitConfig()
 	require.NoError(t, err)
@@ -41,19 +41,19 @@ func TestInitConfig_WithConfigFile(t *testing.T) {
 	// Create temporary directory for config
 	tmpDir := t.TempDir()
 	configDir := filepath.Join(tmpDir, ".initflow")
-	err := os.MkdirAll(configDir, 0755)
+	err := os.MkdirAll(configDir, 0750)
 	require.NoError(t, err)
 
 	// Create config file
 	configFile := filepath.Join(configDir, "config.yaml")
 	configContent := `api_base_url: "http://localhost:4000"`
-	err = os.WriteFile(configFile, []byte(configContent), 0644)
+	err = os.WriteFile(configFile, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	err = InitConfig()
 	require.NoError(t, err)
@@ -71,19 +71,19 @@ func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
 
 	// Set environment variable
 	originalEnv := os.Getenv("INITFLOW_API_BASE_URL")
-	os.Setenv("INITFLOW_API_BASE_URL", "http://localhost:3000")
+	_ = os.Setenv("INITFLOW_API_BASE_URL", "http://localhost:3000")
 	defer func() {
 		if originalEnv == "" {
-			os.Unsetenv("INITFLOW_API_BASE_URL")
+			_ = os.Unsetenv("INITFLOW_API_BASE_URL")
 		} else {
-			os.Setenv("INITFLOW_API_BASE_URL", originalEnv)
+			_ = os.Setenv("INITFLOW_API_BASE_URL", originalEnv)
 		}
 	}()
 
 	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	err := InitConfig()
 	require.NoError(t, err)
@@ -101,8 +101,8 @@ func TestSet(t *testing.T) {
 
 	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	err := InitConfig()
 	require.NoError(t, err)
@@ -124,8 +124,8 @@ func TestSave(t *testing.T) {
 
 	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", originalHome)
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	err := InitConfig()
 	require.NoError(t, err)
@@ -144,7 +144,7 @@ func TestSave(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read and verify content
-	content, err := os.ReadFile(configFile)
+	content, err := os.ReadFile(configFile) // #nosec G304 - test file path is controlled
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "http://localhost:9000")
 }

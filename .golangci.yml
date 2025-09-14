@@ -1,3 +1,5 @@
+version: 2
+
 run:
   timeout: 5m
   issues-exit-code: 1
@@ -5,6 +7,9 @@ run:
   modules-download-mode: readonly
 
 output:
+  formats:
+    colored-line-number:
+      path: stdout
   print-issued-lines: true
   print-linter-name: true
 
@@ -46,9 +51,7 @@ linters-settings:
       - 'fmt\.Print.*'
 
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
+  default: none
   enable:
     - bodyclose
     - dogsled
@@ -59,12 +62,9 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - mnd
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - lll
@@ -72,13 +72,16 @@ linters:
     - nakedret
     - nolintlint
     - rowserrcheck
-    - staticcheck
-    - stylecheck
-    - typecheck
+    - staticcheck  # This now includes gosimple, staticcheck, and stylecheck
     - unconvert
     - unparam
     - unused
     - whitespace
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
   # don't enable:
   # - asciicheck

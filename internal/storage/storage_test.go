@@ -15,7 +15,7 @@ func TestStorage_TokenOperations(t *testing.T) {
 	testToken := "test-token-12345"
 
 	// Clean up any existing token first
-	storage.DeleteToken()
+	_ = storage.DeleteToken()
 
 	// Initially should not have token
 	assert.False(t, storage.HasToken())
@@ -52,7 +52,7 @@ func TestStorage_DeviceIDOperations(t *testing.T) {
 	testDeviceID := "device-abc123"
 
 	// Clean up any existing device ID first
-	storage.DeleteDeviceID()
+	_ = storage.DeleteDeviceID()
 
 	// Initially should not have device ID
 	assert.False(t, storage.HasDeviceID())
@@ -116,8 +116,8 @@ func TestStorage_MultipleOperations(t *testing.T) {
 	assert.Equal(t, testDeviceID, retrievedDeviceID)
 
 	// Clean up
-	storage.DeleteToken()
-	storage.DeleteDeviceID()
+	_ = storage.DeleteToken()
+	_ = storage.DeleteDeviceID()
 }
 
 func TestStorage_OverwriteValues(t *testing.T) {
@@ -156,6 +156,6 @@ func TestStorage_OverwriteValues(t *testing.T) {
 	assert.Equal(t, newDeviceID, retrievedDeviceID)
 
 	// Clean up
-	storage.DeleteToken()
-	storage.DeleteDeviceID()
+	_ = storage.DeleteToken()
+	_ = storage.DeleteDeviceID()
 }

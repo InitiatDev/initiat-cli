@@ -64,7 +64,7 @@ func TestLogin_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -92,7 +92,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -110,7 +110,7 @@ func TestLogin_ServerError(t *testing.T) {
 	// Create test server that returns 500
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -133,12 +133,25 @@ func TestLogin_NetworkError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 	// The error message may vary depending on the system, so just check that it's a network-related error
-	assert.True(t,
-		err.Error() == "failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": dial tcp 192.0.2.0:1: connect: connection refused" ||
-			err.Error() == "failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": dial tcp 192.0.2.0:1: i/o timeout" ||
-			err.Error() == "failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": dial tcp 192.0.2.0:1: network is unreachable" ||
-			err.Error() == "failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)",
-		"Expected a network error, got: %s", err.Error())
+	expectedErrors := []string{
+		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
+			"dial tcp 192.0.2.0:1: connect: connection refused",
+		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
+			"dial tcp 192.0.2.0:1: i/o timeout",
+		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
+			"dial tcp 192.0.2.0:1: network is unreachable",
+		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
+			"context deadline exceeded (Client.Timeout exceeded while awaiting headers)",
+	}
+
+	errorMatched := false
+	for _, expectedError := range expectedErrors {
+		if err.Error() == expectedError {
+			errorMatched = true
+			break
+		}
+	}
+	assert.True(t, errorMatched, "Expected a network error, got: %s", err.Error())
 }
 
 func TestLogin_InvalidJSON(t *testing.T) {
@@ -146,7 +159,7 @@ func TestLogin_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -180,7 +193,7 @@ func TestLogin_EmptyCredentials(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
