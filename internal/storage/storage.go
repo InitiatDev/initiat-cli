@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"crypto/ed25519"
 	"fmt"
 
 	"github.com/zalando/go-keyring"
@@ -65,5 +66,55 @@ func (s *Storage) HasToken() bool {
 // HasDeviceID checks if a device ID exists
 func (s *Storage) HasDeviceID() bool {
 	_, err := s.GetDeviceID()
+	return err == nil
+}
+
+// StoreSigningPrivateKey stores the Ed25519 signing private key
+func (s *Storage) StoreSigningPrivateKey(privateKey ed25519.PrivateKey) error {
+	return keyring.Set(serviceName, "signing-private-key", string(privateKey))
+}
+
+// GetSigningPrivateKey retrieves the Ed25519 signing private key
+func (s *Storage) GetSigningPrivateKey() (ed25519.PrivateKey, error) {
+	keyStr, err := keyring.Get(serviceName, "signing-private-key")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get signing private key: %w", err)
+	}
+	return ed25519.PrivateKey(keyStr), nil
+}
+
+// DeleteSigningPrivateKey removes the Ed25519 signing private key
+func (s *Storage) DeleteSigningPrivateKey() error {
+	return keyring.Delete(serviceName, "signing-private-key")
+}
+
+// StoreEncryptionPrivateKey stores the X25519 encryption private key
+func (s *Storage) StoreEncryptionPrivateKey(privateKey []byte) error {
+	return keyring.Set(serviceName, "encryption-private-key", string(privateKey))
+}
+
+// GetEncryptionPrivateKey retrieves the X25519 encryption private key
+func (s *Storage) GetEncryptionPrivateKey() ([]byte, error) {
+	keyStr, err := keyring.Get(serviceName, "encryption-private-key")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get encryption private key: %w", err)
+	}
+	return []byte(keyStr), nil
+}
+
+// DeleteEncryptionPrivateKey removes the X25519 encryption private key
+func (s *Storage) DeleteEncryptionPrivateKey() error {
+	return keyring.Delete(serviceName, "encryption-private-key")
+}
+
+// HasSigningPrivateKey checks if a signing private key exists
+func (s *Storage) HasSigningPrivateKey() bool {
+	_, err := s.GetSigningPrivateKey()
+	return err == nil
+}
+
+// HasEncryptionPrivateKey checks if an encryption private key exists
+func (s *Storage) HasEncryptionPrivateKey() bool {
+	_, err := s.GetEncryptionPrivateKey()
 	return err == nil
 }

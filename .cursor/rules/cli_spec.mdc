@@ -3,7 +3,7 @@ description:
 globs:
 alwaysApply: true
 ---
-# init.Flow CLI Workflow Specification
+# initFlow CLI Workflow Specification
 
 **Version:** 1.0  
 **Target Implementation:** Go CLI  
@@ -13,7 +13,7 @@ alwaysApply: true
 
 ## Overview
 
-This document specifies the complete CLI workflow for init.Flow, covering user authentication, device registration, and workspace key initialization. The CLI implements a **zero-knowledge architecture** where the server never sees plaintext secrets or workspace keys.
+This document specifies the complete CLI workflow for initFlow, covering user authentication, device registration, and workspace key initialization. The CLI implements a **zero-knowledge architecture** where the server never sees plaintext secrets or workspace keys.
 
 ## Table of Contents
 
@@ -30,17 +30,17 @@ This document specifies the complete CLI workflow for init.Flow, covering user a
 
 ### CLI Command
 ```bash
-init.flow auth login <email>
+initflow auth login <email>
 # Interactive password prompt for security
 ```
 
 ### User Experience
 ```
-$ init.flow auth login user@example.com
+$ initflow auth login user@example.com
 Password: ••••••••••
 🔐 Authenticating...
 ✅ Login successful! Registration token expires in 15 minutes.
-💡 Next: Register this device with 'init.flow device register <name>'
+💡 Next: Register this device with 'initflow device register <name>'
 ```
 
 ### HTTP Request
@@ -78,12 +78,12 @@ Content-Type: application/json
 
 ### CLI Command
 ```bash
-init.flow device register "My MacBook CLI"
+initflow device register "My MacBook CLI"
 ```
 
 ### User Experience
 ```
-$ init.flow device register "My MacBook CLI"
+$ initflow device register "My MacBook CLI"
 🔑 Generating Ed25519 signing keypair...
 🔒 Generating X25519 encryption keypair...
 📡 Registering device with server...
@@ -94,7 +94,7 @@ Device Name: My MacBook CLI
 Created: 2025-09-13 14:30:22 UTC
 
 🔐 Keys stored securely in system keychain
-💡 Next: Initialize workspace keys with 'init.flow workspace list'
+💡 Next: Initialize workspace keys with 'initflow workspace list'
 ```
 
 ### Cryptographic Operations (Client-Side)
@@ -111,9 +111,9 @@ encryptionPublicKey, encryptionPrivateKey := generateX25519Keypair()
 #### 2. Secure Storage
 ```go
 // Store private keys in OS-specific secure storage
-keychain.Store("init.flow.signing.private", signingPrivateKey)
-keychain.Store("init.flow.encryption.private", encryptionPrivateKey)
-keychain.Store("init.flow.device.id", deviceID)
+keychain.Store("initflow.signing.private", signingPrivateKey)
+keychain.Store("initflow.encryption.private", encryptionPrivateKey)
+keychain.Store("initflow.device.id", deviceID)
 ```
 
 ### HTTP Request
@@ -155,17 +155,17 @@ Content-Type: application/json
 ### CLI Command
 ```bash
 # List workspaces first
-init.flow workspace list
+initflow workspace list
 
 # Initialize key for specific workspace
-init.flow workspace init-key <workspace-slug>
+initflow workspace init-key <workspace-slug>
 ```
 
 ### User Experience
 
 #### Listing Workspaces
 ```
-$ init.flow workspace list
+$ initflow workspace list
 🔍 Fetching workspaces...
 
 ┌─────────────────┬────────────────┬─────────────────┬──────┐
@@ -177,12 +177,12 @@ $ init.flow workspace list
 └─────────────────┴────────────────┴─────────────────┴──────┘
 
 💡 Initialize keys for workspaces marked "No" using:
-   init.flow workspace init-key <workspace-slug>
+   initflow workspace init-key <workspace-slug>
 ```
 
 #### Key Initialization
 ```
-$ init.flow workspace init-key my-project
+$ initflow workspace init-key my-project
 🔐 Initializing workspace key for "My Project"...
 
 ⚡ Generating secure 256-bit workspace key...
@@ -193,9 +193,9 @@ $ init.flow workspace init-key my-project
 🎯 You can now store and retrieve secrets in this workspace.
 
 Next steps:
-  • Add secrets: init.flow secrets add API_KEY=your-secret
-  • List secrets: init.flow secrets list
-  • Invite devices: init.flow workspace invite-device
+  • Add secrets: initflow secrets add API_KEY=your-secret
+  • List secrets: initflow secrets list
+  • Invite devices: initflow workspace invite-device
 ```
 
 ### Cryptographic Operations (Client-Side)
@@ -210,7 +210,7 @@ rand.Read(workspaceKey)
 #### 2. Key Wrapping with X25519
 ```go
 // Load device's X25519 private key
-encryptionPrivateKey := keychain.Load("init.flow.encryption.private")
+encryptionPrivateKey := keychain.Load("initflow.encryption.private")
 
 // Create shared secret for encryption (self-encryption pattern)
 // In practice, this would use a more sophisticated key derivation
@@ -226,7 +226,7 @@ wrappedKey := cipher.Seal(nonce, nonce, workspaceKey, nil)
 #### 3. Local Storage
 ```go
 // Store workspace key locally for future secret operations
-keychain.Store(fmt.Sprintf("init.flow.workspace.%s", workspaceSlug), workspaceKey)
+keychain.Store(fmt.Sprintf("initflow.workspace.%s", workspaceSlug), workspaceKey)
 ```
 
 ### HTTP Requests
@@ -362,14 +362,14 @@ Workspace keys are encrypted using X25519 Elliptic Curve Diffie-Hellman with Cha
 #### Wrapping Process
 1. Generate ephemeral X25519 keypair
 2. Compute shared secret: `shared = X25519(ephemeral_private, device_public)`
-3. Derive encryption key: `key = HKDF(shared, salt="init.flow.wrap", info="workspace")`
+3. Derive encryption key: `key = HKDF(shared, salt="initflow.wrap", info="workspace")`
 4. Encrypt: `wrapped = ChaCha20Poly1305.Encrypt(key, workspace_key, nonce)`
 5. Package: `ephemeral_public || nonce || wrapped`
 
 #### Unwrapping Process
 1. Extract components: `ephemeral_public, nonce, wrapped = unpackage(wrapped_key)`
 2. Compute shared secret: `shared = X25519(device_private, ephemeral_public)`
-3. Derive encryption key: `key = HKDF(shared, salt="init.flow.wrap", info="workspace")`
+3. Derive encryption key: `key = HKDF(shared, salt="initflow.wrap", info="workspace")`
 4. Decrypt: `workspace_key = ChaCha20Poly1305.Decrypt(key, wrapped, nonce)`
 
 ---
@@ -466,15 +466,15 @@ Workspace keys are encrypted using X25519 Elliptic Curve Diffie-Hellman with Cha
 
 This specification covers the foundational workflow. Future iterations should include:
 
-1. **Secret Management**: `init.flow secrets add/list/get/delete`
-2. **Device Management**: `init.flow device list/revoke`
-3. **Workspace Sharing**: `init.flow workspace invite/share`
-4. **Key Rotation**: `init.flow workspace rotate-key`
-5. **Backup/Recovery**: `init.flow backup create/restore`
+1. **Secret Management**: `initflow secrets add/list/get/delete`
+2. **Device Management**: `initflow device list/revoke`
+3. **Workspace Sharing**: `initflow workspace invite/share`
+4. **Key Rotation**: `initflow workspace rotate-key`
+5. **Backup/Recovery**: `initflow backup create/restore`
 
 ---
 
 **End of Specification**
 
-*This document serves as the authoritative specification for implementing the init.Flow CLI in Go. All cryptographic operations must be implemented exactly as specified to ensure compatibility with the Phoenix backend.*
+*This document serves as the authoritative specification for implementing the initFlow CLI in Go. All cryptographic operations must be implemented exactly as specified to ensure compatibility with the Phoenix backend.*
 

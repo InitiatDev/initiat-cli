@@ -1,6 +1,8 @@
 package client
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -206,4 +208,151 @@ func TestLogin_EmptyCredentials(t *testing.T) {
 	// Test with empty password - client doesn't validate, just sends to server
 	_, err = client.Login("test@example.com", "")
 	assert.NoError(t, err) // The client doesn't validate empty fields, server would handle this
+}
+
+func TestRegisterDevice_Success(t *testing.T) {
+	// Mock server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, routes.Devices, r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "initflow-cli/1.0", r.Header.Get("User-Agent"))
+
+		// Parse request body
+		var req DeviceRegistrationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "test-token", req.Token)
+		assert.Equal(t, "Test Device", req.Name)
+		assert.NotEmpty(t, req.PublicKeyEd25519)
+		assert.NotEmpty(t, req.PublicKeyX25519)
+
+		// Mock successful response
+		resp := DeviceRegistrationResponse{
+			Success: true,
+			Message: "Device registered successfully",
+			Device: struct {
+				DeviceID  string `json:"device_id"`
+				Name      string `json:"name"`
+				CreatedAt string `json:"created_at"`
+			}{
+				DeviceID:  "device-123",
+				Name:      "Test Device",
+				CreatedAt: "2025-09-13T14:30:22Z",
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated) // Device registration typically returns 201 Created
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	// Generate test keypairs
+	signingPublic, _, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	encryptionPublic := make([]byte, 32)
+	_, err = rand.Read(encryptionPublic)
+	require.NoError(t, err)
+
+	// Test device registration
+	resp, err := client.RegisterDevice("test-token", "Test Device", signingPublic, encryptionPublic)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.True(t, resp.Success)
+	assert.Equal(t, "Device registered successfully", resp.Message)
+	assert.Equal(t, "device-123", resp.Device.DeviceID)
+	assert.Equal(t, "Test Device", resp.Device.Name)
+	assert.Equal(t, "2025-09-13T14:30:22Z", resp.Device.CreatedAt)
+}
+
+func TestRegisterDevice_ServerError(t *testing.T) {
+	// Mock server that returns error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "validation_error",
+			Message: "Invalid device name",
+		})
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	// Generate test keypairs
+	signingPublic, _, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	encryptionPublic := make([]byte, 32)
+	_, err = rand.Read(encryptionPublic)
+	require.NoError(t, err)
+
+	// Test device registration with server error
+	_, err = client.RegisterDevice("test-token", "", signingPublic, encryptionPublic)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid device name")
+}
+
+func TestRegisterDevice_NetworkError(t *testing.T) {
+	// Use invalid URL to simulate network error
+	client := NewWithBaseURL("http://invalid-url-that-does-not-exist.local")
+
+	// Generate test keypairs
+	signingPublic, _, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	encryptionPublic := make([]byte, 32)
+	_, err = rand.Read(encryptionPublic)
+	require.NoError(t, err)
+
+	// Test device registration with network error
+	_, err = client.RegisterDevice("test-token", "Test Device", signingPublic, encryptionPublic)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to make request")
+}
+
+func TestRegisterDevice_Success_With200(t *testing.T) {
+	// Test that we also accept 200 OK responses (some servers might return this)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := DeviceRegistrationResponse{
+			Success: true,
+			Message: "Device registered successfully",
+			Device: struct {
+				DeviceID  string `json:"device_id"`
+				Name      string `json:"name"`
+				CreatedAt string `json:"created_at"`
+			}{
+				DeviceID:  "device-456",
+				Name:      "Test Device 200",
+				CreatedAt: "2025-09-14T14:30:22Z",
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // Test 200 OK response
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	// Generate test keypairs
+	signingPublic, _, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	encryptionPublic := make([]byte, 32)
+	_, err = rand.Read(encryptionPublic)
+	require.NoError(t, err)
+
+	// Test device registration with 200 OK
+	resp, err := client.RegisterDevice("test-token", "Test Device 200", signingPublic, encryptionPublic)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.True(t, resp.Success)
+	assert.Equal(t, "device-456", resp.Device.DeviceID)
 }

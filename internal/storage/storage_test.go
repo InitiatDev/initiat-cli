@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -158,4 +160,94 @@ func TestStorage_OverwriteValues(t *testing.T) {
 	// Clean up
 	_ = storage.DeleteToken()
 	_ = storage.DeleteDeviceID()
+}
+
+func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
+	storage := New()
+
+	// Generate test keypair
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate test keypair: %v", err)
+	}
+
+	// Clean up any existing key first
+	_ = storage.DeleteSigningPrivateKey()
+
+	// Initially should not have signing private key
+	assert.False(t, storage.HasSigningPrivateKey())
+
+	// Store signing private key
+	err = storage.StoreSigningPrivateKey(privateKey)
+	if err != nil {
+		t.Skipf("Skipping keyring test due to error: %v", err)
+		return
+	}
+
+	// Should now have signing private key
+	assert.True(t, storage.HasSigningPrivateKey())
+
+	// Retrieve signing private key
+	retrievedKey, err := storage.GetSigningPrivateKey()
+	assert.NoError(t, err)
+	assert.Equal(t, privateKey, retrievedKey)
+
+	// Verify the key works by signing a message
+	message := []byte("test message")
+	signature := ed25519.Sign(retrievedKey, message)
+	assert.True(t, ed25519.Verify(publicKey, message, signature))
+
+	// Delete signing private key
+	err = storage.DeleteSigningPrivateKey()
+	assert.NoError(t, err)
+
+	// Should no longer have signing private key
+	assert.False(t, storage.HasSigningPrivateKey())
+
+	// Getting deleted key should fail
+	_, err = storage.GetSigningPrivateKey()
+	assert.Error(t, err)
+}
+
+func TestStorage_EncryptionPrivateKeyOperations(t *testing.T) {
+	storage := New()
+
+	// Generate test key (32 random bytes for X25519)
+	testKey := make([]byte, 32)
+	_, err := rand.Read(testKey)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	// Clean up any existing key first
+	_ = storage.DeleteEncryptionPrivateKey()
+
+	// Initially should not have encryption private key
+	assert.False(t, storage.HasEncryptionPrivateKey())
+
+	// Store encryption private key
+	err = storage.StoreEncryptionPrivateKey(testKey)
+	if err != nil {
+		t.Skipf("Skipping keyring test due to error: %v", err)
+		return
+	}
+
+	// Should now have encryption private key
+	assert.True(t, storage.HasEncryptionPrivateKey())
+
+	// Retrieve encryption private key
+	retrievedKey, err := storage.GetEncryptionPrivateKey()
+	assert.NoError(t, err)
+	assert.Equal(t, testKey, retrievedKey)
+
+	// Delete encryption private key
+	err = storage.DeleteEncryptionPrivateKey()
+	assert.NoError(t, err)
+
+	// Should no longer have encryption private key
+	assert.False(t, storage.HasEncryptionPrivateKey())
+
+	// Getting deleted key should fail
+	_, err = storage.GetEncryptionPrivateKey()
+	assert.Error(t, err)
 }
