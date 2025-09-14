@@ -12,21 +12,18 @@ const (
 	configDirPermissions = 0750
 )
 
-// Config holds the application configuration
 type Config struct {
 	APIBaseURL string `mapstructure:"api_base_url"`
 }
 
 var globalConfig *Config
 
-// DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
 		APIBaseURL: "https://api.initflow.com",
 	}
 }
 
-// InitConfig initializes the configuration system
 func InitConfig() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

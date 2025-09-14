@@ -18,13 +18,11 @@ const (
 	defaultTimeoutSeconds = 30
 )
 
-// Client represents the HTTP client for InitFlow API
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-// New creates a new InitFlow API client
 func New() *Client {
 	cfg := config.Get()
 
@@ -36,7 +34,6 @@ func New() *Client {
 	}
 }
 
-// NewWithBaseURL creates a new client with a custom base URL
 func NewWithBaseURL(baseURL string) *Client {
 	return &Client{
 		baseURL: baseURL,
@@ -46,13 +43,11 @@ func NewWithBaseURL(baseURL string) *Client {
 	}
 }
 
-// LoginRequest represents the login request payload
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// LoginResponse represents the login response
 type LoginResponse struct {
 	Token string `json:"token"`
 	User  struct {
@@ -63,13 +58,11 @@ type LoginResponse struct {
 	} `json:"user"`
 }
 
-// ErrorResponse represents an API error response
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
 }
 
-// DeviceRegistrationRequest represents the device registration request payload
 type DeviceRegistrationRequest struct {
 	Token            string `json:"token"`
 	Name             string `json:"name"`
@@ -77,7 +70,6 @@ type DeviceRegistrationRequest struct {
 	PublicKeyX25519  string `json:"public_key_x25519"`
 }
 
-// DeviceRegistrationResponse represents the device registration response
 type DeviceRegistrationResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
@@ -88,7 +80,6 @@ type DeviceRegistrationResponse struct {
 	} `json:"device"`
 }
 
-// Login authenticates a user and returns a registration token
 func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	loginReq := LoginRequest{
 		Email:    email,
@@ -114,7 +105,7 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer func() {
-		_ = resp.Body.Close() // Ignore close error as we're already handling the main error
+		_ = resp.Body.Close()
 	}()
 
 	body, err := io.ReadAll(resp.Body)
@@ -138,8 +129,11 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	return &loginResp, nil
 }
 
-// RegisterDevice registers a new device with the InitFlow API
-func (c *Client) RegisterDevice(token, name string, signingPublicKey ed25519.PublicKey, encryptionPublicKey []byte) (*DeviceRegistrationResponse, error) {
+func (c *Client) RegisterDevice(
+	token, name string,
+	signingPublicKey ed25519.PublicKey,
+	encryptionPublicKey []byte,
+) (*DeviceRegistrationResponse, error) {
 	deviceReq := DeviceRegistrationRequest{
 		Token:            token,
 		Name:             name,
@@ -166,7 +160,7 @@ func (c *Client) RegisterDevice(token, name string, signingPublicKey ed25519.Pub
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer func() {
-		_ = resp.Body.Close() // Ignore close error as we're already handling the main error
+		_ = resp.Body.Close()
 	}()
 
 	body, err := io.ReadAll(resp.Body)

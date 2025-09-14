@@ -21,7 +21,6 @@ func TestGenerateEd25519Keypair(t *testing.T) {
 		t.Errorf("Expected private key size %d, got %d", ed25519.PrivateKeySize, len(privateKey))
 	}
 
-	// Verify the keypair works by signing and verifying a message
 	message := []byte("test message")
 	signature := ed25519.Sign(privateKey, message)
 
@@ -36,15 +35,14 @@ func TestGenerateX25519Keypair(t *testing.T) {
 		t.Fatalf("Failed to generate X25519 keypair: %v", err)
 	}
 
-	if len(publicKey) != 32 {
-		t.Errorf("Expected public key size 32, got %d", len(publicKey))
+	if len(publicKey) != x25519KeySize {
+		t.Errorf("Expected public key size %d, got %d", x25519KeySize, len(publicKey))
 	}
 
-	if len(privateKey) != 32 {
-		t.Errorf("Expected private key size 32, got %d", len(privateKey))
+	if len(privateKey) != x25519KeySize {
+		t.Errorf("Expected private key size %d, got %d", x25519KeySize, len(privateKey))
 	}
 
-	// Verify the keypair works by performing key exchange
 	expectedPublicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
 	if err != nil {
 		t.Fatalf("Failed to compute expected public key: %v", err)
@@ -59,7 +57,6 @@ func TestGenerateX25519Keypair(t *testing.T) {
 }
 
 func TestGenerateKeypairsUnique(t *testing.T) {
-	// Generate two Ed25519 keypairs and ensure they're different
 	pub1, priv1, err := generateEd25519Keypair()
 	if err != nil {
 		t.Fatalf("Failed to generate first Ed25519 keypair: %v", err)
@@ -78,7 +75,6 @@ func TestGenerateKeypairsUnique(t *testing.T) {
 		t.Error("Generated Ed25519 private keys are identical")
 	}
 
-	// Generate two X25519 keypairs and ensure they're different
 	xPub1, xPriv1, err := generateX25519Keypair()
 	if err != nil {
 		t.Fatalf("Failed to generate first X25519 keypair: %v", err)

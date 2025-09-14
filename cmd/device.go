@@ -35,11 +35,9 @@ func init() {
 	deviceCmd.AddCommand(registerDeviceCmd)
 }
 
-// ensureAuthenticated checks if user is authenticated and prompts for login if not
 func ensureAuthenticated() error {
 	storage := storage.New()
 
-	// Check if we have a valid token
 	if storage.HasToken() {
 		return nil
 	}
@@ -47,7 +45,6 @@ func ensureAuthenticated() error {
 	fmt.Println("🔐 Authentication required for device registration")
 	fmt.Println()
 
-	// Prompt for email
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Email: ")
 	email, err := reader.ReadString('\n')
@@ -59,30 +56,26 @@ func ensureAuthenticated() error {
 		return fmt.Errorf("email cannot be empty")
 	}
 
-	// Prompt for password
 	fmt.Print("Password: ")
 	passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to read password: %w", err)
 	}
-	fmt.Println() // Add newline after password input
+	fmt.Println()
 
 	password := string(passwordBytes)
 	if password == "" {
 		return fmt.Errorf("password cannot be empty")
 	}
 
-	// Show authentication progress
 	fmt.Println("🔐 Authenticating...")
 
-	// Create client and attempt login
 	apiClient := client.New()
 	loginResp, err := apiClient.Login(email, password)
 	if err != nil {
 		return fmt.Errorf("❌ Authentication failed: %w", err)
 	}
 
-	// Store the registration token securely
 	if err := storage.StoreToken(loginResp.Token); err != nil {
 		return fmt.Errorf("❌ Failed to store authentication token: %w", err)
 	}
@@ -93,7 +86,6 @@ func ensureAuthenticated() error {
 	return nil
 }
 
-// generateEd25519Keypair generates an Ed25519 signing keypair
 func generateEd25519Keypair() (ed25519.PublicKey, ed25519.PrivateKey, error) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -102,15 +94,14 @@ func generateEd25519Keypair() (ed25519.PublicKey, ed25519.PrivateKey, error) {
 	return publicKey, privateKey, nil
 }
 
-// generateX25519Keypair generates an X25519 encryption keypair
+const x25519KeySize = 32
+
 func generateX25519Keypair() ([]byte, []byte, error) {
-	// Generate private key (32 random bytes)
-	privateKey := make([]byte, 32)
+	privateKey := make([]byte, x25519KeySize)
 	if _, err := rand.Read(privateKey); err != nil {
 		return nil, nil, fmt.Errorf("failed to generate X25519 private key: %w", err)
 	}
 
-	// Generate public key from private key
 	publicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate X25519 public key: %w", err)
@@ -125,12 +116,10 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("device name cannot be empty")
 	}
 
-	// Ensure user is authenticated
 	if err := ensureAuthenticated(); err != nil {
 		return err
 	}
 
-	// Check if device is already registered
 	storage := storage.New()
 	if storage.HasDeviceID() {
 		deviceID, _ := storage.GetDeviceID()
@@ -141,21 +130,18 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("🔑 Registering device: %s\n", deviceName)
 
-	// Generate Ed25519 signing keypair
 	fmt.Println("🔑 Generating Ed25519 signing keypair...")
 	signingPublicKey, signingPrivateKey, err := generateEd25519Keypair()
 	if err != nil {
 		return fmt.Errorf("failed to generate signing keypair: %w", err)
 	}
 
-	// Generate X25519 encryption keypair
 	fmt.Println("🔒 Generating X25519 encryption keypair...")
 	encryptionPublicKey, encryptionPrivateKey, err := generateX25519Keypair()
 	if err != nil {
 		return fmt.Errorf("failed to generate encryption keypair: %w", err)
 	}
 
-	// Register device with server
 	fmt.Println("📡 Registering device with server...")
 	apiClient := client.New()
 
@@ -169,7 +155,6 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Device registration failed: %w", err)
 	}
 
-	// Store private keys and device ID securely
 	fmt.Println("🔐 Storing keys securely in system keychain...")
 
 	if err := storage.StoreSigningPrivateKey(signingPrivateKey); err != nil {
@@ -184,10 +169,7 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to store device ID: %w", err)
 	}
 
-	// Clean up registration token (it's no longer needed)
 	_ = storage.DeleteToken()
-
-	// Success message
 	fmt.Println("✅ Device registered successfully!")
 	fmt.Println()
 	fmt.Printf("Device ID: %s\n", deviceResp.Device.DeviceID)
