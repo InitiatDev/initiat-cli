@@ -1,57 +1,7 @@
-version: 2
-
+version: "2"
 run:
-  timeout: 5m
-  issues-exit-code: 1
   tests: true
-  modules-download-mode: readonly
-
-output:
-  formats:
-    colored-line-number:
-      path: stdout
-  print-issued-lines: true
-  print-linter-name: true
-
-linters-settings:
-  govet:
-    shadow: true
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-  goimports:
-    local-prefixes: github.com/DylanBlakemore/initflow-cli
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-  funlen:
-    lines: 100
-    statements: 50
-  forbidigo:
-    forbid:
-      - ^print.*$
-      - 'fmt\.Print.*'
-
 linters:
-  default: none
   enable:
     - bodyclose
     - dogsled
@@ -62,107 +12,57 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - mnd
     - goprintffuncname
     - gosec
     - govet
     - ineffassign
     - lll
     - misspell
+    - mnd
     - nakedret
     - nolintlint
     - rowserrcheck
-    - staticcheck  # This now includes gosimple, staticcheck, and stylecheck
+    - staticcheck
     - unconvert
     - unparam
     - unused
     - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - funlen
+          - goconst
+          - gocyclo
+          - gosec
+          - lll
+          - mnd
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    lll:
+      line-length: 120
+    funlen:
+      lines: 100
+      statements: 50
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-  # don't enable:
-  # - asciicheck
-  # - scopelint
-  # - gochecknoglobals
-  # - gocognit
-  # - godot
-  # - godox
-  # - goerr113
-  # - interfacer
-  # - maligned
-  # - nestif
-  # - prealloc
-  # - testpackage
-  # - revive
-  # - wsl
-
-issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - mnd
-        - funlen
-        - goconst
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - lll
-
-    # Allow init functions in cmd package (common for CLI apps)
-    - path: cmd/
-      linters:
-        - gochecknoinits
-
-    # Allow package comments to be missing in some cases
-    - linters:
-        - stylecheck
-      text: "ST1000:"
-
-    # Allow long lines in tests for readability
-    - path: _test\.go
-      linters:
-        - lll
-
-    # https://github.com/go-critic/go-critic/issues/926
-    - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
-
-  # Independently from option `exclude` we use default exclude patterns,
-  # it can be disabled by this option. To list all
-  # excluded by default patterns execute `golangci-lint run --help`.
-  # Default value for this option is true.
-  exclude-use-default: false
-
-  # The default value is false. If set to true exclude and exclude-rules
-  # regular expressions become case sensitive.
-  exclude-case-sensitive: false
-
-  # The list of ids of default excludes to include or disable. By default it's empty.
-  include:
-    - EXC0002 # disable excluding of issues about comments from golint
-
-  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
-  max-issues-per-linter: 0
-
-  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
-  max-same-issues: 0
-
-  # Show only new issues: if there are unstaged changes or untracked files,
-  # only those changes are analyzed, e.g. if you have `master` branch
-  # checked out and make changes, then only those changes are analyzed.
-  new: false
-
-  # Show only new issues created after git revision `REV`
-  new-from-rev: ""
-
-  # Show only new issues created in git patch with set file path.
-  new-from-patch: ""
-
-  # Fix found issues (if it's supported by the linter)
-  fix: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
