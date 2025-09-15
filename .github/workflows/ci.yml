@@ -42,8 +42,23 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
+      - name: Install and setup GNOME Keyring for tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnome-keyring dbus-x11
+          # Start D-Bus session
+          export $(dbus-launch)
+          # Initialize keyring with a test password
+          echo 'test' | gnome-keyring-daemon --unlock --daemonize
+          # Start the keyring daemon
+          gnome-keyring-daemon --start --daemonize --components=secrets
+
       - name: Run tests
         run: |
+          # Ensure keyring environment is available
+          export $(dbus-launch)
+          export GNOME_KEYRING_CONTROL=/tmp/keyring-$$
+          export GNOME_KEYRING_PID=$(pgrep gnome-keyring-daemon)
           go test -v -race -coverprofile=coverage.out ./... || \
           go test -v -race ./...
 
