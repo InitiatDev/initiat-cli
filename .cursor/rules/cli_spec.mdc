@@ -257,7 +257,7 @@ encodedSignature := base64.StdEncoding.EncodeToString(signature)
 
 #### Initialize Workspace Key
 ```http
-POST /api/v1/workspaces/123/initialize-key
+POST /api/v1/workspaces/123/initialize
 Authorization: Device abc123def456
 X-Signature: base64-encoded-ed25519-signature
 X-Timestamp: 1694612345
@@ -345,7 +345,7 @@ All authenticated API requests must be signed using the device's Ed25519 private
 #### Example Signature Message
 ```
 POST
-/api/v1/workspaces/123/initialize-key
+/api/v1/workspaces/123/initialize
 {"wrapped_workspace_key":"eyJhbGciOiJIUzI1NiJ9..."}
 1694612345
 ```
@@ -458,7 +458,7 @@ Workspace keys are encrypted using X25519 Elliptic Curve Diffie-Hellman with Cha
 | `/api/v1/auth/login` | POST | None | User authentication |
 | `/api/v1/devices` | POST | Token | Device registration |
 | `/api/v1/workspaces` | GET | Device | List workspaces |
-| `/api/v1/workspaces/{id}/initialize-key` | POST | Device | Initialize workspace key |
+| `/api/v1/workspaces/{id}/initialize` | POST | Device | Initialize workspace key |
 
 ---
 

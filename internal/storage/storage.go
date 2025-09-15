@@ -4,25 +4,41 @@ import (
 	"crypto/ed25519"
 	"fmt"
 
+	"github.com/DylanBlakemore/initflow-cli/internal/config"
 	"github.com/zalando/go-keyring"
 )
 
 const (
-	serviceName = "initflow-cli"
+	DefaultServiceName = "initflow-cli"
 )
 
-type Storage struct{}
+type Storage struct {
+	serviceName string
+}
 
 func New() *Storage {
-	return &Storage{}
+	serviceName := DefaultServiceName
+	cfg := config.Get()
+	if cfg.ServiceName != "" {
+		serviceName = cfg.ServiceName
+	}
+	return &Storage{
+		serviceName: serviceName,
+	}
+}
+
+func NewWithServiceName(serviceName string) *Storage {
+	return &Storage{
+		serviceName: serviceName,
+	}
 }
 
 func (s *Storage) StoreToken(token string) error {
-	return keyring.Set(serviceName, "registration-token", token)
+	return keyring.Set(s.serviceName, "registration-token", token)
 }
 
 func (s *Storage) GetToken() (string, error) {
-	token, err := keyring.Get(serviceName, "registration-token")
+	token, err := keyring.Get(s.serviceName, "registration-token")
 	if err != nil {
 		return "", fmt.Errorf("failed to get token: %w", err)
 	}
@@ -30,15 +46,15 @@ func (s *Storage) GetToken() (string, error) {
 }
 
 func (s *Storage) DeleteToken() error {
-	return keyring.Delete(serviceName, "registration-token")
+	return keyring.Delete(s.serviceName, "registration-token")
 }
 
 func (s *Storage) StoreDeviceID(deviceID string) error {
-	return keyring.Set(serviceName, "device-id", deviceID)
+	return keyring.Set(s.serviceName, "device-id", deviceID)
 }
 
 func (s *Storage) GetDeviceID() (string, error) {
-	deviceID, err := keyring.Get(serviceName, "device-id")
+	deviceID, err := keyring.Get(s.serviceName, "device-id")
 	if err != nil {
 		return "", fmt.Errorf("failed to get device ID: %w", err)
 	}
@@ -46,7 +62,7 @@ func (s *Storage) GetDeviceID() (string, error) {
 }
 
 func (s *Storage) DeleteDeviceID() error {
-	return keyring.Delete(serviceName, "device-id")
+	return keyring.Delete(s.serviceName, "device-id")
 }
 
 func (s *Storage) HasToken() bool {
@@ -60,11 +76,11 @@ func (s *Storage) HasDeviceID() bool {
 }
 
 func (s *Storage) StoreSigningPrivateKey(privateKey ed25519.PrivateKey) error {
-	return keyring.Set(serviceName, "signing-private-key", string(privateKey))
+	return keyring.Set(s.serviceName, "signing-private-key", string(privateKey))
 }
 
 func (s *Storage) GetSigningPrivateKey() (ed25519.PrivateKey, error) {
-	keyStr, err := keyring.Get(serviceName, "signing-private-key")
+	keyStr, err := keyring.Get(s.serviceName, "signing-private-key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get signing private key: %w", err)
 	}
@@ -72,15 +88,15 @@ func (s *Storage) GetSigningPrivateKey() (ed25519.PrivateKey, error) {
 }
 
 func (s *Storage) DeleteSigningPrivateKey() error {
-	return keyring.Delete(serviceName, "signing-private-key")
+	return keyring.Delete(s.serviceName, "signing-private-key")
 }
 
 func (s *Storage) StoreEncryptionPrivateKey(privateKey []byte) error {
-	return keyring.Set(serviceName, "encryption-private-key", string(privateKey))
+	return keyring.Set(s.serviceName, "encryption-private-key", string(privateKey))
 }
 
 func (s *Storage) GetEncryptionPrivateKey() ([]byte, error) {
-	keyStr, err := keyring.Get(serviceName, "encryption-private-key")
+	keyStr, err := keyring.Get(s.serviceName, "encryption-private-key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get encryption private key: %w", err)
 	}
@@ -88,7 +104,7 @@ func (s *Storage) GetEncryptionPrivateKey() ([]byte, error) {
 }
 
 func (s *Storage) DeleteEncryptionPrivateKey() error {
-	return keyring.Delete(serviceName, "encryption-private-key")
+	return keyring.Delete(s.serviceName, "encryption-private-key")
 }
 
 func (s *Storage) HasSigningPrivateKey() bool {
@@ -103,12 +119,12 @@ func (s *Storage) HasEncryptionPrivateKey() bool {
 
 func (s *Storage) StoreWorkspaceKey(workspaceSlug string, key []byte) error {
 	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
-	return keyring.Set(serviceName, keyName, string(key))
+	return keyring.Set(s.serviceName, keyName, string(key))
 }
 
 func (s *Storage) GetWorkspaceKey(workspaceSlug string) ([]byte, error) {
 	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
-	keyStr, err := keyring.Get(serviceName, keyName)
+	keyStr, err := keyring.Get(s.serviceName, keyName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace key for %s: %w", workspaceSlug, err)
 	}
@@ -117,7 +133,7 @@ func (s *Storage) GetWorkspaceKey(workspaceSlug string) ([]byte, error) {
 
 func (s *Storage) DeleteWorkspaceKey(workspaceSlug string) error {
 	keyName := fmt.Sprintf("workspace-key-%s", workspaceSlug)
-	return keyring.Delete(serviceName, keyName)
+	return keyring.Delete(s.serviceName, keyName)
 }
 
 func (s *Storage) HasWorkspaceKey(workspaceSlug string) bool {

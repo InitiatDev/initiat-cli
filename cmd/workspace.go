@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 
 	"github.com/DylanBlakemore/initflow-cli/internal/client"
+	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
 	"github.com/DylanBlakemore/initflow-cli/internal/storage"
 )
 
@@ -78,7 +79,7 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 			keyStatus,
 			workspace.Role)
 	}
-	w.Flush()
+	_ = w.Flush()
 
 	hasUninitialized := false
 	for _, workspace := range workspaces {
@@ -122,7 +123,7 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
-	workspaceKey := make([]byte, 32)
+	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
 		return fmt.Errorf("❌ Failed to generate workspace key: %w", err)
 	}
@@ -159,7 +160,7 @@ func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to get encryption private key: %w", err)
 	}
 
-	ephemeralPrivate := make([]byte, 32)
+	ephemeralPrivate := make([]byte, encoding.X25519PrivateKeySize)
 	if _, err := rand.Read(ephemeralPrivate); err != nil {
 		return nil, fmt.Errorf("failed to generate ephemeral private key: %w", err)
 	}
@@ -175,7 +176,7 @@ func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, erro
 	}
 
 	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initflow.wrap"), []byte("workspace"))
-	encryptionKey := make([]byte, 32)
+	encryptionKey := make([]byte, encoding.WorkspaceKeySize)
 	if _, err := hkdf.Read(encryptionKey); err != nil {
 		return nil, fmt.Errorf("failed to derive encryption key: %w", err)
 	}
@@ -185,12 +186,12 @@ func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
-	nonce := make([]byte, 12)
+	nonce := make([]byte, encoding.ChaCha20NonceSize)
 	if _, err := rand.Read(nonce); err != nil {
 		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	ciphertext := cipher.Seal(nil, nonce, workspaceKey, nil)
+	ciphertext := cipher.Seal(nil, nonce, workspaceKey, nil) // #nosec G407 - nonce is randomly generated above
 
 	wrapped := make([]byte, 0, 32+12+len(ciphertext))
 	wrapped = append(wrapped, ephemeralPublic...)

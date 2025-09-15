@@ -25,7 +25,7 @@ func TestWorkspaceRoutes(t *testing.T) {
 
 func TestWorkspaceRoutes_InitializeKey(t *testing.T) {
 	route := Workspace.InitializeKey(123)
-	assert.Equal(t, "/api/v1/workspaces/123/initialize-key", route)
+	assert.Equal(t, "/api/v1/workspaces/123/initialize", route)
 }
 
 func TestWorkspaceRoutes_GetByID(t *testing.T) {
@@ -104,7 +104,7 @@ func TestBuildURL(t *testing.T) {
 			name:     "workspace initialize key",
 			baseURL:  baseURL,
 			path:     Workspace.InitializeKey(123),
-			expected: "https://api.initflow.com/api/v1/workspaces/123/initialize-key",
+			expected: "https://api.initflow.com/api/v1/workspaces/123/initialize",
 		},
 	}
 
@@ -132,9 +132,9 @@ func TestWorkspaceRoutesWithDifferentIDs(t *testing.T) {
 		workspaceID int
 		expected    string
 	}{
-		{1, "/api/v1/workspaces/1/initialize-key"},
-		{999, "/api/v1/workspaces/999/initialize-key"},
-		{123456, "/api/v1/workspaces/123456/initialize-key"},
+		{1, "/api/v1/workspaces/1/initialize"},
+		{999, "/api/v1/workspaces/999/initialize"},
+		{123456, "/api/v1/workspaces/123456/initialize"},
 	}
 
 	for _, tc := range testCases {

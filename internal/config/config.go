@@ -13,14 +13,16 @@ const (
 )
 
 type Config struct {
-	APIBaseURL string `mapstructure:"api_base_url"`
+	APIBaseURL  string `mapstructure:"api_base_url"`
+	ServiceName string `mapstructure:"service_name"`
 }
 
 var globalConfig *Config
 
 func DefaultConfig() *Config {
 	return &Config{
-		APIBaseURL: "https://api.initflow.com",
+		APIBaseURL:  "https://api.initflow.com",
+		ServiceName: "initflow-cli",
 	}
 }
 
@@ -39,6 +41,7 @@ func InitConfig() error {
 
 	defaults := DefaultConfig()
 	viper.SetDefault("api_base_url", defaults.APIBaseURL)
+	viper.SetDefault("service_name", defaults.ServiceName)
 
 	viper.SetEnvPrefix("INITFLOW")
 	viper.AutomaticEnv()

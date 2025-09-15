@@ -1,0 +1,207 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# InitFlow Encoding Specification
+
+This document outlines the exact encoding/decoding standards used for each piece of information in InitFlow, ensuring consistency across all client implementations.
+
+## Overview
+
+InitFlow uses **URL-Safe Base64 encoding without padding** for all cryptographic data. This unified approach provides:
+
+- **Simplicity**: One encoding rule for all data types
+- **Flexibility**: Safe to use in URLs, headers, JSON, cookies, and file names
+- **Consistency**: No need to remember different encoding types
+- **Universal**: Works across all programming languages and platforms
+
+## Encoding Standards by Data Type
+
+| Data Type | Encoding | Usage Location | Binary Size | Description |
+|-----------|----------|----------------|-------------|-------------|
+| **Device IDs** | URL-Safe Base64 | Authorization headers | 16 bytes | Unique device identifier |
+| **User Tokens** | URL-Safe Base64 | Magic links, cookies | 32 bytes | Authentication tokens |
+| **Session Tokens** | URL-Safe Base64 | Session cookies | 32 bytes | Persistent session identifiers |
+| **Cryptographic Signatures** | URL-Safe Base64 | X-Signature headers | 64 bytes | Ed25519 signatures |
+| **Public Keys (Ed25519/X25519)** | URL-Safe Base64 | JSON request bodies | 32 bytes | Cryptographic public keys |
+| **Workspace Key IDs** | URL-Safe Base64 | JSON responses | 16 bytes | Workspace identifier |
+
+## Implementation Requirements
+
+All client implementations MUST follow these encoding standards:
+
+### Base64 Variant
+- **Type**: URL-Safe Base64 (RFC 4648 Section 5)
+- **Padding**: None (no `=` characters)
+- **Character Set**: `A-Z`, `a-z`, `0-9`, `-`, `_`
+
+### Language-Specific Examples
+
+#### Go
+```go
+import "encoding/base64"
+
+func encode(data []byte) string {
+    return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(data)
+}
+
+func decode(encoded string) ([]byte, error) {
+    return base64.URLEncoding.WithPadding(base64.NoPadding).DecodeString(encoded)
+}
+```
+
+#### JavaScript/TypeScript
+```javascript
+// Encoding (Node.js)
+function encode(data) {
+    return Buffer.from(data).toString('base64url');
+}
+
+// Decoding (Node.js)
+function decode(encoded) {
+    return Buffer.from(encoded, 'base64url');
+}
+
+// Browser (using base64url library or manual conversion)
+function encode(data) {
+    return btoa(String.fromCharCode(...data))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+```
+
+#### Python
+```python
+import base64
+
+def encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
+
+def decode(encoded: str) -> bytes:
+    # Add padding if needed
+    padding = 4 - (len(encoded) % 4)
+    if padding != 4:
+        encoded += '=' * padding
+    return base64.urlsafe_b64decode(encoded)
+```
+
+#### Elixir/Phoenix
+```elixir
+def encode(data) when is_binary(data) do
+  Base.url_encode64(data, padding: false)
+end
+
+def decode(encoded) when is_binary(encoded) do
+  Base.url_decode64(encoded, padding: false)
+end
+```
+
+## Protocol Usage Examples
+
+### Device Registration Flow
+```
+1. Generate device ID (16 random bytes)
+   Raw: [16 random bytes]
+   Encoded: "abc123def456ghi789jkl" (22 chars, no padding)
+
+2. Generate Ed25519 keypair
+   Public Key Raw: [32 bytes]
+   Public Key Encoded: "MEUCIQDx..." (43 chars, no padding)
+
+3. Send registration request
+   POST /api/v1/devices
+   {
+     "token": "xyz789abc123def456...",      // User token (URL-safe)
+     "name": "My Device",
+     "public_key_ed25519": "MEUCIQDx...",   // Ed25519 public key (URL-safe)
+     "public_key_x25519": "MCQCIG7..."     // X25519 public key (URL-safe)
+   }
+```
+
+### Request Authentication Flow
+```
+1. Create signature message
+   POST\n/api/v1/workspaces\n{}\n1694612345
+
+2. Sign with Ed25519 private key
+   Signature Raw: [64 bytes]
+   Signature Encoded: "MEUCIQDx..." (86 chars, no padding)
+
+3. Set HTTP headers
+   Authorization: Device abc123def456ghi789jkl
+   X-Signature: MEUCIQDx...
+   X-Timestamp: 1694612345
+```
+
+### Token Exchange Flow
+```
+1. User receives magic link
+   https://app.initflow.com/auth/magic?token=xyz789abc123def456...
+
+2. Client extracts and decodes token
+   Token Encoded: "xyz789abc123def456..."
+   Token Raw: [32 bytes]
+
+3. Use token for device registration
+   (See Device Registration Flow above)
+```
+
+## Validation Requirements
+
+### Encoding Validation
+- **Character Set**: Only `A-Z`, `a-z`, `0-9`, `-`, `_` characters allowed
+- **No Padding**: Must not contain `=` characters
+- **Length**: Encoded length must be valid for expected binary size
+
+### Binary Validation After Decoding
+| Data Type | Expected Size | Validation |
+|-----------|---------------|------------|
+| Device IDs | 16 bytes | Exact length match |
+| User Tokens | 32 bytes | Exact length match |
+| Session Tokens | 32 bytes | Exact length match |
+| Ed25519 Signatures | 64 bytes | Exact length match |
+| Ed25519 Public Keys | 32 bytes | Exact length match |
+| X25519 Public Keys | 32 bytes | Exact length match |
+| Workspace Key IDs | 16 bytes | Exact length match |
+
+### Error Handling
+- Return generic "invalid format" errors
+- Do not expose encoding implementation details
+- Log validation failures for debugging (server-side only)
+- Validate before processing any cryptographic operations
+
+## Implementation Checklist
+
+When implementing InitFlow encoding in any language:
+
+### Required Features
+- [ ] URL-Safe Base64 encoding (RFC 4648 Section 5)
+- [ ] No padding support (strip/ignore `=` characters)
+- [ ] Binary length validation for each data type
+- [ ] Proper error handling for invalid input
+- [ ] Test vector validation (see above)
+
+### Security Requirements
+- [ ] Constant-time comparison for sensitive data
+- [ ] Secure random number generation for tokens/IDs
+- [ ] Memory clearing after use (where possible)
+- [ ] Input validation before cryptographic operations
+
+### Interoperability Testing
+Test your implementation against these scenarios:
+- [ ] Encode/decode round-trips for all data types
+- [ ] Cross-language compatibility (encode in one language, decode in another)
+- [ ] Invalid input handling (malformed Base64, wrong lengths)
+- [ ] Edge cases (empty input, maximum lengths)
+
+## Reference Implementation
+
+The canonical implementation is in the InitFlow Phoenix application:
+- **Module**: `InitFlow.Crypto.Encoder`
+- **Location**: `lib/init_flow/crypto/encoder.ex`
+- **Tests**: `test/init_flow/crypto/encoder_test.exs`
+
+All client implementations should maintain compatibility with this reference.
+

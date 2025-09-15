@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"crypto/ed25519"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DylanBlakemore/initflow-cli/internal/config"
+	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
 	"github.com/DylanBlakemore/initflow-cli/internal/routes"
 	"github.com/DylanBlakemore/initflow-cli/internal/storage"
 )
@@ -165,11 +165,21 @@ func (c *Client) RegisterDevice(
 	signingPublicKey ed25519.PublicKey,
 	encryptionPublicKey []byte,
 ) (*DeviceRegistrationResponse, error) {
+	ed25519Encoded, err := encoding.EncodeEd25519PublicKey(signingPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode Ed25519 public key: %w", err)
+	}
+
+	x25519Encoded, err := encoding.EncodeX25519PublicKey(encryptionPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode X25519 public key: %w", err)
+	}
+
 	deviceReq := DeviceRegistrationRequest{
 		Token:            token,
 		Name:             name,
-		PublicKeyEd25519: base64.StdEncoding.EncodeToString(signingPublicKey),
-		PublicKeyX25519:  base64.StdEncoding.EncodeToString(encryptionPublicKey),
+		PublicKeyEd25519: ed25519Encoded,
+		PublicKeyX25519:  x25519Encoded,
 	}
 
 	jsonData, err := json.Marshal(deviceReq)
@@ -243,8 +253,13 @@ func (c *Client) signRequest(req *http.Request, body []byte) error {
 
 	signature := ed25519.Sign(signingKey, []byte(message))
 
+	signatureEncoded, err := encoding.EncodeEd25519Signature(signature)
+	if err != nil {
+		return fmt.Errorf("failed to encode signature: %w", err)
+	}
+
 	req.Header.Set("Authorization", "Device "+deviceID)
-	req.Header.Set("X-Signature", base64.StdEncoding.EncodeToString(signature))
+	req.Header.Set("X-Signature", signatureEncoded)
 	req.Header.Set("X-Timestamp", strconv.FormatInt(timestamp, 10))
 
 	return nil
@@ -309,7 +324,7 @@ func (c *Client) GetWorkspaceBySlug(slug string) (*Workspace, error) {
 
 func (c *Client) InitializeWorkspaceKey(workspaceID int, wrappedKey []byte) error {
 	initReq := InitializeWorkspaceKeyRequest{
-		WrappedWorkspaceKey: base64.StdEncoding.EncodeToString(wrappedKey),
+		WrappedWorkspaceKey: encoding.Encode(wrappedKey),
 	}
 
 	jsonData, err := json.Marshal(initReq)

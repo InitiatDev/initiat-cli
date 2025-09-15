@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	cfgFile string
-	apiURL  string
+	cfgFile     string
+	apiURL      string
+	serviceName string
 )
 
 var rootCmd = &cobra.Command{
@@ -29,6 +30,12 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
+		if serviceName != "" {
+			if err := config.Set("service_name", serviceName); err != nil {
+				return fmt.Errorf("failed to set service name: %w", err)
+			}
+		}
+
 		return nil
 	},
 }
@@ -36,7 +43,10 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.initflow/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://api.initflow.com)")
+	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initflow-cli",
+		"keyring service name for credential storage")
 }
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

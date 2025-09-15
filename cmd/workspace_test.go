@@ -3,7 +3,6 @@ package cmd
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/DylanBlakemore/initflow-cli/internal/client"
 	"github.com/DylanBlakemore/initflow-cli/internal/config"
+	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
 	"github.com/DylanBlakemore/initflow-cli/internal/storage"
 )
 
@@ -104,7 +104,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(response)
 
-		case "/api/v1/workspaces/1/initialize-key":
+		case "/api/v1/workspaces/1/initialize":
 			if r.Method != "POST" {
 				t.Errorf("Expected POST, got %s", r.Method)
 			}
@@ -118,8 +118,8 @@ func TestWorkspaceInitKey(t *testing.T) {
 				t.Error("Expected wrapped workspace key")
 			}
 
-			if _, err := base64.StdEncoding.DecodeString(req.WrappedWorkspaceKey); err != nil {
-				t.Errorf("Invalid base64 wrapped key: %v", err)
+			if _, err := encoding.Decode(req.WrappedWorkspaceKey); err != nil {
+				t.Errorf("Invalid encoded wrapped key: %v", err)
 			}
 			response := client.InitializeWorkspaceKeyResponse{
 				Success: true,
@@ -255,19 +255,30 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		t.Fatalf("Failed to set API URL: %v", err)
 	}
 
+	if err := config.Set("service_name", "initflow-cli-test-"+t.Name()); err != nil {
+		t.Fatalf("Failed to set service name: %v", err)
+	}
+
 	store := storage.New()
 
 	signingPublic, signingPrivate, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatalf("Failed to generate signing keypair: %v", err)
 	}
-	store.StoreSigningPrivateKey(signingPrivate)
+
+	if err := store.StoreSigningPrivateKey(signingPrivate); err != nil {
+		t.Fatalf("Failed to store signing private key: %v", err)
+	}
 
 	encryptionPrivate := make([]byte, 32)
 	rand.Read(encryptionPrivate)
-	store.StoreEncryptionPrivateKey(encryptionPrivate)
+	if err := store.StoreEncryptionPrivateKey(encryptionPrivate); err != nil {
+		t.Fatalf("Failed to store encryption private key: %v", err)
+	}
 
-	store.StoreDeviceID("test-device-123")
+	if err := store.StoreDeviceID("test-device-123"); err != nil {
+		t.Fatalf("Failed to store device ID: %v", err)
+	}
 
 	t.Cleanup(func() {
 		store.DeleteSigningPrivateKey()

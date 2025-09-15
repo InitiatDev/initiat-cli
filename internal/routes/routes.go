@@ -17,7 +17,7 @@ const (
 type WorkspaceRoutes struct{}
 
 func (w WorkspaceRoutes) InitializeKey(workspaceID int) string {
-	return fmt.Sprintf("%s/%d/initialize-key", Workspaces, workspaceID)
+	return fmt.Sprintf("%s/%d/initialize", Workspaces, workspaceID)
 }
 
 func (w WorkspaceRoutes) GetByID(workspaceID int) string {
