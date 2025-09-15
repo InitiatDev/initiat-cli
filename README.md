@@ -57,6 +57,7 @@ initflow auth login user@example.com
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Linux Setup](#linux-setup)
 - [Authentication](#authentication)
 - [Configuration](#configuration)
 - [Usage Examples](#usage-examples)
@@ -74,6 +75,8 @@ Before using the init.Flow CLI, you need:
 3. **System Requirements**:
    - Go 1.25 or later (for building from source)
    - OS keychain access (macOS Keychain, Windows Credential Manager, or Linux Secret Service)
+   
+   **Linux Users**: If you encounter keyring errors, see [Linux Setup](#linux-setup) below.
 
 ## 🛠 Installation
 
@@ -104,6 +107,104 @@ cd initflow-cli
 go build -o initflow .
 sudo mv initflow /usr/local/bin/  # Optional: add to PATH
 ```
+
+## 🐧 Linux Setup
+
+The init.Flow CLI requires a secret service for secure credential storage. Most desktop Linux distributions include this by default, but some setups may need manual configuration.
+
+### Check if Secret Service is Available
+
+```bash
+# Test if secret service is working
+initflow auth login test@example.com
+```
+
+If you see an error like `The name org.freedesktop.secrets was not provided by any .service files`, follow the setup below.
+
+### Install Secret Service (Ubuntu/Debian)
+
+```bash
+sudo apt-get update
+sudo apt-get install gnome-keyring dbus-x11
+```
+
+### Install Secret Service (Fedora/RHEL)
+
+```bash
+sudo dnf install gnome-keyring
+```
+
+### Install Secret Service (Arch Linux)
+
+```bash
+sudo pacman -S gnome-keyring
+```
+
+### Start the Service
+
+For desktop environments (GNOME, KDE, XFCE), the keyring usually starts automatically. For minimal setups:
+
+```bash
+# Start D-Bus session (if not running)
+export $(dbus-launch)
+
+# Start GNOME Keyring daemon
+gnome-keyring-daemon --start --daemonize --components=secrets
+
+# Add to your shell profile (~/.bashrc, ~/.zshrc) for persistence
+echo 'export $(dbus-launch)' >> ~/.bashrc
+echo 'gnome-keyring-daemon --start --daemonize --components=secrets >/dev/null 2>&1' >> ~/.bashrc
+```
+
+### Alternative: KWallet (KDE)
+
+If you're using KDE and prefer KWallet:
+
+```bash
+# Install KWallet and bridge
+sudo apt-get install kwalletmanager kwallet-pam  # Ubuntu/Debian
+sudo dnf install kwalletmanager5                  # Fedora
+
+# KWallet should provide the secret service automatically
+```
+
+### Headless/Server Environments
+
+For servers or headless setups, you can use a minimal secret service:
+
+```bash
+# Install minimal keyring
+sudo apt-get install gnome-keyring-daemon
+
+# Create a simple startup script
+cat > ~/.config/autostart/keyring.sh << 'EOF'
+#!/bin/bash
+export $(dbus-launch)
+echo "defaultpassword" | gnome-keyring-daemon --unlock --daemonize
+gnome-keyring-daemon --start --daemonize --components=secrets
+EOF
+
+chmod +x ~/.config/autostart/keyring.sh
+```
+
+### Troubleshooting
+
+If you continue to have issues:
+
+1. **Check if the service is running:**
+   ```bash
+   ps aux | grep keyring
+   ```
+
+2. **Verify D-Bus is available:**
+   ```bash
+   echo $DBUS_SESSION_BUS_ADDRESS
+   ```
+
+3. **Test secret service directly:**
+   ```bash
+   python3 -c "import secretstorage; print('Secret service working!')"
+   ```
 
 ## 🔐 Authentication
 
