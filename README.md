@@ -394,7 +394,7 @@ The project includes automated GitHub Actions workflows:
 
 #### **Continuous Integration (`.github/workflows/ci.yml`)**
 Runs on every push and pull request:
-- ✅ **Multi-version testing** (Go 1.24, 1.25)
+- ✅ **Multi-version testing** (Go 1.25)
 - ✅ **Code formatting** checks
 - ✅ **Linting** with golangci-lint
 - ✅ **Security scanning** with gosec
