@@ -90,11 +90,11 @@ type Workspace struct {
 	KeyInitialized bool   `json:"key_initialized"`
 	KeyVersion     int    `json:"key_version"`
 	Role           string `json:"role"`
-	Account        struct {
+	Organization   struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 		Slug string `json:"slug"`
-	} `json:"account"`
+	} `json:"organization"`
 }
 
 type ListWorkspacesResponse struct {

@@ -40,14 +40,14 @@ func TestWorkspaceList(t *testing.T) {
 					KeyInitialized: false,
 					KeyVersion:     0,
 					Role:           "Owner",
-					Account: struct {
+					Organization: struct {
 						ID   int    `json:"id"`
 						Name string `json:"name"`
 						Slug string `json:"slug"`
 					}{
 						ID:   123,
-						Name: "Test Account",
-						Slug: "test-account",
+						Name: "Test Organization",
+						Slug: "test-organization",
 					},
 				},
 				{
@@ -58,14 +58,14 @@ func TestWorkspaceList(t *testing.T) {
 					KeyInitialized: true,
 					KeyVersion:     1,
 					Role:           "Member",
-					Account: struct {
+					Organization: struct {
 						ID   int    `json:"id"`
 						Name string `json:"name"`
 						Slug string `json:"slug"`
 					}{
 						ID:   456,
-						Name: "Team Account",
-						Slug: "team-account",
+						Name: "Team Organization",
+						Slug: "team-organization",
 					},
 				},
 			},

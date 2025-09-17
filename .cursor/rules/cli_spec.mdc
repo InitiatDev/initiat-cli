@@ -281,7 +281,7 @@ Content-Type: application/json
       "description": "Project secrets and API keys",
       "key_initialized": false,
       "key_version": 0,
-      "account": {
+      "organization": {
         "id": 456,
         "name": "John Doe's Personal Account",
         "slug": "john-doe"
@@ -294,7 +294,7 @@ Content-Type: application/json
       "description": "Shared team credentials",
       "key_initialized": true,
       "key_version": 1,
-      "account": {
+      "organization": {
         "id": 789,
         "name": "Acme Corp",
         "slug": "acme-corp"
