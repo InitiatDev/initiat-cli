@@ -13,6 +13,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/DylanBlakemore/initflow-cli/internal/client"
+	"github.com/DylanBlakemore/initflow-cli/internal/config"
 	"github.com/DylanBlakemore/initflow-cli/internal/storage"
 )
 
@@ -30,15 +31,32 @@ var registerDeviceCmd = &cobra.Command{
 	RunE:  runRegisterDevice,
 }
 
+var unregisterDeviceCmd = &cobra.Command{
+	Use:   "unregister",
+	Short: "Clear local device credentials",
+	Long:  "Remove all device credentials stored locally in the system keychain. Use this when you want to register a fresh device or clean up after deleting a device from the server.",
+	RunE:  runUnregisterDevice,
+}
+
+var clearTokenCmd = &cobra.Command{
+	Use:   "clear-token",
+	Short: "Clear stored authentication token",
+	Long:  "Remove the stored authentication token. Use this if you're getting 'Invalid or expired registration token' errors.",
+	RunE:  runClearToken,
+}
+
 func init() {
 	rootCmd.AddCommand(deviceCmd)
 	deviceCmd.AddCommand(registerDeviceCmd)
+	deviceCmd.AddCommand(unregisterDeviceCmd)
+	deviceCmd.AddCommand(clearTokenCmd)
 }
 
 func ensureAuthenticated() error {
 	storage := storage.New()
 
 	if storage.HasToken() {
+		fmt.Println("ℹ️  Found existing authentication token")
 		return nil
 	}
 
@@ -124,7 +142,12 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	if storage.HasDeviceID() {
 		deviceID, _ := storage.GetDeviceID()
 		fmt.Printf("⚠️  Device already registered with ID: %s\n", deviceID)
-		fmt.Println("💡 Use 'initflow device list' to view registered devices")
+		fmt.Println()
+		fmt.Println("If you deleted this device from the server, you can:")
+		fmt.Println("• Clear local credentials: initflow device unregister")
+		fmt.Println("• Then register again: initflow device register <name>")
+		fmt.Println()
+		fmt.Println("Or use 'initflow device list' to view registered devices")
 		return nil
 	}
 
@@ -145,13 +168,22 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	fmt.Println("📡 Registering device with server...")
 	apiClient := client.New()
 
+	// Debug: show current config
+	cfg := config.Get()
+	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.APIBaseURL)
+
 	token, err := storage.GetToken()
 	if err != nil {
 		return fmt.Errorf("failed to get authentication token: %w", err)
 	}
 
+	fmt.Printf("🔍 Debug: Using API client with token length: %d\n", len(token))
+	fmt.Printf("🔍 Debug: Ed25519 public key size: %d bytes\n", len(signingPublicKey))
+	fmt.Printf("🔍 Debug: X25519 public key size: %d bytes\n", len(encryptionPublicKey))
+
 	deviceResp, err := apiClient.RegisterDevice(token, deviceName, signingPublicKey, encryptionPublicKey)
 	if err != nil {
+		fmt.Printf("🔍 Debug: Registration error details: %v\n", err)
 		return fmt.Errorf("❌ Device registration failed: %w", err)
 	}
 
@@ -178,6 +210,48 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("🔐 Keys stored securely in system keychain")
 	fmt.Println("💡 Next: Initialize workspace keys with 'initflow workspace list'")
+
+	return nil
+}
+
+func runUnregisterDevice(cmd *cobra.Command, args []string) error {
+	storage := storage.New()
+
+	// Check if there are any device credentials to clear
+	if !storage.HasDeviceID() && !storage.HasSigningPrivateKey() && !storage.HasEncryptionPrivateKey() {
+		fmt.Println("ℹ️  No device credentials found in local storage")
+		return nil
+	}
+
+	fmt.Println("🔐 Clearing local device credentials...")
+
+	if err := storage.ClearDeviceCredentials(); err != nil {
+		return fmt.Errorf("❌ Failed to clear device credentials: %w", err)
+	}
+
+	fmt.Println("✅ Device credentials cleared successfully!")
+	fmt.Println()
+	fmt.Println("💡 You can now register a new device with 'initflow device register <name>'")
+
+	return nil
+}
+
+func runClearToken(cmd *cobra.Command, args []string) error {
+	storage := storage.New()
+
+	if !storage.HasToken() {
+		fmt.Println("ℹ️  No authentication token found in local storage")
+		return nil
+	}
+
+	fmt.Println("🔐 Clearing authentication token...")
+
+	if err := storage.DeleteToken(); err != nil {
+		return fmt.Errorf("❌ Failed to clear authentication token: %w", err)
+	}
+
+	fmt.Println("✅ Authentication token cleared successfully!")
+	fmt.Println("💡 You will need to authenticate again for device registration")
 
 	return nil
 }

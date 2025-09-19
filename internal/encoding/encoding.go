@@ -18,15 +18,15 @@ func EncodeEd25519PublicKey(publicKey ed25519.PublicKey) (string, error) {
 	if len(publicKey) != ed25519.PublicKeySize {
 		return "", fmt.Errorf("invalid Ed25519 public key size: %d", len(publicKey))
 	}
-	return base64.StdEncoding.EncodeToString(publicKey), nil
+	return base64.RawURLEncoding.EncodeToString(publicKey), nil
 }
 
 // EncodeX25519PublicKey encodes an X25519 public key for API transmission
 func EncodeX25519PublicKey(publicKey []byte) (string, error) {
-	if len(publicKey) != UserTokenSize {
+	if len(publicKey) != X25519PrivateKeySize {
 		return "", fmt.Errorf("invalid X25519 public key size: %d", len(publicKey))
 	}
-	return base64.StdEncoding.EncodeToString(publicKey), nil
+	return base64.RawURLEncoding.EncodeToString(publicKey), nil
 }
 
 // EncodeEd25519Signature encodes an Ed25519 signature for authentication headers

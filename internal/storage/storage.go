@@ -140,3 +140,29 @@ func (s *Storage) HasWorkspaceKey(workspaceSlug string) bool {
 	_, err := s.GetWorkspaceKey(workspaceSlug)
 	return err == nil
 }
+
+// ClearDeviceCredentials removes all device-related credentials from local storage
+func (s *Storage) ClearDeviceCredentials() error {
+	var errors []error
+
+	if err := s.DeleteDeviceID(); err != nil {
+		errors = append(errors, fmt.Errorf("failed to delete device ID: %w", err))
+	}
+
+	if err := s.DeleteSigningPrivateKey(); err != nil {
+		errors = append(errors, fmt.Errorf("failed to delete signing private key: %w", err))
+	}
+
+	if err := s.DeleteEncryptionPrivateKey(); err != nil {
+		errors = append(errors, fmt.Errorf("failed to delete encryption private key: %w", err))
+	}
+
+	// Also clean up any leftover registration token
+	_ = s.DeleteToken() // Ignore error as token might not exist
+
+	if len(errors) > 0 {
+		return fmt.Errorf("errors clearing device credentials: %v", errors)
+	}
+
+	return nil
+}

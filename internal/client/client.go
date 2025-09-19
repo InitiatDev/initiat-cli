@@ -175,6 +175,18 @@ func (c *Client) RegisterDevice(
 		return nil, fmt.Errorf("failed to encode X25519 public key: %w", err)
 	}
 
+	// Debug: show encoded keys (first 20 chars only for security)
+	ed25519Preview := ed25519Encoded
+	if len(ed25519Preview) > 20 {
+		ed25519Preview = ed25519Preview[:20] + "..."
+	}
+	x25519Preview := x25519Encoded
+	if len(x25519Preview) > 20 {
+		x25519Preview = x25519Preview[:20] + "..."
+	}
+	fmt.Printf("🔍 Debug: Ed25519 encoded: %s\n", ed25519Preview)
+	fmt.Printf("🔍 Debug: X25519 encoded: %s\n", x25519Preview)
+
 	deviceReq := DeviceRegistrationRequest{
 		Token:            token,
 		Name:             name,
@@ -212,7 +224,10 @@ func (c *Client) RegisterDevice(
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		var errResp ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("device registration failed with status %d: %s", resp.StatusCode, string(body))
+			return nil, fmt.Errorf("device registration failed with status %d, raw response: %s", resp.StatusCode, string(body))
+		}
+		if errResp.Message == "" {
+			return nil, fmt.Errorf("device registration failed with status %d, error: %s, raw response: %s", resp.StatusCode, errResp.Error, string(body))
 		}
 		return nil, fmt.Errorf("device registration failed: %s", errResp.Message)
 	}
