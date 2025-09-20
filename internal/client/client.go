@@ -87,6 +87,7 @@ type Workspace struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	Slug           string `json:"slug"`
+	CompositeSlug  string `json:"composite_slug"`
 	Description    string `json:"description"`
 	KeyInitialized bool   `json:"key_initialized"`
 	KeyVersion     int    `json:"key_version"`
@@ -372,22 +373,49 @@ func (c *Client) ListWorkspaces() ([]Workspace, error) {
 	return workspacesResp.Workspaces, nil
 }
 
-func (c *Client) GetWorkspaceBySlug(slug string) (*Workspace, error) {
-	workspaces, err := c.ListWorkspaces()
+func (c *Client) GetWorkspaceBySlug(orgSlug, workspaceSlug string) (*Workspace, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.GetBySlug(orgSlug, workspaceSlug))
+	req, err := http.NewRequest(routes.GET, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	for _, workspace := range workspaces {
-		if workspace.Slug == slug {
-			return &workspace, nil
+	req.Header.Set("User-Agent", "initflow-cli/1.0")
+
+	if err := c.signRequest(req, nil); err != nil {
+		return nil, fmt.Errorf("failed to sign request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("get workspace failed with status %d: %s", resp.StatusCode, string(body))
 		}
+		return nil, fmt.Errorf("get workspace failed: %s", errResp.Message)
 	}
 
-	return nil, fmt.Errorf("workspace '%s' not found", slug)
+	var workspace Workspace
+	if err := json.Unmarshal(body, &workspace); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &workspace, nil
 }
 
-func (c *Client) InitializeWorkspaceKey(workspaceID int, wrappedKey []byte) error {
+func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKey []byte) error {
 	initReq := InitializeWorkspaceKeyRequest{
 		WrappedWorkspaceKey: encoding.Encode(wrappedKey),
 	}
@@ -397,7 +425,7 @@ func (c *Client) InitializeWorkspaceKey(workspaceID int, wrappedKey []byte) erro
 		return fmt.Errorf("failed to marshal initialize key request: %w", err)
 	}
 
-	url := routes.BuildURL(c.baseURL, routes.Workspace.InitializeKey(workspaceID))
+	url := routes.BuildURL(c.baseURL, routes.Workspace.InitializeKey(orgSlug, workspaceSlug))
 	req, err := http.NewRequest(routes.POST, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -435,7 +463,7 @@ func (c *Client) InitializeWorkspaceKey(workspaceID int, wrappedKey []byte) erro
 }
 
 func (c *Client) SetSecret(
-	workspaceID int, key string, encryptedValue, nonce []byte, description string, force bool,
+	orgSlug, workspaceSlug, key string, encryptedValue, nonce []byte, description string, force bool,
 ) (*Secret, error) {
 	setReq := SetSecretRequest{
 		Key:            key,
@@ -449,7 +477,7 @@ func (c *Client) SetSecret(
 		return nil, fmt.Errorf("failed to marshal set secret request: %w", err)
 	}
 
-	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(workspaceID))
+	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(orgSlug, workspaceSlug))
 	req, err := http.NewRequest(routes.POST, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -491,8 +519,8 @@ func (c *Client) SetSecret(
 	return &setResp.Secret, nil
 }
 
-func (c *Client) GetSecret(workspaceID int, secretKey string) (*SecretWithValue, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(workspaceID, secretKey))
+func (c *Client) GetSecret(orgSlug, workspaceSlug, secretKey string) (*SecretWithValue, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(orgSlug, workspaceSlug, secretKey))
 	req, err := http.NewRequest(routes.GET, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -533,8 +561,8 @@ func (c *Client) GetSecret(workspaceID int, secretKey string) (*SecretWithValue,
 	return &getResp.Secret, nil
 }
 
-func (c *Client) ListSecrets(workspaceID int) ([]Secret, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(workspaceID))
+func (c *Client) ListSecrets(orgSlug, workspaceSlug string) ([]Secret, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(orgSlug, workspaceSlug))
 	req, err := http.NewRequest(routes.GET, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -575,8 +603,8 @@ func (c *Client) ListSecrets(workspaceID int) ([]Secret, error) {
 	return listResp.Secrets, nil
 }
 
-func (c *Client) DeleteSecret(workspaceID int, secretKey string) error {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(workspaceID, secretKey))
+func (c *Client) DeleteSecret(orgSlug, workspaceSlug, secretKey string) error {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(orgSlug, workspaceSlug, secretKey))
 	req, err := http.NewRequest(routes.DELETE, url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)

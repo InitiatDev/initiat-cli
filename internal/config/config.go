@@ -13,16 +13,18 @@ const (
 )
 
 type Config struct {
-	APIBaseURL  string `mapstructure:"api_base_url"`
-	ServiceName string `mapstructure:"service_name"`
+	APIBaseURL     string `mapstructure:"api_base_url"`
+	ServiceName    string `mapstructure:"service_name"`
+	DefaultOrgSlug string `mapstructure:"default_org_slug"`
 }
 
 var globalConfig *Config
 
 func DefaultConfig() *Config {
 	return &Config{
-		APIBaseURL:  "https://api.initflow.com",
-		ServiceName: "initflow-cli",
+		APIBaseURL:     "https://api.initflow.com",
+		ServiceName:    "initflow-cli",
+		DefaultOrgSlug: "",
 	}
 }
 
@@ -42,6 +44,7 @@ func InitConfig() error {
 	defaults := DefaultConfig()
 	viper.SetDefault("api_base_url", defaults.APIBaseURL)
 	viper.SetDefault("service_name", defaults.ServiceName)
+	viper.SetDefault("default_org_slug", defaults.DefaultOrgSlug)
 
 	viper.SetEnvPrefix("INITFLOW")
 	viper.AutomaticEnv()
@@ -90,4 +93,28 @@ func Save() error {
 
 	configFile := filepath.Join(configDir, "config.yaml")
 	return viper.WriteConfigAs(configFile)
+}
+
+// GetDefaultOrgSlug returns the default organization slug from config
+func GetDefaultOrgSlug() string {
+	cfg := Get()
+	return cfg.DefaultOrgSlug
+}
+
+// SetDefaultOrgSlug sets the default organization slug and saves the config
+func SetDefaultOrgSlug(orgSlug string) error {
+	if err := Set("default_org_slug", orgSlug); err != nil {
+		return fmt.Errorf("failed to set default org slug: %w", err)
+	}
+
+	if err := Save(); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	return nil
+}
+
+// ClearDefaultOrgSlug removes the default organization slug and saves the config
+func ClearDefaultOrgSlug() error {
+	return SetDefaultOrgSlug("")
 }

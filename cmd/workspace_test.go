@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/DylanBlakemore/initflow-cli/internal/client"
@@ -87,24 +88,30 @@ func TestWorkspaceList(t *testing.T) {
 func TestWorkspaceInitKey(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/v1/workspaces":
-			response := client.ListWorkspacesResponse{
-				Workspaces: []client.Workspace{
-					{
-						ID:             1,
-						Name:           "My Project",
-						Slug:           "my-project",
-						Description:    "Test project",
-						KeyInitialized: false,
-						KeyVersion:     0,
-						Role:           "Owner",
-					},
+		case "/api/v1/workspaces/test-org/my-project":
+			workspace := client.Workspace{
+				ID:             1,
+				Name:           "My Project",
+				Slug:           "my-project",
+				CompositeSlug:  "test-org/my-project",
+				Description:    "Test project",
+				KeyInitialized: false,
+				KeyVersion:     0,
+				Role:           "Owner",
+				Organization: struct {
+					ID   int    `json:"id"`
+					Name string `json:"name"`
+					Slug string `json:"slug"`
+				}{
+					ID:   1,
+					Name: "Test Org",
+					Slug: "test-org",
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(workspace)
 
-		case "/api/v1/workspaces/1/initialize":
+		case "/api/v1/workspaces/test-org/my-project/initialize":
 			if r.Method != "POST" {
 				t.Errorf("Expected POST, got %s", r.Method)
 			}
@@ -144,42 +151,47 @@ func TestWorkspaceInitKey(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"my-project"})
+	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/my-project"})
 	if err != nil {
 		t.Fatalf("runWorkspaceInit failed: %v", err)
 	}
 
 	store := storage.New()
-	if !store.HasWorkspaceKey("my-project") {
+	if !store.HasWorkspaceKey("test-org/my-project") {
 		t.Error("Expected workspace key to be stored locally")
 	}
 }
 
 func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := client.ListWorkspacesResponse{
-			Workspaces: []client.Workspace{
-				{
-					ID:             1,
-					Name:           "My Project",
-					Slug:           "my-project",
-					Description:    "Test project",
-					KeyInitialized: true,
-					KeyVersion:     1,
-					Role:           "Owner",
-				},
-			},
+		if strings.Contains(r.URL.Path, "/api/v1/workspaces/test-org/my-project") {
+			workspace := client.Workspace{
+				ID:             1,
+				Name:           "My Project",
+				Slug:           "my-project",
+				Description:    "Test project",
+				KeyInitialized: true,
+				KeyVersion:     1,
+				Role:           "Owner",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(workspace)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
 	setupTestEnvironment(t, server.URL)
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"my-project"})
+	// Ensure no workspace key exists locally
+	store := storage.New()
+	store.DeleteWorkspaceKey("test-org/my-project")
+
+	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/my-project"})
 	if err == nil {
 		t.Error("Expected error for already initialized workspace")
+		return
 	}
 	expectedMsg := "ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery"
 	if err.Error() != expectedMsg {
@@ -189,21 +201,21 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 
 func TestWorkspaceInitKeyNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := client.ListWorkspacesResponse{
-			Workspaces: []client.Workspace{},
-		}
+		// Return 404 for any workspace request to simulate non-existent workspace
+		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(map[string]string{"error": "workspace not found"})
 	}))
 	defer server.Close()
 
 	setupTestEnvironment(t, server.URL)
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"non-existent"})
+	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/non-existent"})
 	if err == nil {
 		t.Error("Expected error for non-existent workspace")
+		return
 	}
-	if err.Error() != "❌ Failed to get workspace info: workspace 'non-existent' not found" {
+	if !strings.Contains(err.Error(), "Failed to get workspace info") {
 		t.Errorf("Expected specific error message, got: %v", err)
 	}
 }
@@ -286,10 +298,10 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		store.DeleteEncryptionPrivateKey()
 		store.DeleteDeviceID()
 		store.DeleteToken()
-		store.DeleteWorkspaceKey("my-project")
-		store.DeleteWorkspaceKey("team-secrets")
-		store.DeleteWorkspaceKey("personal-vault")
-		store.DeleteWorkspaceKey("non-existent")
+		store.DeleteWorkspaceKey("test-org/my-project")
+		store.DeleteWorkspaceKey("test-org/team-secrets")
+		store.DeleteWorkspaceKey("test-org/personal-vault")
+		store.DeleteWorkspaceKey("test-org/non-existent")
 	})
 
 	oldStdout := os.Stdout

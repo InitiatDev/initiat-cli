@@ -13,7 +13,9 @@ import (
 	"golang.org/x/crypto/hkdf"
 
 	"github.com/DylanBlakemore/initflow-cli/internal/client"
+	"github.com/DylanBlakemore/initflow-cli/internal/config"
 	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
+	"github.com/DylanBlakemore/initflow-cli/internal/slug"
 	"github.com/DylanBlakemore/initflow-cli/internal/storage"
 )
 
@@ -31,11 +33,15 @@ var workspaceListCmd = &cobra.Command{
 }
 
 var workspaceInitCmd = &cobra.Command{
-	Use:   "init <workspace-slug>",
+	Use:   "init <org-slug/workspace-slug>",
 	Short: "Initialize workspace key",
-	Long:  `Initialize a new workspace key for secure secret storage.`,
-	Args:  cobra.ExactArgs(1),
-	RunE:  runWorkspaceInit,
+	Long: `Initialize a new workspace key for secure secret storage.
+
+Examples:
+  initflow workspace init acme-corp/production
+  initflow workspace init production  # Uses default org context`,
+	Args: cobra.ExactArgs(1),
+	RunE: runWorkspaceInit,
 }
 
 var (
@@ -75,8 +81,8 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "Name\tSlug\tKey Initialized\tRole")
-	fmt.Fprintln(w, "────\t────\t───────────────\t────")
+	fmt.Fprintln(w, "Name\tComposite Slug\tKey Initialized\tRole")
+	fmt.Fprintln(w, "────\t──────────────\t───────────────\t────")
 
 	for _, workspace := range workspaces {
 		keyStatus := "❌ No"
@@ -84,10 +90,15 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 			keyStatus = "✅ Yes"
 		}
 
-		fmt.Fprintf(w, "%s (ID:%d)\t%s\t%s\t%s\n",
+		// Use composite slug if available, otherwise construct it
+		compositeSlug := workspace.CompositeSlug
+		if compositeSlug == "" {
+			compositeSlug = fmt.Sprintf("%s/%s", workspace.Organization.Slug, workspace.Slug)
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 			workspace.Name,
-			workspace.ID,
-			workspace.Slug,
+			compositeSlug,
 			keyStatus,
 			workspace.Role)
 	}
@@ -103,16 +114,23 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 
 	if hasUninitialized {
 		fmt.Println("\n💡 Initialize keys for workspaces marked \"No\" using:")
-		fmt.Println("   initflow workspace init <workspace-slug>")
+		fmt.Println("   initflow workspace init <org-slug/workspace-slug>")
 	}
 
 	return nil
 }
 
 func runWorkspaceInit(cmd *cobra.Command, args []string) error {
-	workspaceSlug := args[0]
+	workspaceInput := args[0]
 
-	fmt.Printf("🔐 Initializing workspace key for \"%s\"...\n", workspaceSlug)
+	// Resolve the workspace slug (could be composite or workspace-only)
+	defaultOrgSlug := config.GetDefaultOrgSlug()
+	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	if err != nil {
+		return fmt.Errorf("❌ %w", err)
+	}
+
+	fmt.Printf("🔐 Initializing workspace key for \"%s\"...\n", compositeSlug.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -120,12 +138,12 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	workspace, err := c.GetWorkspaceBySlug(workspaceSlug)
+	workspace, err := c.GetWorkspaceBySlug(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get workspace info: %w", err)
 	}
 
-	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, workspaceSlug)
+	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, compositeSlug.String())
 	if err != nil {
 		return err
 	}
@@ -133,16 +151,16 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := handleForceFlag(store, workspaceSlug); err != nil {
+	if err := handleForceFlag(store, compositeSlug.String()); err != nil {
 		return err
 	}
 
-	return initializeWorkspaceKey(c, store, workspace, workspaceSlug)
+	return initializeWorkspaceKey(c, store, workspace, compositeSlug)
 }
 
-func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storage, workspaceSlug string) (bool, error) {
+func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storage, compositeSlug string) (bool, error) {
 	if workspace.KeyInitialized {
-		if store.HasWorkspaceKey(workspaceSlug) {
+		if store.HasWorkspaceKey(compositeSlug) {
 			fmt.Println("ℹ️ Workspace key already exists locally and is initialized on server")
 			return false, nil
 		}
@@ -150,7 +168,7 @@ func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storag
 			"ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery")
 	}
 
-	if store.HasWorkspaceKey(workspaceSlug) && !forceWorkspaceInit {
+	if store.HasWorkspaceKey(compositeSlug) && !forceWorkspaceInit {
 		fmt.Println("⚠️  Local workspace key exists but server workspace is not initialized.")
 		fmt.Println("   This usually happens when a workspace was deleted and recreated with the same name.")
 		fmt.Println("   Use --force to generate a new key and reinitialize.")
@@ -160,10 +178,10 @@ func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storag
 	return true, nil
 }
 
-func handleForceFlag(store *storage.Storage, workspaceSlug string) error {
-	if forceWorkspaceInit && store.HasWorkspaceKey(workspaceSlug) {
+func handleForceFlag(store *storage.Storage, compositeSlug string) error {
+	if forceWorkspaceInit && store.HasWorkspaceKey(compositeSlug) {
 		fmt.Println("🔄 Force flag detected - removing old local workspace key...")
-		if err := store.DeleteWorkspaceKey(workspaceSlug); err != nil {
+		if err := store.DeleteWorkspaceKey(compositeSlug); err != nil {
 			fmt.Printf("⚠️  Warning: Failed to delete old workspace key: %v\n", err)
 		}
 	}
@@ -171,7 +189,7 @@ func handleForceFlag(store *storage.Storage, workspaceSlug string) error {
 }
 
 func initializeWorkspaceKey(
-	c *client.Client, store *storage.Storage, workspace *client.Workspace, workspaceSlug string,
+	c *client.Client, store *storage.Storage, _ *client.Workspace, compositeSlug slug.CompositeSlug,
 ) error {
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
 	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
@@ -186,11 +204,11 @@ func initializeWorkspaceKey(
 	}
 
 	fmt.Println("📡 Uploading encrypted key to server...")
-	if err := c.InitializeWorkspaceKey(workspace.ID, wrappedKey); err != nil {
+	if err := c.InitializeWorkspaceKey(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug, wrappedKey); err != nil {
 		return fmt.Errorf("❌ Failed to initialize workspace key: %w", err)
 	}
 
-	if err := store.StoreWorkspaceKey(workspaceSlug, workspaceKey); err != nil {
+	if err := store.StoreWorkspaceKey(compositeSlug.String(), workspaceKey); err != nil {
 		return fmt.Errorf("❌ Failed to store workspace key locally: %w", err)
 	}
 

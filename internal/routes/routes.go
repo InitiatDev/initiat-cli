@@ -16,24 +16,24 @@ const (
 
 type WorkspaceRoutes struct{}
 
-func (w WorkspaceRoutes) InitializeKey(workspaceID int) string {
-	return fmt.Sprintf("%s/%d/initialize", Workspaces, workspaceID)
+func (w WorkspaceRoutes) InitializeKey(orgSlug, workspaceSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/initialize", Workspaces, orgSlug, workspaceSlug)
 }
 
-func (w WorkspaceRoutes) GetByID(workspaceID int) string {
-	return fmt.Sprintf("%s/%d", Workspaces, workspaceID)
+func (w WorkspaceRoutes) GetBySlug(orgSlug, workspaceSlug string) string {
+	return fmt.Sprintf("%s/%s/%s", Workspaces, orgSlug, workspaceSlug)
 }
 
-func (w WorkspaceRoutes) Secrets(workspaceID int) string {
-	return fmt.Sprintf("%s/%d/secrets", Workspaces, workspaceID)
+func (w WorkspaceRoutes) Secrets(orgSlug, workspaceSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/secrets", Workspaces, orgSlug, workspaceSlug)
 }
 
-func (w WorkspaceRoutes) SecretByKey(workspaceID int, secretKey string) string {
-	return fmt.Sprintf("%s/%d/secrets/%s", Workspaces, workspaceID, secretKey)
+func (w WorkspaceRoutes) SecretByKey(orgSlug, workspaceSlug, secretKey string) string {
+	return fmt.Sprintf("%s/%s/%s/secrets/%s", Workspaces, orgSlug, workspaceSlug, secretKey)
 }
 
-func (w WorkspaceRoutes) InviteDevice(workspaceID int) string {
-	return fmt.Sprintf("%s/%d/invite-device", Workspaces, workspaceID)
+func (w WorkspaceRoutes) InviteDevice(orgSlug, workspaceSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/invite-device", Workspaces, orgSlug, workspaceSlug)
 }
 
 var Workspace = WorkspaceRoutes{}

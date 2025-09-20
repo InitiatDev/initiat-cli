@@ -24,28 +24,28 @@ func TestWorkspaceRoutes(t *testing.T) {
 }
 
 func TestWorkspaceRoutes_InitializeKey(t *testing.T) {
-	route := Workspace.InitializeKey(123)
-	assert.Equal(t, "/api/v1/workspaces/123/initialize", route)
+	route := Workspace.InitializeKey("acme-corp", "production")
+	assert.Equal(t, "/api/v1/workspaces/acme-corp/production/initialize", route)
 }
 
-func TestWorkspaceRoutes_GetByID(t *testing.T) {
-	route := Workspace.GetByID(456)
-	assert.Equal(t, "/api/v1/workspaces/456", route)
+func TestWorkspaceRoutes_GetBySlug(t *testing.T) {
+	route := Workspace.GetBySlug("acme-corp", "staging")
+	assert.Equal(t, "/api/v1/workspaces/acme-corp/staging", route)
 }
 
 func TestWorkspaceRoutes_Secrets(t *testing.T) {
-	route := Workspace.Secrets(789)
-	assert.Equal(t, "/api/v1/workspaces/789/secrets", route)
+	route := Workspace.Secrets("my-org", "development")
+	assert.Equal(t, "/api/v1/workspaces/my-org/development/secrets", route)
 }
 
 func TestWorkspaceRoutes_SecretByKey(t *testing.T) {
-	route := Workspace.SecretByKey(123, "API_KEY")
-	assert.Equal(t, "/api/v1/workspaces/123/secrets/API_KEY", route)
+	route := Workspace.SecretByKey("acme-corp", "production", "API_KEY")
+	assert.Equal(t, "/api/v1/workspaces/acme-corp/production/secrets/API_KEY", route)
 }
 
 func TestWorkspaceRoutes_InviteDevice(t *testing.T) {
-	route := Workspace.InviteDevice(456)
-	assert.Equal(t, "/api/v1/workspaces/456/invite-device", route)
+	route := Workspace.InviteDevice("my-org", "staging")
+	assert.Equal(t, "/api/v1/workspaces/my-org/staging/invite-device", route)
 }
 
 func TestDeviceRoutes_GetByID(t *testing.T) {
@@ -103,8 +103,8 @@ func TestBuildURL(t *testing.T) {
 		{
 			name:     "workspace initialize key",
 			baseURL:  baseURL,
-			path:     Workspace.InitializeKey(123),
-			expected: "https://api.initflow.com/api/v1/workspaces/123/initialize",
+			path:     Workspace.InitializeKey("acme-corp", "production"),
+			expected: "https://api.initflow.com/api/v1/workspaces/acme-corp/production/initialize",
 		},
 	}
 
@@ -126,20 +126,20 @@ func TestRouteStruct(t *testing.T) {
 	assert.Equal(t, "/api/v1/auth/login", route.Path)
 }
 
-func TestWorkspaceRoutesWithDifferentIDs(t *testing.T) {
-	// Test with various workspace IDs to ensure proper formatting
+func TestWorkspaceRoutesWithDifferentSlugs(t *testing.T) {
 	testCases := []struct {
-		workspaceID int
-		expected    string
+		orgSlug       string
+		workspaceSlug string
+		expected      string
 	}{
-		{1, "/api/v1/workspaces/1/initialize"},
-		{999, "/api/v1/workspaces/999/initialize"},
-		{123456, "/api/v1/workspaces/123456/initialize"},
+		{"acme", "prod", "/api/v1/workspaces/acme/prod/initialize"},
+		{"my-company", "staging-env", "/api/v1/workspaces/my-company/staging-env/initialize"},
+		{"org123", "workspace456", "/api/v1/workspaces/org123/workspace456/initialize"},
 	}
 
 	for _, tc := range testCases {
-		t.Run("workspace_"+string(rune(tc.workspaceID)), func(t *testing.T) {
-			route := Workspace.InitializeKey(tc.workspaceID)
+		t.Run("workspace_"+tc.orgSlug+"_"+tc.workspaceSlug, func(t *testing.T) {
+			route := Workspace.InitializeKey(tc.orgSlug, tc.workspaceSlug)
 			assert.Equal(t, tc.expected, route)
 		})
 	}
