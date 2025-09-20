@@ -34,15 +34,17 @@ var registerDeviceCmd = &cobra.Command{
 var unregisterDeviceCmd = &cobra.Command{
 	Use:   "unregister",
 	Short: "Clear local device credentials",
-	Long:  "Remove all device credentials stored locally in the system keychain. Use this when you want to register a fresh device or clean up after deleting a device from the server.",
-	RunE:  runUnregisterDevice,
+	Long: "Remove all device credentials stored locally in the system keychain. " +
+		"Use this when you want to register a fresh device or clean up after deleting a device from the server.",
+	RunE: runUnregisterDevice,
 }
 
 var clearTokenCmd = &cobra.Command{
 	Use:   "clear-token",
 	Short: "Clear stored authentication token",
-	Long:  "Remove the stored authentication token. Use this if you're getting 'Invalid or expired registration token' errors.",
-	RunE:  runClearToken,
+	Long: "Remove the stored authentication token. " +
+		"Use this if you're getting 'Invalid or expired registration token' errors.",
+	RunE: runClearToken,
 }
 
 func init() {
@@ -128,6 +130,92 @@ func generateX25519Keypair() ([]byte, []byte, error) {
 	return publicKey, privateKey, nil
 }
 
+func checkExistingDevice(storage *storage.Storage) error {
+	if !storage.HasDeviceID() {
+		return nil
+	}
+
+	deviceID, _ := storage.GetDeviceID()
+	fmt.Printf("⚠️  Device already registered with ID: %s\n", deviceID)
+	fmt.Println()
+	fmt.Println("If you deleted this device from the server, you can:")
+	fmt.Println("• Clear local credentials: initflow device unregister")
+	fmt.Println("• Then register again: initflow device register <name>")
+	fmt.Println()
+	fmt.Println("Or use 'initflow device list' to view registered devices")
+	return fmt.Errorf("device already registered")
+}
+
+func generateKeypairs() (ed25519.PublicKey, ed25519.PrivateKey, []byte, []byte, error) {
+	fmt.Println("🔑 Generating Ed25519 signing keypair...")
+	signingPublicKey, signingPrivateKey, err := generateEd25519Keypair()
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("failed to generate signing keypair: %w", err)
+	}
+
+	fmt.Println("🔒 Generating X25519 encryption keypair...")
+	encryptionPublicKey, encryptionPrivateKey, err := generateX25519Keypair()
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("failed to generate encryption keypair: %w", err)
+	}
+
+	return signingPublicKey, signingPrivateKey, encryptionPublicKey, encryptionPrivateKey, nil
+}
+
+func performDeviceRegistration(
+	deviceName string,
+	signingPublicKey ed25519.PublicKey,
+	encryptionPublicKey []byte,
+	storage *storage.Storage,
+) (*client.DeviceRegistrationResponse, error) {
+	fmt.Println("📡 Registering device with server...")
+	apiClient := client.New()
+
+	// Debug: show current config
+	cfg := config.Get()
+	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.APIBaseURL)
+
+	token, err := storage.GetToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get authentication token: %w", err)
+	}
+
+	fmt.Printf("🔍 Debug: Using API client with token length: %d\n", len(token))
+	fmt.Printf("🔍 Debug: Ed25519 public key size: %d bytes\n", len(signingPublicKey))
+	fmt.Printf("🔍 Debug: X25519 public key size: %d bytes\n", len(encryptionPublicKey))
+
+	deviceResp, err := apiClient.RegisterDevice(token, deviceName, signingPublicKey, encryptionPublicKey)
+	if err != nil {
+		fmt.Printf("🔍 Debug: Registration error details: %v\n", err)
+		return nil, fmt.Errorf("❌ Device registration failed: %w", err)
+	}
+
+	return deviceResp, nil
+}
+
+func storeDeviceCredentials(
+	storage *storage.Storage,
+	signingPrivateKey ed25519.PrivateKey,
+	encryptionPrivateKey []byte,
+	deviceID string,
+) error {
+	fmt.Println("🔐 Storing keys securely in system keychain...")
+
+	if err := storage.StoreSigningPrivateKey(signingPrivateKey); err != nil {
+		return fmt.Errorf("failed to store signing private key: %w", err)
+	}
+
+	if err := storage.StoreEncryptionPrivateKey(encryptionPrivateKey); err != nil {
+		return fmt.Errorf("failed to store encryption private key: %w", err)
+	}
+
+	if err := storage.StoreDeviceID(deviceID); err != nil {
+		return fmt.Errorf("failed to store device ID: %w", err)
+	}
+
+	return nil
+}
+
 func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	deviceName := strings.TrimSpace(args[0])
 	if deviceName == "" {
@@ -139,66 +227,26 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	}
 
 	storage := storage.New()
-	if storage.HasDeviceID() {
-		deviceID, _ := storage.GetDeviceID()
-		fmt.Printf("⚠️  Device already registered with ID: %s\n", deviceID)
-		fmt.Println()
-		fmt.Println("If you deleted this device from the server, you can:")
-		fmt.Println("• Clear local credentials: initflow device unregister")
-		fmt.Println("• Then register again: initflow device register <name>")
-		fmt.Println()
-		fmt.Println("Or use 'initflow device list' to view registered devices")
-		return nil
+
+	if err := checkExistingDevice(storage); err != nil {
+		return nil // Not a real error, just early return
 	}
 
 	fmt.Printf("🔑 Registering device: %s\n", deviceName)
 
-	fmt.Println("🔑 Generating Ed25519 signing keypair...")
-	signingPublicKey, signingPrivateKey, err := generateEd25519Keypair()
+	signingPublicKey, signingPrivateKey, encryptionPublicKey, encryptionPrivateKey, err := generateKeypairs()
 	if err != nil {
-		return fmt.Errorf("failed to generate signing keypair: %w", err)
+		return err
 	}
 
-	fmt.Println("🔒 Generating X25519 encryption keypair...")
-	encryptionPublicKey, encryptionPrivateKey, err := generateX25519Keypair()
+	deviceResp, err := performDeviceRegistration(deviceName, signingPublicKey, encryptionPublicKey, storage)
 	if err != nil {
-		return fmt.Errorf("failed to generate encryption keypair: %w", err)
+		return err
 	}
 
-	fmt.Println("📡 Registering device with server...")
-	apiClient := client.New()
-
-	// Debug: show current config
-	cfg := config.Get()
-	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.APIBaseURL)
-
-	token, err := storage.GetToken()
+	err = storeDeviceCredentials(storage, signingPrivateKey, encryptionPrivateKey, deviceResp.Device.DeviceID)
 	if err != nil {
-		return fmt.Errorf("failed to get authentication token: %w", err)
-	}
-
-	fmt.Printf("🔍 Debug: Using API client with token length: %d\n", len(token))
-	fmt.Printf("🔍 Debug: Ed25519 public key size: %d bytes\n", len(signingPublicKey))
-	fmt.Printf("🔍 Debug: X25519 public key size: %d bytes\n", len(encryptionPublicKey))
-
-	deviceResp, err := apiClient.RegisterDevice(token, deviceName, signingPublicKey, encryptionPublicKey)
-	if err != nil {
-		fmt.Printf("🔍 Debug: Registration error details: %v\n", err)
-		return fmt.Errorf("❌ Device registration failed: %w", err)
-	}
-
-	fmt.Println("🔐 Storing keys securely in system keychain...")
-
-	if err := storage.StoreSigningPrivateKey(signingPrivateKey); err != nil {
-		return fmt.Errorf("failed to store signing private key: %w", err)
-	}
-
-	if err := storage.StoreEncryptionPrivateKey(encryptionPrivateKey); err != nil {
-		return fmt.Errorf("failed to store encryption private key: %w", err)
-	}
-
-	if err := storage.StoreDeviceID(deviceResp.Device.DeviceID); err != nil {
-		return fmt.Errorf("failed to store device ID: %w", err)
+		return err
 	}
 
 	_ = storage.DeleteToken()
@@ -225,7 +273,8 @@ func runUnregisterDevice(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("🔐 Clearing local device credentials...")
 
-	if err := storage.ClearDeviceCredentials(); err != nil {
+	err := storage.ClearDeviceCredentials()
+	if err != nil {
 		return fmt.Errorf("❌ Failed to clear device credentials: %w", err)
 	}
 
@@ -246,7 +295,8 @@ func runClearToken(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("🔐 Clearing authentication token...")
 
-	if err := storage.DeleteToken(); err != nil {
+	err := storage.DeleteToken()
+	if err != nil {
 		return fmt.Errorf("❌ Failed to clear authentication token: %w", err)
 	}
 

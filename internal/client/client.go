@@ -18,6 +18,7 @@ import (
 
 const (
 	defaultTimeoutSeconds = 30
+	debugPreviewLength    = 20 // Length of key preview for debug output
 )
 
 type Client struct {
@@ -160,32 +161,62 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	return &loginResp, nil
 }
 
+func (c *Client) encodeKeys(signingPublicKey ed25519.PublicKey, encryptionPublicKey []byte) (string, string, error) {
+	ed25519Encoded, err := encoding.EncodeEd25519PublicKey(signingPublicKey)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to encode Ed25519 public key: %w", err)
+	}
+
+	x25519Encoded, err := encoding.EncodeX25519PublicKey(encryptionPublicKey)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to encode X25519 public key: %w", err)
+	}
+
+	// Debug: show encoded keys (first few chars only for security)
+	ed25519Preview := ed25519Encoded
+	if len(ed25519Preview) > debugPreviewLength {
+		ed25519Preview = ed25519Preview[:debugPreviewLength] + "..."
+	}
+	x25519Preview := x25519Encoded
+	if len(x25519Preview) > debugPreviewLength {
+		x25519Preview = x25519Preview[:debugPreviewLength] + "..."
+	}
+	fmt.Printf("🔍 Debug: Ed25519 encoded: %s\n", ed25519Preview)
+	fmt.Printf("🔍 Debug: X25519 encoded: %s\n", x25519Preview)
+
+	return ed25519Encoded, x25519Encoded, nil
+}
+
+func (c *Client) handleRegistrationResponse(resp *http.Response, body []byte) (*DeviceRegistrationResponse, error) {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("device registration failed with status %d, raw response: %s", resp.StatusCode, string(body))
+		}
+		if errResp.Message == "" {
+			return nil, fmt.Errorf("device registration failed with status %d, error: %s, raw response: %s",
+				resp.StatusCode, errResp.Error, string(body))
+		}
+		return nil, fmt.Errorf("device registration failed: %s", errResp.Message)
+	}
+
+	var deviceResp DeviceRegistrationResponse
+	if err := json.Unmarshal(body, &deviceResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &deviceResp, nil
+}
+
 func (c *Client) RegisterDevice(
 	token, name string,
 	signingPublicKey ed25519.PublicKey,
 	encryptionPublicKey []byte,
 ) (*DeviceRegistrationResponse, error) {
-	ed25519Encoded, err := encoding.EncodeEd25519PublicKey(signingPublicKey)
+	ed25519Encoded, x25519Encoded, err := c.encodeKeys(signingPublicKey, encryptionPublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode Ed25519 public key: %w", err)
+		return nil, err
 	}
-
-	x25519Encoded, err := encoding.EncodeX25519PublicKey(encryptionPublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode X25519 public key: %w", err)
-	}
-
-	// Debug: show encoded keys (first 20 chars only for security)
-	ed25519Preview := ed25519Encoded
-	if len(ed25519Preview) > 20 {
-		ed25519Preview = ed25519Preview[:20] + "..."
-	}
-	x25519Preview := x25519Encoded
-	if len(x25519Preview) > 20 {
-		x25519Preview = x25519Preview[:20] + "..."
-	}
-	fmt.Printf("🔍 Debug: Ed25519 encoded: %s\n", ed25519Preview)
-	fmt.Printf("🔍 Debug: X25519 encoded: %s\n", x25519Preview)
 
 	deviceReq := DeviceRegistrationRequest{
 		Token:            token,
@@ -221,23 +252,7 @@ func (c *Client) RegisterDevice(
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("device registration failed with status %d, raw response: %s", resp.StatusCode, string(body))
-		}
-		if errResp.Message == "" {
-			return nil, fmt.Errorf("device registration failed with status %d, error: %s, raw response: %s", resp.StatusCode, errResp.Error, string(body))
-		}
-		return nil, fmt.Errorf("device registration failed: %s", errResp.Message)
-	}
-
-	var deviceResp DeviceRegistrationResponse
-	if err := json.Unmarshal(body, &deviceResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &deviceResp, nil
+	return c.handleRegistrationResponse(resp, body)
 }
 
 func (c *Client) signRequest(req *http.Request, body []byte) error {

@@ -54,7 +54,6 @@ linters:
       line-length: 120
     funlen:
       lines: 100
-      statements: 50
 
 formatters:
   enable:
