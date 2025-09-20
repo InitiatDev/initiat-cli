@@ -38,10 +38,21 @@ var workspaceInitCmd = &cobra.Command{
 	RunE:  runWorkspaceInit,
 }
 
+var (
+	forceWorkspaceInit bool
+)
+
 func init() {
 	rootCmd.AddCommand(workspaceCmd)
 	workspaceCmd.AddCommand(workspaceListCmd)
 	workspaceCmd.AddCommand(workspaceInitCmd)
+	workspaceInitCmd.Flags().BoolVarP(
+		&forceWorkspaceInit,
+		"force",
+		"f",
+		false,
+		"Force re-initialization even if local key exists",
+	)
 }
 
 func runWorkspaceList(cmd *cobra.Command, args []string) error {
@@ -73,8 +84,9 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 			keyStatus = "✅ Yes"
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+		fmt.Fprintf(w, "%s (ID:%d)\t%s\t%s\t%s\n",
 			workspace.Name,
+			workspace.ID,
 			workspace.Slug,
 			keyStatus,
 			workspace.Role)
@@ -107,21 +119,60 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
 	}
 
-	if store.HasWorkspaceKey(workspaceSlug) {
-		fmt.Println("ℹ️ Workspace key already exists locally")
-		return nil
-	}
-
 	c := client.New()
 	workspace, err := c.GetWorkspaceBySlug(workspaceSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get workspace info: %w", err)
 	}
 
-	if workspace.KeyInitialized {
-		return fmt.Errorf("ℹ️ Workspace key already initialized")
+	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, workspaceSlug)
+	if err != nil {
+		return err
+	}
+	if !shouldContinue {
+		return nil
 	}
 
+	if err := handleForceFlag(store, workspaceSlug); err != nil {
+		return err
+	}
+
+	return initializeWorkspaceKey(c, store, workspace, workspaceSlug)
+}
+
+func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storage, workspaceSlug string) (bool, error) {
+	if workspace.KeyInitialized {
+		if store.HasWorkspaceKey(workspaceSlug) {
+			fmt.Println("ℹ️ Workspace key already exists locally and is initialized on server")
+			return false, nil
+		}
+		return false, fmt.Errorf(
+			"ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery")
+	}
+
+	if store.HasWorkspaceKey(workspaceSlug) && !forceWorkspaceInit {
+		fmt.Println("⚠️  Local workspace key exists but server workspace is not initialized.")
+		fmt.Println("   This usually happens when a workspace was deleted and recreated with the same name.")
+		fmt.Println("   Use --force to generate a new key and reinitialize.")
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func handleForceFlag(store *storage.Storage, workspaceSlug string) error {
+	if forceWorkspaceInit && store.HasWorkspaceKey(workspaceSlug) {
+		fmt.Println("🔄 Force flag detected - removing old local workspace key...")
+		if err := store.DeleteWorkspaceKey(workspaceSlug); err != nil {
+			fmt.Printf("⚠️  Warning: Failed to delete old workspace key: %v\n", err)
+		}
+	}
+	return nil
+}
+
+func initializeWorkspaceKey(
+	c *client.Client, store *storage.Storage, workspace *client.Workspace, workspaceSlug string,
+) error {
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
 	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
@@ -143,6 +194,11 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to store workspace key locally: %w", err)
 	}
 
+	printSuccessMessage()
+	return nil
+}
+
+func printSuccessMessage() {
 	fmt.Println("✅ Workspace key initialized successfully!")
 	fmt.Println("🎯 You can now store and retrieve secrets in this workspace.")
 	fmt.Println()
@@ -150,8 +206,6 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	fmt.Println("  • Add secrets: initflow secrets add API_KEY=your-secret")
 	fmt.Println("  • List secrets: initflow secrets list")
 	fmt.Println("  • Invite devices: initflow workspace invite-device")
-
-	return nil
 }
 
 func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, error) {
@@ -186,7 +240,8 @@ func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
-	nonce := make([]byte, encoding.ChaCha20NonceSize)
+	const chacha20NonceSize = 12             // ChaCha20-Poly1305 nonce size
+	nonce := make([]byte, chacha20NonceSize) // ChaCha20-Poly1305 nonce for workspace key wrapping
 	if _, err := rand.Read(nonce); err != nil {
 		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}

@@ -112,6 +112,46 @@ type InitializeWorkspaceKeyResponse struct {
 	Workspace Workspace `json:"workspace"`
 }
 
+type Secret struct {
+	ID              int    `json:"id"`
+	Key             string `json:"key"`
+	Version         int    `json:"version"`
+	WorkspaceID     int    `json:"workspace_id"`
+	CreatedByDevice struct {
+		ID       int    `json:"id"`
+		DeviceID string `json:"device_id"`
+		Name     string `json:"name"`
+	} `json:"created_by_device"`
+	InsertedAt string `json:"inserted_at"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
+type SecretWithValue struct {
+	Secret
+	EncryptedValue string `json:"encrypted_value"`
+	Nonce          string `json:"nonce"`
+}
+
+type SetSecretRequest struct {
+	Key            string `json:"key"`
+	EncryptedValue string `json:"encrypted_value"`
+	Nonce          string `json:"nonce"`
+	Description    string `json:"description,omitempty"`
+}
+
+type SetSecretResponse struct {
+	Secret Secret `json:"secret"`
+}
+
+type GetSecretResponse struct {
+	Secret SecretWithValue `json:"secret"`
+}
+
+type ListSecretsResponse struct {
+	Secrets []Secret `json:"secrets"`
+	Count   int      `json:"count"`
+}
+
 func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	loginReq := LoginRequest{
 		Email:    email,
@@ -255,7 +295,7 @@ func (c *Client) RegisterDevice(
 	return c.handleRegistrationResponse(resp, body)
 }
 
-func (c *Client) signRequest(req *http.Request, body []byte) error {
+func (c *Client) signRequest(req *http.Request, _ []byte) error {
 	store := storage.New()
 
 	deviceID, err := store.GetDeviceID()
@@ -270,15 +310,10 @@ func (c *Client) signRequest(req *http.Request, body []byte) error {
 
 	timestamp := time.Now().Unix()
 
-	var bodyStr string
-	if body != nil {
-		bodyStr = string(body)
-	}
-
-	message := fmt.Sprintf("%s\n%s\n%s\n%d",
+	// ✅ NEW: Body-agnostic signature format (no body in message)
+	message := fmt.Sprintf("%s\n%s\n%d",
 		req.Method,
 		req.URL.Path+req.URL.RawQuery,
-		bodyStr,
 		timestamp)
 
 	signature := ed25519.Sign(signingKey, []byte(message))
@@ -394,6 +429,184 @@ func (c *Client) InitializeWorkspaceKey(workspaceID int, wrappedKey []byte) erro
 			return fmt.Errorf("initialize workspace key failed with status %d: %s", resp.StatusCode, string(body))
 		}
 		return fmt.Errorf("initialize workspace key failed: %s", errResp.Message)
+	}
+
+	return nil
+}
+
+func (c *Client) SetSecret(
+	workspaceID int, key string, encryptedValue, nonce []byte, description string, force bool,
+) (*Secret, error) {
+	setReq := SetSecretRequest{
+		Key:            key,
+		EncryptedValue: encoding.Encode(encryptedValue),
+		Nonce:          encoding.Encode(nonce),
+		Description:    description,
+	}
+
+	jsonData, err := json.Marshal(setReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal set secret request: %w", err)
+	}
+
+	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(workspaceID))
+	req, err := http.NewRequest(routes.POST, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "initflow-cli/1.0")
+
+	if err := c.signRequest(req, jsonData); err != nil {
+		return nil, fmt.Errorf("failed to sign request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("set secret failed with status %d: %s", resp.StatusCode, string(body))
+		}
+		return nil, fmt.Errorf("set secret failed: %s", errResp.Message)
+	}
+
+	var setResp SetSecretResponse
+	if err := json.Unmarshal(body, &setResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &setResp.Secret, nil
+}
+
+func (c *Client) GetSecret(workspaceID int, secretKey string) (*SecretWithValue, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(workspaceID, secretKey))
+	req, err := http.NewRequest(routes.GET, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "initflow-cli/1.0")
+
+	if err := c.signRequest(req, nil); err != nil {
+		return nil, fmt.Errorf("failed to sign request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("get secret failed with status %d: %s", resp.StatusCode, string(body))
+		}
+		return nil, fmt.Errorf("get secret failed: %s", errResp.Message)
+	}
+
+	var getResp GetSecretResponse
+	if err := json.Unmarshal(body, &getResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &getResp.Secret, nil
+}
+
+func (c *Client) ListSecrets(workspaceID int) ([]Secret, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(workspaceID))
+	req, err := http.NewRequest(routes.GET, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "initflow-cli/1.0")
+
+	if err := c.signRequest(req, nil); err != nil {
+		return nil, fmt.Errorf("failed to sign request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("list secrets failed with status %d: %s", resp.StatusCode, string(body))
+		}
+		return nil, fmt.Errorf("list secrets failed: %s", errResp.Message)
+	}
+
+	var listResp ListSecretsResponse
+	if err := json.Unmarshal(body, &listResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return listResp.Secrets, nil
+}
+
+func (c *Client) DeleteSecret(workspaceID int, secretKey string) error {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(workspaceID, secretKey))
+	req, err := http.NewRequest(routes.DELETE, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "initflow-cli/1.0")
+
+	if err := c.signRequest(req, nil); err != nil {
+		return fmt.Errorf("failed to sign request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return fmt.Errorf("delete secret failed with status %d: %s", resp.StatusCode, string(body))
+		}
+		return fmt.Errorf("delete secret failed: %s", errResp.Message)
 	}
 
 	return nil

@@ -181,7 +181,8 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for already initialized workspace")
 	}
-	if err.Error() != "ℹ️ Workspace key already initialized" {
+	expectedMsg := "ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery"
+	if err.Error() != expectedMsg {
 		t.Errorf("Expected specific error message, got: %v", err)
 	}
 }

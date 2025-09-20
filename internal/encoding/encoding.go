@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	WorkspaceKeySize     = 32 // 256 bits for ChaCha20-Poly1305
+	WorkspaceKeySize     = 32 // 256 bits for XSalsa20Poly1305 (NaCl secretbox)
 	X25519PrivateKeySize = 32 // X25519 private key size
-	ChaCha20NonceSize    = 12 // ChaCha20-Poly1305 nonce size
+	SecretboxNonceSize   = 24 // XSalsa20Poly1305 nonce size (NaCl secretbox)
 	UserTokenSize        = 32 // User authentication token size
 )
 
@@ -43,6 +43,23 @@ func Encode(data []byte) string {
 }
 
 // Decode provides general base64 decoding for binary data
+// Tries multiple base64 formats for compatibility
 func Decode(encoded string) ([]byte, error) {
-	return base64.RawURLEncoding.DecodeString(encoded)
+	// Try RawURLEncoding first (our preferred format)
+	if data, err := base64.RawURLEncoding.DecodeString(encoded); err == nil {
+		return data, nil
+	}
+
+	// Try standard base64 encoding (with padding)
+	if data, err := base64.StdEncoding.DecodeString(encoded); err == nil {
+		return data, nil
+	}
+
+	// Try URLEncoding (with padding)
+	if data, err := base64.URLEncoding.DecodeString(encoded); err == nil {
+		return data, nil
+	}
+
+	// Try RawStdEncoding (without padding)
+	return base64.RawStdEncoding.DecodeString(encoded)
 }
