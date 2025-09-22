@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/routes"
+	"github.com/DylanBlakemore/initiat-cli/internal/routes"
 )
 
 func TestNew(t *testing.T) {
@@ -39,7 +39,7 @@ func TestLogin_Success(t *testing.T) {
 
 		// Verify headers
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "initflow-cli/1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "initiat-cli/1.0", r.Header.Get("User-Agent"))
 
 		// Verify request body
 		var loginReq LoginRequest
@@ -216,7 +216,7 @@ func TestRegisterDevice_Success(t *testing.T) {
 		assert.Equal(t, "POST", r.Method)
 		assert.Equal(t, routes.Devices, r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "initflow-cli/1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "initiat-cli/1.0", r.Header.Get("User-Agent"))
 
 		// Parse request body
 		var req DeviceRegistrationRequest

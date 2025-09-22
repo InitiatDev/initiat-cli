@@ -22,8 +22,8 @@ var globalConfig *Config
 
 func DefaultConfig() *Config {
 	return &Config{
-		APIBaseURL:     "https://api.initflow.com",
-		ServiceName:    "initflow-cli",
+		APIBaseURL:     "https://api.initiat.com",
+		ServiceName:    "initiat-cli",
 		DefaultOrgSlug: "",
 	}
 }
@@ -37,7 +37,7 @@ func InitConfig() error {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".initflow")
+	configDir := filepath.Join(home, ".initiat")
 	viper.AddConfigPath(configDir)
 	viper.AddConfigPath(".")
 
@@ -46,7 +46,7 @@ func InitConfig() error {
 	viper.SetDefault("service_name", defaults.ServiceName)
 	viper.SetDefault("default_org_slug", defaults.DefaultOrgSlug)
 
-	viper.SetEnvPrefix("INITFLOW")
+	viper.SetEnvPrefix("INITIAT")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -86,7 +86,7 @@ func Save() error {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".initflow")
+	configDir := filepath.Join(home, ".initiat")
 	if err := os.MkdirAll(configDir, configDirPermissions); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}

@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 func TestWorkspaceList(t *testing.T) {
@@ -268,7 +268,7 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		t.Fatalf("Failed to set API URL: %v", err)
 	}
 
-	if err := config.Set("service_name", "initflow-cli-test-"+t.Name()); err != nil {
+	if err := config.Set("service_name", "initiat-cli-test-"+t.Name()); err != nil {
 		t.Fatalf("Failed to set service name: %v", err)
 	}
 

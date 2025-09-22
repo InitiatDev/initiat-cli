@@ -22,27 +22,27 @@ jobs:
       - name: Build binaries
         run: |
           # Build for multiple platforms
-          GOOS=darwin GOARCH=amd64 go build -o initflow-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o initflow-darwin-arm64 .
-          GOOS=linux GOARCH=amd64 go build -o initflow-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o initflow-linux-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o initflow-windows-amd64.exe .
+          GOOS=darwin GOARCH=amd64 go build -o initiat-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o initiat-darwin-arm64 .
+          GOOS=linux GOARCH=amd64 go build -o initiat-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o initiat-linux-arm64 .
+          GOOS=windows GOARCH=amd64 go build -o initiat-windows-amd64.exe .
 
           # Create archives
-          tar -czf initflow-darwin-amd64.tar.gz initflow-darwin-amd64
-          tar -czf initflow-darwin-arm64.tar.gz initflow-darwin-arm64
-          tar -czf initflow-linux-amd64.tar.gz initflow-linux-amd64
-          tar -czf initflow-linux-arm64.tar.gz initflow-linux-arm64
-          zip initflow-windows-amd64.zip initflow-windows-amd64.exe
+          tar -czf initiat-darwin-amd64.tar.gz initiat-darwin-amd64
+          tar -czf initiat-darwin-arm64.tar.gz initiat-darwin-arm64
+          tar -czf initiat-linux-amd64.tar.gz initiat-linux-amd64
+          tar -czf initiat-linux-arm64.tar.gz initiat-linux-arm64
+          zip initiat-windows-amd64.zip initiat-windows-amd64.exe
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            initflow-darwin-amd64.tar.gz
-            initflow-darwin-arm64.tar.gz
-            initflow-linux-amd64.tar.gz
-            initflow-linux-arm64.tar.gz
-            initflow-windows-amd64.zip
+            initiat-darwin-amd64.tar.gz
+            initiat-darwin-arm64.tar.gz
+            initiat-linux-amd64.tar.gz
+            initiat-linux-arm64.tar.gz
+            initiat-windows-amd64.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

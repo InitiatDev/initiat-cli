@@ -8,20 +8,20 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Authentication commands",
-	Long:  "Manage authentication with InitFlow",
+	Long:  "Manage authentication with Initiat",
 }
 
 var loginCmd = &cobra.Command{
 	Use:   "login <email>",
-	Short: "Login to InitFlow",
-	Long:  "Authenticate with InitFlow using your email and password",
+	Short: "Login to Initiat",
+	Long:  "Authenticate with Initiat using your email and password",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runLogin,
 }
@@ -63,7 +63,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("✅ Login successful! Registration token expires in 15 minutes.")
 	fmt.Printf("👋 Welcome, %s %s!\n", loginResp.User.Name, loginResp.User.Surname)
-	fmt.Println("💡 Next: Register this device with 'initflow device register <name>'")
+	fmt.Println("💡 Next: Register this device with 'initiat device register <name>'")
 
 	return nil
 }

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/DylanBlakemore/initflow-cli/cmd"
+import "github.com/DylanBlakemore/initiat-cli/cmd"
 
 func main() {
 	cmd.Execute()

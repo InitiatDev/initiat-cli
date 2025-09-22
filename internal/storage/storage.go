@@ -4,12 +4,12 @@ import (
 	"crypto/ed25519"
 	"fmt"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/zalando/go-keyring"
 )
 
 const (
-	DefaultServiceName = "initflow-cli"
+	DefaultServiceName = "initiat-cli"
 )
 
 type Storage struct {

@@ -1,4 +1,4 @@
-# InitFlow Secret Management Specification
+# Initiat Secret Management Specification
 
 **Version:** 2.0  
 **Date:** September 2025  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-InitFlow implements a **zero-knowledge secret management system** where the server never has access to plaintext secret values, workspace keys, or user passwords. All encryption and decryption operations occur client-side using industry-standard cryptographic libraries.
+Initiat implements a **zero-knowledge secret management system** where the server never has access to plaintext secret values, workspace keys, or user passwords. All encryption and decryption operations occur client-side using industry-standard cryptographic libraries.
 
 ## Architecture Principles
 
@@ -56,7 +56,7 @@ Secret Values (arbitrary plaintext)
 
 #### Command
 ```bash
-initflow secret set <KEY> <VALUE> [OPTIONS]
+initiat secret set <KEY> <VALUE> [OPTIONS]
 ```
 
 #### Options
@@ -67,14 +67,14 @@ initflow secret set <KEY> <VALUE> [OPTIONS]
 #### Examples
 ```bash
 # Basic secret creation
-initflow secret set API_KEY "sk-1234567890abcdef" --workspace 42
+initiat secret set API_KEY "sk-1234567890abcdef" --workspace 42
 
 # With description
-initflow secret set DB_PASSWORD "super-secret-pass" --workspace 42 \
+initiat secret set DB_PASSWORD "super-secret-pass" --workspace 42 \
   --description "Production database password"
 
 # Force overwrite
-initflow secret set API_KEY "new-value" --workspace 42 --force
+initiat secret set API_KEY "new-value" --workspace 42 --force
 ```
 
 #### Cryptographic Workflow
@@ -118,7 +118,7 @@ initflow secret set API_KEY "new-value" --workspace 42 --force
 
 #### Command
 ```bash
-initflow secret get <KEY> [OPTIONS]
+initiat secret get <KEY> [OPTIONS]
 ```
 
 #### Options
@@ -129,13 +129,13 @@ initflow secret get <KEY> [OPTIONS]
 #### Examples
 ```bash
 # Get secret value
-initflow secret get API_KEY --workspace 42
+initiat secret get API_KEY --workspace 42
 
 # JSON output with metadata
-initflow secret get API_KEY --workspace 42 --output json
+initiat secret get API_KEY --workspace 42 --output json
 
 # Environment variable format
-initflow secret get API_KEY --workspace 42 --output env
+initiat secret get API_KEY --workspace 42 --output env
 ```
 
 #### Cryptographic Workflow
@@ -187,7 +187,7 @@ export API_KEY="sk-1234567890abcdef"
 
 #### Command
 ```bash
-initflow secret list [OPTIONS]
+initiat secret list [OPTIONS]
 ```
 
 #### Options
@@ -197,13 +197,13 @@ initflow secret list [OPTIONS]
 #### Examples
 ```bash
 # Table format (default)
-initflow secret list --workspace 42
+initiat secret list --workspace 42
 
 # JSON format
-initflow secret list --workspace 42 --format json
+initiat secret list --workspace 42 --format json
 
 # Simple format (keys only)
-initflow secret list --workspace 42 --format simple
+initiat secret list --workspace 42 --format simple
 ```
 
 #### Output Formats
@@ -240,7 +240,7 @@ DB_PASSWORD
 
 #### Command
 ```bash
-initflow secret delete <KEY> [OPTIONS]
+initiat secret delete <KEY> [OPTIONS]
 ```
 
 #### Options
@@ -250,10 +250,10 @@ initflow secret delete <KEY> [OPTIONS]
 #### Examples
 ```bash
 # Delete with confirmation
-initflow secret delete API_KEY --workspace 42
+initiat secret delete API_KEY --workspace 42
 
 # Force delete without confirmation
-initflow secret delete API_KEY --workspace 42 --force
+initiat secret delete API_KEY --workspace 42 --force
 ```
 
 #### Workflow
@@ -339,22 +339,22 @@ All requests require device signature authentication:
 
 1. **Verify Device Registration**
    ```bash
-   initflow device list
+   initiat device list
    ```
 
 2. **Check Workspace Access**
    ```bash
-   initflow workspace list
+   initiat workspace list
    ```
 
 3. **Validate Workspace Key**
    ```bash
-   initflow workspace init <workspace-slug>
+   initiat workspace init <workspace-slug>
    ```
 
 4. **Test Network Connectivity**
    ```bash
-   initflow secret list --workspace <id>
+   initiat secret list --workspace <id>
    ```
 
 ---

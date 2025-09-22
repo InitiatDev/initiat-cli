@@ -1,4 +1,4 @@
-# init.Flow CLI
+# Initiat CLI
 
 A developer experience platform that accelerates team onboarding and reduces time-to-first-commit from days to minutes. The CLI provides secure secret sharing, environment setup, and guided onboarding workflows. Built with Go for cross-platform compatibility and security.
 
@@ -8,7 +8,7 @@ A developer experience platform that accelerates team onboarding and reduces tim
 ## 🚀 Quick Start
 
 ### Prerequisites
-1. **Create an init.Flow account** at [initflow.com](https://initflow.com)
+1. **Create an Initiat account** at [initiat.com](https://initiat.com)
 2. **Set your password** during account creation or in your profile settings
 
 ### Installation & Login
@@ -18,16 +18,16 @@ A developer experience platform that accelerates team onboarding and reduces tim
 ```bash
 # Download for your platform from GitHub Releases
 # macOS (Intel)
-curl -L https://github.com/DylanBlakemore/initflow-cli/releases/latest/download/initflow-darwin-amd64.tar.gz | tar xz
-sudo mv initflow-darwin-amd64 /usr/local/bin/initflow
+curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-darwin-amd64.tar.gz | tar xz
+sudo mv initiat-darwin-amd64 /usr/local/bin/initiat
 
 # macOS (Apple Silicon)
-curl -L https://github.com/DylanBlakemore/initflow-cli/releases/latest/download/initflow-darwin-arm64.tar.gz | tar xz
-sudo mv initflow-darwin-arm64 /usr/local/bin/initflow
+curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-darwin-arm64.tar.gz | tar xz
+sudo mv initiat-darwin-arm64 /usr/local/bin/initiat
 
 # Linux (x64)
-curl -L https://github.com/DylanBlakemore/initflow-cli/releases/latest/download/initflow-linux-amd64.tar.gz | tar xz
-sudo mv initflow-linux-amd64 /usr/local/bin/initflow
+curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-linux-amd64.tar.gz | tar xz
+sudo mv initiat-linux-amd64 /usr/local/bin/initiat
 
 # Windows (download .zip from releases page)
 ```
@@ -35,22 +35,22 @@ sudo mv initflow-linux-amd64 /usr/local/bin/initflow
 #### Option 2: Install with Go
 
 ```bash
-go install github.com/DylanBlakemore/initflow-cli@latest
+go install github.com/DylanBlakemore/initiat-cli@latest
 ```
 
 #### Option 3: Build from Source
 
 ```bash
-git clone https://github.com/DylanBlakemore/initflow-cli.git
-cd initflow-cli
-go build -o initflow .
+git clone https://github.com/DylanBlakemore/initiat-cli.git
+cd initiat-cli
+go build -o initiat .
 ```
 
 #### Login
 
 ```bash
-# Login with your init.Flow account credentials
-initflow auth login user@example.com
+# Login with your Initiat account credentials
+initiat auth login user@example.com
 ```
 
 ## 📋 Table of Contents
@@ -68,9 +68,9 @@ initflow auth login user@example.com
 
 ## 📋 Prerequisites
 
-Before using the init.Flow CLI, you need:
+Before using the Initiat CLI, you need:
 
-1. **init.Flow Account**: Create an account at [initflow.com](https://initflow.com)
+1. **Initiat Account**: Create an account at [initiat.com](https://initiat.com)
 2. **Password Setup**: Set your password during registration or in your account settings
 3. **System Requirements**:
    - Go 1.25 or later (for building from source)
@@ -84,39 +84,39 @@ Before using the init.Flow CLI, you need:
 
 **No Go installation required!** Download the binary for your platform:
 
-1. Go to [GitHub Releases](https://github.com/DylanBlakemore/initflow-cli/releases)
+1. Go to [GitHub Releases](https://github.com/DylanBlakemore/initiat-cli/releases)
 2. Download the archive for your platform:
-   - `initflow-darwin-amd64.tar.gz` (macOS Intel)
-   - `initflow-darwin-arm64.tar.gz` (macOS Apple Silicon)
-   - `initflow-linux-amd64.tar.gz` (Linux x64)
-   - `initflow-linux-arm64.tar.gz` (Linux ARM64)
-   - `initflow-windows-amd64.zip` (Windows x64)
+   - `initiat-darwin-amd64.tar.gz` (macOS Intel)
+   - `initiat-darwin-arm64.tar.gz` (macOS Apple Silicon)
+   - `initiat-linux-amd64.tar.gz` (Linux x64)
+   - `initiat-linux-arm64.tar.gz` (Linux ARM64)
+   - `initiat-windows-amd64.zip` (Windows x64)
 3. Extract and move to your PATH
 
 ### Option 2: Go Install
 
 ```bash
-go install github.com/DylanBlakemore/initflow-cli@latest
+go install github.com/DylanBlakemore/initiat-cli@latest
 ```
 
 ### Option 3: Build from Source
 
 ```bash
-git clone https://github.com/DylanBlakemore/initflow-cli.git
-cd initflow-cli
-go build -o initflow .
-sudo mv initflow /usr/local/bin/  # Optional: add to PATH
+git clone https://github.com/DylanBlakemore/initiat-cli.git
+cd initiat-cli
+go build -o initiat .
+sudo mv initiat /usr/local/bin/  # Optional: add to PATH
 ```
 
 ## 🐧 Linux Setup
 
-The init.Flow CLI requires a secret service for secure credential storage. Most desktop Linux distributions include this by default, but some setups may need manual configuration.
+The Initiat CLI requires a secret service for secure credential storage. Most desktop Linux distributions include this by default, but some setups may need manual configuration.
 
 ### Check if Secret Service is Available
 
 ```bash
 # Test if secret service is working
-initflow auth login test@example.com
+initiat auth login test@example.com
 ```
 
 If you see an error like `The name org.freedesktop.secrets was not provided by any .service files`, follow the setup below.
@@ -210,34 +210,34 @@ If you continue to have issues:
 
 ### Login
 
-Authenticate with your existing init.Flow account credentials:
+Authenticate with your existing Initiat account credentials:
 
 ```bash
-initflow auth login user@example.com
+initiat auth login user@example.com
 ```
 
-**Note**: You must have an account at [initflow.com](https://initflow.com) with a password set before using this command.
+**Note**: You must have an account at [initiat.com](https://initiat.com) with a password set before using this command.
 
 The CLI will:
 1. Prompt for your password (hidden input)
-2. Authenticate with the init.Flow API
+2. Authenticate with the Initiat API
 3. Store your registration token securely in the OS keychain
 4. Display next steps for device registration
 
 ### Example Output
 
 ```
-$ initflow auth login user@example.com
+$ initiat auth login user@example.com
 Password: ••••••••••
 🔐 Authenticating...
 ✅ Login successful! Registration token expires in 15 minutes.
 👋 Welcome, John Doe!
-💡 Next: Register this device with 'initflow device register <name>'
+💡 Next: Register this device with 'initiat device register <name>'
 ```
 
 ## ⚙️ Configuration
 
-The init.Flow CLI supports multiple configuration methods with the following precedence (highest to lowest):
+The Initiat CLI supports multiple configuration methods with the following precedence (highest to lowest):
 
 1. **Command-line flags**
 2. **Environment variables**
@@ -247,26 +247,26 @@ The init.Flow CLI supports multiple configuration methods with the following pre
 ### Configuration File
 
 The CLI automatically creates and uses a configuration file at:
-- **macOS/Linux**: `~/.initflow/config.yaml`
-- **Windows**: `%USERPROFILE%\.initflow\config.yaml`
+- **macOS/Linux**: `~/.initiat/config.yaml`
+- **Windows**: `%USERPROFILE%\.initiat\config.yaml`
 
 #### Example Configuration File
 
 ```yaml
-# ~/.initflow/config.yaml
-api_base_url: "https://api.initflow.com"
+# ~/.initiat/config.yaml
+api_base_url: "https://api.initiat.com"
 ```
 
 ### Environment Variables
 
-All configuration options can be set via environment variables with the `INITFLOW_` prefix:
+All configuration options can be set via environment variables with the `INITIAT_` prefix:
 
 ```bash
 # Set API base URL
-export INITFLOW_API_BASE_URL="http://localhost:4000"
+export INITIAT_API_BASE_URL="http://localhost:4000"
 
 # Use the CLI with environment config
-initflow auth login user@example.com
+initiat auth login user@example.com
 ```
 
 ### Command-Line Flags
@@ -275,34 +275,34 @@ Override any configuration option using global flags:
 
 ```bash
 # Use localhost for development
-initflow --api-url http://localhost:4000 auth login user@example.com
+initiat --api-url http://localhost:4000 auth login user@example.com
 
 # Specify custom config file
-initflow --config /path/to/custom-config.yaml auth login user@example.com
+initiat --config /path/to/custom-config.yaml auth login user@example.com
 ```
 
 ### Configuration Options
 
 | Option | Flag | Environment Variable | Default | Description |
 |--------|------|---------------------|---------|-------------|
-| API Base URL | `--api-url` | `INITFLOW_API_BASE_URL` | `https://api.initflow.com` | Base URL for init.Flow API |
-| Config File | `--config` | N/A | `~/.initflow/config.yaml` | Path to configuration file |
+| API Base URL | `--api-url` | `INITIAT_API_BASE_URL` | `https://api.initiat.com` | Base URL for Initiat API |
+| Config File | `--config` | N/A | `~/.initiat/config.yaml` | Path to configuration file |
 
 ### Development Configuration
 
-For local development against a local init.Flow server:
+For local development against a local Initiat server:
 
 ```bash
 # Method 1: Environment variable
-export INITFLOW_API_BASE_URL="http://localhost:4000"
-initflow auth login dev@example.com
+export INITIAT_API_BASE_URL="http://localhost:4000"
+initiat auth login dev@example.com
 
 # Method 2: Command-line flag
-initflow --api-url http://localhost:4000 auth login dev@example.com
+initiat --api-url http://localhost:4000 auth login dev@example.com
 
 # Method 3: Configuration file
-echo "api_base_url: http://localhost:4000" > ~/.initflow/config.yaml
-initflow auth login dev@example.com
+echo "api_base_url: http://localhost:4000" > ~/.initiat/config.yaml
+initiat auth login dev@example.com
 ```
 
 ## 📚 Usage Examples
@@ -310,54 +310,54 @@ initflow auth login dev@example.com
 ### Developer Onboarding Flow
 
 ```bash
-# 1. Login to init.Flow (requires existing account)
-initflow auth login user@example.com
+# 1. Login to Initiat (requires existing account)
+initiat auth login user@example.com
 
 # 2. Register this device (coming soon)
-initflow device register "My MacBook CLI"
+initiat device register "My MacBook CLI"
 
 # 3. List available workspaces (coming soon)
-initflow workspace list
+initiat workspace list
 
 # 4. Initialize workspace key for secure secret access (coming soon)
-initflow workspace init-key my-project
+initiat workspace init-key my-project
 
 # 5. Set up development environment (coming soon)
-initflow setup my-project
+initiat setup my-project
 
 # 6. Fetch secrets and environment variables (coming soon)
-initflow secrets fetch --workspace my-project --output .env
+initiat secrets fetch --workspace my-project --output .env
 ```
 
 ### Development Workflow
 
 ```bash
 # Set up for local development
-export INITFLOW_API_BASE_URL="http://localhost:4000"
+export INITIAT_API_BASE_URL="http://localhost:4000"
 
 # Login with development server
-initflow auth login dev@localhost.com
+initiat auth login dev@localhost.com
 
 # All subsequent commands use localhost
-initflow device register "Development Machine"
+initiat device register "Development Machine"
 ```
 
 ### Configuration Management
 
 ```bash
 # View help for global options
-initflow --help
+initiat --help
 
 # View current configuration (implied from defaults and environment)
-initflow auth login --help  # Shows current API URL in global flags
+initiat auth login --help  # Shows current API URL in global flags
 
 # Test different API endpoints
-initflow --api-url https://staging.initflow.com auth login user@example.com
+initiat --api-url https://staging.initiat.com auth login user@example.com
 ```
 
 ## 🚀 Developer Onboarding Features
 
-init.Flow is designed to accelerate developer productivity and reduce onboarding friction. Secret management is just one component of a comprehensive developer experience platform:
+Initiat is designed to accelerate developer productivity and reduce onboarding friction. Secret management is just one component of a comprehensive developer experience platform:
 
 ### 🔐 **Secure Secret Sharing** (Current)
 - Zero-knowledge architecture for maximum security
@@ -366,7 +366,7 @@ init.Flow is designed to accelerate developer productivity and reduce onboarding
 - Environment variable export (`.env` files)
 
 ### 🛠 **Environment Setup** (Coming Soon)
-- One-command project setup (`initflow setup my-project`)
+- One-command project setup (`initiat setup my-project`)
 - Automated dependency installation
 - Development environment configuration
 - Docker and containerization support
@@ -402,14 +402,14 @@ init.Flow is designed to accelerate developer productivity and reduce onboarding
 
 ```bash
 # Clone the repository
-git clone https://github.com/DylanBlakemore/initflow-cli.git
-cd initflow-cli
+git clone https://github.com/DylanBlakemore/initiat-cli.git
+cd initiat-cli
 
 # Install dependencies
 go mod tidy
 
 # Build the CLI
-go build -o initflow .
+go build -o initiat .
 
 # Run tests
 go test ./...
@@ -418,13 +418,13 @@ go test ./...
 ### Project Structure
 
 ```
-initflow-cli/
+initiat-cli/
 ├── cmd/                    # CLI commands
 │   ├── auth.go            # Authentication commands
 │   ├── root.go            # Root command and global flags
 │   └── version.go         # Version command
 ├── internal/
-│   ├── client/            # HTTP client for init.Flow API
+│   ├── client/            # HTTP client for Initiat API
 │   ├── config/            # Configuration management
 │   ├── routes/            # API route definitions
 │   └── storage/           # Secure storage (OS keychain)
@@ -536,7 +536,7 @@ The CLI stores authentication tokens securely using the operating system's crede
 
 ### Zero-Knowledge Architecture
 
-The init.Flow CLI implements a zero-knowledge architecture:
+The Initiat CLI implements a zero-knowledge architecture:
 
 - **Passwords**: Never stored, only used for authentication
 - **Tokens**: Stored encrypted in OS keychain
@@ -559,7 +559,7 @@ This usually indicates a problem with OS keychain access:
 
 ```bash
 # macOS: Ensure Keychain Access is working
-security find-generic-password -s "initflow-cli" 2>/dev/null || echo "No keychain entry found"
+security find-generic-password -s "initiat-cli" 2>/dev/null || echo "No keychain entry found"
 
 # Linux: Ensure secret service is running
 systemctl --user status gnome-keyring-daemon
@@ -571,10 +571,10 @@ Check your API URL configuration:
 
 ```bash
 # Verify current configuration
-initflow --api-url https://api.initflow.com auth login --help
+initiat --api-url https://api.initiat.com auth login --help
 
 # Test with explicit URL
-initflow --api-url https://api.initflow.com auth login user@example.com
+initiat --api-url https://api.initiat.com auth login user@example.com
 ```
 
 #### "Configuration file not found"
@@ -583,11 +583,11 @@ The CLI creates configuration files automatically, but you can create one manual
 
 ```bash
 # Create config directory
-mkdir -p ~/.initflow
+mkdir -p ~/.initiat
 
 # Create basic config file
-cat > ~/.initflow/config.yaml << EOF
-api_base_url: "https://api.initflow.com"
+cat > ~/.initiat/config.yaml << EOF
+api_base_url: "https://api.initiat.com"
 EOF
 ```
 
@@ -598,7 +598,7 @@ For troubleshooting, you can enable verbose output:
 ```bash
 # Enable Go HTTP client debugging
 export GODEBUG=http2debug=1
-initflow auth login user@example.com
+initiat auth login user@example.com
 ```
 
 ## 🤝 Contributing
@@ -617,8 +617,8 @@ We welcome contributions! Please see our contributing guidelines:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/initflow-cli.git
-cd initflow-cli
+git clone https://github.com/yourusername/initiat-cli.git
+cd initiat-cli
 
 # Install dependencies
 go mod tidy
@@ -627,8 +627,8 @@ go mod tidy
 go test ./...
 
 # Build and test the CLI
-go build -o initflow .
-./initflow --help
+go build -o initiat .
+./initiat --help
 ```
 
 ## 📄 License
@@ -637,18 +637,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [init.Flow Website](https://initflow.com)
-- [API Documentation](https://docs.initflow.com)
-- [Issue Tracker](https://github.com/DylanBlakemore/initflow-cli/issues)
-- [Discussions](https://github.com/DylanBlakemore/initflow-cli/discussions)
+- [Initiat Website](https://initiat.com)
+- [API Documentation](https://docs.initiat.com)
+- [Issue Tracker](https://github.com/DylanBlakemore/initiat-cli/issues)
+- [Discussions](https://github.com/DylanBlakemore/initiat-cli/discussions)
 
 ## 📞 Support
 
-- **Documentation**: [docs.initflow.com](https://docs.initflow.com)
-- **Community**: [GitHub Discussions](https://github.com/DylanBlakemore/initflow-cli/discussions)
-- **Issues**: [GitHub Issues](https://github.com/DylanBlakemore/initflow-cli/issues)
-- **Email**: support@initflow.com
+- **Documentation**: [docs.initiat.com](https://docs.initiat.com)
+- **Community**: [GitHub Discussions](https://github.com/DylanBlakemore/initiat-cli/discussions)
+- **Issues**: [GitHub Issues](https://github.com/DylanBlakemore/initiat-cli/issues)
+- **Email**: support@initiat.com
 
 ---
 
-**init.Flow CLI** - Accelerating developer onboarding, one commit at a time. 🚀
+**Initiat CLI** - Accelerating developer onboarding, one commit at a time. 🚀

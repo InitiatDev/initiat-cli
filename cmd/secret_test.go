@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 )
 
 func TestEncryptSecretValue(t *testing.T) {

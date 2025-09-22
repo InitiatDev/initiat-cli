@@ -13,7 +13,7 @@ import (
 // a mock keyring interface for more reliable testing.
 
 func TestStorage_TokenOperations(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-token")
+	storage := NewWithServiceName("initiat-cli-test-token")
 	testToken := "test-token-12345"
 
 	_ = storage.DeleteToken()
@@ -42,7 +42,7 @@ func TestStorage_TokenOperations(t *testing.T) {
 }
 
 func TestStorage_DeviceIDOperations(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-device")
+	storage := NewWithServiceName("initiat-cli-test-device")
 	testDeviceID := "device-abc123"
 
 	_ = storage.DeleteDeviceID()
@@ -71,7 +71,7 @@ func TestStorage_DeviceIDOperations(t *testing.T) {
 }
 
 func TestStorage_MultipleOperations(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-multi")
+	storage := NewWithServiceName("initiat-cli-test-multi")
 	testToken := "multi-test-token"
 	testDeviceID := "multi-test-device"
 
@@ -106,7 +106,7 @@ func TestStorage_MultipleOperations(t *testing.T) {
 }
 
 func TestStorage_OverwriteValues(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-overwrite")
+	storage := NewWithServiceName("initiat-cli-test-overwrite")
 
 	err := storage.StoreToken("initial-token")
 	if err != nil {
@@ -142,7 +142,7 @@ func TestStorage_OverwriteValues(t *testing.T) {
 }
 
 func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-signing")
+	storage := NewWithServiceName("initiat-cli-test-signing")
 
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -179,7 +179,7 @@ func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
 }
 
 func TestStorage_EncryptionPrivateKeyOperations(t *testing.T) {
-	storage := NewWithServiceName("initflow-cli-test-encryption")
+	storage := NewWithServiceName("initiat-cli-test-encryption")
 
 	testKey := make([]byte, 32)
 	_, err := rand.Read(testKey)

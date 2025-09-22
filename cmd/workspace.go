@@ -12,11 +12,11 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
-	"github.com/DylanBlakemore/initflow-cli/internal/slug"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
+	"github.com/DylanBlakemore/initiat-cli/internal/slug"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 var workspaceCmd = &cobra.Command{
@@ -38,8 +38,8 @@ var workspaceInitCmd = &cobra.Command{
 	Long: `Initialize a new workspace key for secure secret storage.
 
 Examples:
-  initflow workspace init acme-corp/production
-  initflow workspace init production  # Uses default org context`,
+  initiat workspace init acme-corp/production
+  initiat workspace init production  # Uses default org context`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWorkspaceInit,
 }
@@ -66,7 +66,7 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	c := client.New()
@@ -76,7 +76,7 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(workspaces) == 0 {
-		fmt.Println("No workspaces found. Create one at https://app.initflow.com")
+		fmt.Println("No workspaces found. Create one at https://app.initiat.com")
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 
 	if hasUninitialized {
 		fmt.Println("\n💡 Initialize keys for workspaces marked \"No\" using:")
-		fmt.Println("   initflow workspace init <org-slug/workspace-slug>")
+		fmt.Println("   initiat workspace init <org-slug/workspace-slug>")
 	}
 
 	return nil
@@ -134,7 +134,7 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	c := client.New()
@@ -221,9 +221,9 @@ func printSuccessMessage() {
 	fmt.Println("🎯 You can now store and retrieve secrets in this workspace.")
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("  • Add secrets: initflow secrets add API_KEY=your-secret")
-	fmt.Println("  • List secrets: initflow secrets list")
-	fmt.Println("  • Invite devices: initflow workspace invite-device")
+	fmt.Println("  • Add secrets: initiat secrets add API_KEY=your-secret")
+	fmt.Println("  • List secrets: initiat secrets list")
+	fmt.Println("  • Invite devices: initiat workspace invite-device")
 }
 
 func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, error) {
@@ -247,7 +247,7 @@ func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to compute shared secret: %w", err)
 	}
 
-	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initflow.wrap"), []byte("workspace"))
+	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
 	encryptionKey := make([]byte, encoding.WorkspaceKeySize)
 	if _, err := hkdf.Read(encryptionKey); err != nil {
 		return nil, fmt.Errorf("failed to derive encryption key: %w", err)

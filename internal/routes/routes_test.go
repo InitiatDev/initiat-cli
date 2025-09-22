@@ -74,7 +74,7 @@ func TestPredefinedRoutes(t *testing.T) {
 }
 
 func TestBuildURL(t *testing.T) {
-	baseURL := "https://api.initflow.com"
+	baseURL := "https://api.initiat.com"
 
 	tests := []struct {
 		name     string
@@ -86,13 +86,13 @@ func TestBuildURL(t *testing.T) {
 			name:     "login route",
 			baseURL:  baseURL,
 			path:     AuthLogin,
-			expected: "https://api.initflow.com/api/v1/auth/login",
+			expected: "https://api.initiat.com/api/v1/auth/login",
 		},
 		{
 			name:     "workspaces route",
 			baseURL:  baseURL,
 			path:     Workspaces,
-			expected: "https://api.initflow.com/api/v1/workspaces",
+			expected: "https://api.initiat.com/api/v1/workspaces",
 		},
 		{
 			name:     "localhost development",
@@ -104,7 +104,7 @@ func TestBuildURL(t *testing.T) {
 			name:     "workspace initialize key",
 			baseURL:  baseURL,
 			path:     Workspace.InitializeKey("acme-corp", "production"),
-			expected: "https://api.initflow.com/api/v1/workspaces/acme-corp/production/initialize",
+			expected: "https://api.initiat.com/api/v1/workspaces/acme-corp/production/initialize",
 		},
 	}
 

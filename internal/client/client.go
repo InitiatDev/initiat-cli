@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
-	"github.com/DylanBlakemore/initflow-cli/internal/routes"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
+	"github.com/DylanBlakemore/initiat-cli/internal/routes"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 const (
@@ -171,7 +171,7 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -278,7 +278,7 @@ func (c *Client) RegisterDevice(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -338,7 +338,7 @@ func (c *Client) ListWorkspaces() ([]Workspace, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, nil); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
@@ -380,7 +380,7 @@ func (c *Client) GetWorkspaceBySlug(orgSlug, workspaceSlug string) (*Workspace, 
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, nil); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
@@ -432,7 +432,7 @@ func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKe
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, jsonData); err != nil {
 		return fmt.Errorf("failed to sign request: %w", err)
@@ -484,7 +484,7 @@ func (c *Client) SetSecret(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, jsonData); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
@@ -526,7 +526,7 @@ func (c *Client) GetSecret(orgSlug, workspaceSlug, secretKey string) (*SecretWit
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, nil); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
@@ -568,7 +568,7 @@ func (c *Client) ListSecrets(orgSlug, workspaceSlug string) ([]Secret, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, nil); err != nil {
 		return nil, fmt.Errorf("failed to sign request: %w", err)
@@ -610,7 +610,7 @@ func (c *Client) DeleteSecret(orgSlug, workspaceSlug, secretKey string) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "initflow-cli/1.0")
+	req.Header.Set("User-Agent", "initiat-cli/1.0")
 
 	if err := c.signRequest(req, nil); err != nil {
 		return fmt.Errorf("failed to sign request: %w", err)

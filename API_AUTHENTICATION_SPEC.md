@@ -1,10 +1,10 @@
-# InitFlow API Authentication Specification
+# Initiat API Authentication Specification
 
-This document provides comprehensive documentation for the InitFlow API authentication system, including cryptographic details and implementation requirements.
+This document provides comprehensive documentation for the Initiat API authentication system, including cryptographic details and implementation requirements.
 
 ## Overview
 
-InitFlow uses a two-phase authentication system:
+Initiat uses a two-phase authentication system:
 1. **User Authentication**: Email/password login to obtain device registration tokens
 2. **Device Authentication**: Cryptographic signature-based authentication for API requests
 

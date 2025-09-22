@@ -12,21 +12,21 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/term"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 var deviceCmd = &cobra.Command{
 	Use:   "device",
 	Short: "Device management commands",
-	Long:  "Manage devices registered with InitFlow",
+	Long:  "Manage devices registered with Initiat",
 }
 
 var registerDeviceCmd = &cobra.Command{
 	Use:   "register <device-name>",
-	Short: "Register this device with InitFlow",
-	Long:  "Register this device with InitFlow to enable secure secret access",
+	Short: "Register this device with Initiat",
+	Long:  "Register this device with Initiat to enable secure secret access",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runRegisterDevice,
 }
@@ -139,10 +139,10 @@ func checkExistingDevice(storage *storage.Storage) error {
 	fmt.Printf("⚠️  Device already registered with ID: %s\n", deviceID)
 	fmt.Println()
 	fmt.Println("If you deleted this device from the server, you can:")
-	fmt.Println("• Clear local credentials: initflow device unregister")
-	fmt.Println("• Then register again: initflow device register <name>")
+	fmt.Println("• Clear local credentials: initiat device unregister")
+	fmt.Println("• Then register again: initiat device register <name>")
 	fmt.Println()
-	fmt.Println("Or use 'initflow device list' to view registered devices")
+	fmt.Println("Or use 'initiat device list' to view registered devices")
 	return fmt.Errorf("device already registered")
 }
 
@@ -257,7 +257,7 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Created: %s\n", deviceResp.Device.CreatedAt)
 	fmt.Println()
 	fmt.Println("🔐 Keys stored securely in system keychain")
-	fmt.Println("💡 Next: Initialize workspace keys with 'initflow workspace list'")
+	fmt.Println("💡 Next: Initialize workspace keys with 'initiat workspace list'")
 
 	return nil
 }
@@ -280,7 +280,7 @@ func runUnregisterDevice(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("✅ Device credentials cleared successfully!")
 	fmt.Println()
-	fmt.Println("💡 You can now register a new device with 'initflow device register <name>'")
+	fmt.Println("💡 You can now register a new device with 'initiat device register <name>'")
 
 	return nil
 }

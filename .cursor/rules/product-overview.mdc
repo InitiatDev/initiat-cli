@@ -6,7 +6,7 @@ alwaysApply: true
 
 # **Product Requirements Document (PRD)**
 
-**Product Name (working):** *init.Flow* (or chosen brand)
+**Product Name (working):** *Initiat* (or chosen brand)
 **Version:** Draft v2
 
 ---
@@ -15,7 +15,7 @@ alwaysApply: true
 
 Developers lose precious time during onboarding: setting up environments, configuring access, managing secrets, and piecing together scattered instructions. This slows productivity, creates security risks, and frustrates new hires.
 
-**init.Flow** is a developer-first onboarding platform designed to remove that friction. Starting with secure secret sharing as the foundation, it evolves into a complete workflow for onboarding and enabling developers. The goal is to reduce *time-to-first-commit* from days to minutes, while ensuring teams onboard securely, consistently, and with a great developer experience.
+**Initiat** is a developer-first onboarding platform designed to remove that friction. Starting with secure secret sharing as the foundation, it evolves into a complete workflow for onboarding and enabling developers. The goal is to reduce *time-to-first-commit* from days to minutes, while ensuring teams onboard securely, consistently, and with a great developer experience.
 
 ---
 
@@ -34,7 +34,7 @@ Developers lose precious time during onboarding: setting up environments, config
 ### 3.1 Secret Sharing & Access (MVP) - 'KeySync'
 
 * Secure vault for API keys, tokens, environment variables.
-* CLI/API commands (`init.flow secrets add/fetch`).
+* CLI/API commands (`Initiat secrets add/fetch`).
 * Export to `.env` files and integrate with GitHub Actions, Docker, etc.
 * Free tier for small teams (limited seats/workspace).
 * Guardrails: seats are non-rotatable.
@@ -42,7 +42,7 @@ Developers lose precious time during onboarding: setting up environments, config
 ### 3.2 Developer Onboarding Flows (Phase 2)
 
 * Prebuilt workspace templates for popular stacks (Node, Elixir, Python, etc.).
-* One-command setup (`init.flow setup myapp`).
+* One-command setup (`Initiat setup myapp`).
 * Guided runbooks embedded into the flow (self-service onboarding).
 * Extendable for team-specific onboarding.
 
@@ -181,7 +181,7 @@ Developers lose precious time during onboarding: setting up environments, config
 
 * **Overlap with “vault” competitors:** Differentiate via DX + onboarding workflows.
 * **Free tier abuse:** Seat-locking and workspace limits.
-* **Branding confusion (locker.io, Runway, etc.):** Lean into DX-first positioning with a distinct name (e.g., *init.Flow*).
+* **Branding confusion (locker.io, Runway, etc.):** Lean into DX-first positioning with a distinct name (e.g., *Initiat*).
 * **Trust concerns:** Publish security details, open docs, audits.
 
 ---

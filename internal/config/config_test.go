@@ -12,7 +12,7 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
-	assert.Equal(t, "https://api.initflow.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
 }
 
 func TestInitConfig_WithDefaults(t *testing.T) {
@@ -31,7 +31,7 @@ func TestInitConfig_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "https://api.initflow.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
 }
 
 func TestInitConfig_WithConfigFile(t *testing.T) {
@@ -40,7 +40,7 @@ func TestInitConfig_WithConfigFile(t *testing.T) {
 
 	// Create temporary directory for config
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".initflow")
+	configDir := filepath.Join(tmpDir, ".initiat")
 	err := os.MkdirAll(configDir, 0750)
 	require.NoError(t, err)
 
@@ -70,13 +70,13 @@ func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Set environment variable
-	originalEnv := os.Getenv("INITFLOW_API_BASE_URL")
-	_ = os.Setenv("INITFLOW_API_BASE_URL", "http://localhost:3000")
+	originalEnv := os.Getenv("INITIAT_API_BASE_URL")
+	_ = os.Setenv("INITIAT_API_BASE_URL", "http://localhost:3000")
 	defer func() {
 		if originalEnv == "" {
-			_ = os.Unsetenv("INITFLOW_API_BASE_URL")
+			_ = os.Unsetenv("INITIAT_API_BASE_URL")
 		} else {
-			_ = os.Setenv("INITFLOW_API_BASE_URL", originalEnv)
+			_ = os.Setenv("INITIAT_API_BASE_URL", originalEnv)
 		}
 	}()
 
@@ -139,7 +139,7 @@ func TestSave(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify config file was created
-	configFile := filepath.Join(tmpDir, ".initflow", "config.yaml")
+	configFile := filepath.Join(tmpDir, ".initiat", "config.yaml")
 	_, err = os.Stat(configFile)
 	assert.NoError(t, err)
 
@@ -154,5 +154,5 @@ func TestGet_BeforeInit(t *testing.T) {
 	globalConfig = nil
 
 	cfg := Get()
-	assert.Equal(t, "https://api.initflow.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
 }

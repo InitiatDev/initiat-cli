@@ -163,18 +163,18 @@ jobs:
       - name: Build for multiple platforms
         run: |
           # Test that the code builds for all target platforms
-          GOOS=darwin GOARCH=amd64 go build -o /tmp/initflow-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o /tmp/initflow-darwin-arm64 .
-          GOOS=linux GOARCH=amd64 go build -o /tmp/initflow-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o /tmp/initflow-linux-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o /tmp/initflow-windows-amd64.exe .
+          GOOS=darwin GOARCH=amd64 go build -o /tmp/initiat-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o /tmp/initiat-darwin-arm64 .
+          GOOS=linux GOARCH=amd64 go build -o /tmp/initiat-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o /tmp/initiat-linux-arm64 .
+          GOOS=windows GOARCH=amd64 go build -o /tmp/initiat-windows-amd64.exe .
 
       - name: Test binary functionality
         run: |
-          go build -o initflow .
-          ./initflow --help
-          ./initflow auth --help
-          ./initflow version
+          go build -o initiat .
+          ./initiat --help
+          ./initiat auth --help
+          ./initiat version
 
   dependency-check:
     name: Dependency Check

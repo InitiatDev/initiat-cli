@@ -87,7 +87,7 @@ func ResolveWorkspaceSlug(input string, defaultOrgSlug string) (CompositeSlug, e
 	if defaultOrgSlug == "" {
 		return CompositeSlug{}, fmt.Errorf(
 			"workspace slug '%s' requires organization context. "+
-				"Use 'org-slug/workspace-slug' format or set default organization with 'initflow config use org <org-slug>'",
+				"Use 'org-slug/workspace-slug' format or set default organization with 'initiat config use org <org-slug>'",
 			input)
 	}
 

@@ -8,7 +8,7 @@ set -e
 VERSION=${1:-"dev"}
 OUTPUT_DIR="dist"
 
-echo "🏗️  Building init.Flow CLI v${VERSION}"
+echo "🏗️  Building Initiat CLI v${VERSION}"
 
 # Clean and create output directory
 rm -rf ${OUTPUT_DIR}
@@ -28,7 +28,7 @@ platforms=(
 for platform in "${platforms[@]}"; do
     IFS='/' read -r GOOS GOARCH <<< "$platform"
     
-    output_name="initflow-${GOOS}-${GOARCH}"
+    output_name="initiat-${GOOS}-${GOARCH}"
     if [ "$GOOS" = "windows" ]; then
         output_name="${output_name}.exe"
     fi
@@ -49,8 +49,8 @@ ls -la ${OUTPUT_DIR}/
 echo ""
 echo "🚀 To create archives:"
 echo "  cd ${OUTPUT_DIR}"
-echo "  tar -czf initflow-darwin-amd64.tar.gz initflow-darwin-amd64"
-echo "  tar -czf initflow-darwin-arm64.tar.gz initflow-darwin-arm64"
-echo "  tar -czf initflow-linux-amd64.tar.gz initflow-linux-amd64"
-echo "  tar -czf initflow-linux-arm64.tar.gz initflow-linux-arm64"
-echo "  zip initflow-windows-amd64.zip initflow-windows-amd64.exe"
+echo "  tar -czf initiat-darwin-amd64.tar.gz initiat-darwin-amd64"
+echo "  tar -czf initiat-darwin-arm64.tar.gz initiat-darwin-arm64"
+echo "  tar -czf initiat-linux-amd64.tar.gz initiat-linux-amd64"
+echo "  tar -czf initiat-linux-arm64.tar.gz initiat-linux-arm64"
+echo "  zip initiat-windows-amd64.zip initiat-windows-amd64.exe"

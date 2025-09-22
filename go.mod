@@ -1,4 +1,4 @@
-module github.com/DylanBlakemore/initflow-cli
+module github.com/DylanBlakemore/initiat-cli
 
 go 1.25.1
 

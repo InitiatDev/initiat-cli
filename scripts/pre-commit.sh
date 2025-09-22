@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pre-commit hook for init.Flow CLI
+# Pre-commit hook for Initiat CLI
 # This script runs formatting, linting, and tests before allowing a commit
 
 set -e
@@ -108,8 +108,8 @@ fi
 
 # 7. Build check
 print_status "info" "Testing build..."
-if go build -o /tmp/initflow-test .; then
-    rm -f /tmp/initflow-test
+if go build -o /tmp/initiat-test .; then
+    rm -f /tmp/initiat-test
     print_status "success" "Build successful"
 else
     print_status "error" "Build failed"

@@ -1,6 +1,6 @@
-# InitFlow Workspace API Specification
+# Initiat Workspace API Specification
 
-This document provides comprehensive documentation for the InitFlow Workspace API, including cryptographic key management and access control.
+This document provides comprehensive documentation for the Initiat Workspace API, including cryptographic key management and access control.
 
 ## Overview
 

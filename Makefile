@@ -1,4 +1,4 @@
-# Makefile for init.Flow CLI
+# Makefile for Initiat CLI
 
 .PHONY: help build test lint format clean install deps security vuln-check
 
@@ -11,16 +11,16 @@ help: ## Show this help message
 
 # Build targets
 build: ## Build the CLI binary
-	@echo "🏗️  Building init.Flow CLI..."
-	go build -o initflow .
+	@echo "🏗️  Building Initiat CLI..."
+	go build -o initiat .
 
 build-all: ## Build for all platforms
 	@echo "🏗️  Building for all platforms..."
 	./scripts/build-release.sh
 
 install: build ## Install the CLI to /usr/local/bin
-	@echo "📦 Installing initflow to /usr/local/bin..."
-	sudo mv initflow /usr/local/bin/
+	@echo "📦 Installing initiat to /usr/local/bin..."
+	sudo mv initiat /usr/local/bin/
 
 # Development targets
 deps: ## Download and verify dependencies
@@ -77,7 +77,7 @@ vuln-check: ## Check for vulnerabilities
 # Utility targets
 clean: ## Clean build artifacts
 	@echo "🧹 Cleaning build artifacts..."
-	rm -f initflow
+	rm -f initiat
 	rm -rf dist/
 	rm -f coverage.out coverage.html
 
@@ -108,8 +108,8 @@ install-tools: ## Install development tools
 # Docker targets (if you want to add Docker support later)
 docker-build: ## Build Docker image
 	@echo "🐳 Building Docker image..."
-	docker build -t initflow-cli .
+	docker build -t initiat-cli .
 
 docker-test: ## Test in Docker container
 	@echo "🐳 Testing in Docker..."
-	docker run --rm initflow-cli --help
+	docker run --rm initiat-cli --help

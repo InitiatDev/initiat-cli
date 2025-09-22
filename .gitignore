@@ -12,8 +12,8 @@
 *.a
 
 # Built application binary
-initflow
-initflow.exe
+initiat
+initiat.exe
 
 # Test binary, coverage reports
 *.cover

@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
 )
 
 func TestLoginCmd_Success(t *testing.T) {
@@ -57,7 +57,7 @@ func TestLoginCmd_Success(t *testing.T) {
 	loginSubCmd, _, err := authCmd.Find([]string{"login"})
 	require.NoError(t, err)
 	assert.Equal(t, "login <email>", loginSubCmd.Use)
-	assert.Equal(t, "Login to InitFlow", loginSubCmd.Short)
+	assert.Equal(t, "Login to Initiat", loginSubCmd.Short)
 }
 
 func TestLoginCmd_InvalidArgs(t *testing.T) {
@@ -87,13 +87,13 @@ func TestLoginCmd_EmptyEmail(t *testing.T) {
 func TestAuthCmd_Structure(t *testing.T) {
 	assert.Equal(t, "auth", authCmd.Use)
 	assert.Equal(t, "Authentication commands", authCmd.Short)
-	assert.Equal(t, "Manage authentication with InitFlow", authCmd.Long)
+	assert.Equal(t, "Manage authentication with Initiat", authCmd.Long)
 	var loginFound bool
 	for _, cmd := range authCmd.Commands() {
 		if cmd.Use == "login <email>" {
 			loginFound = true
-			assert.Equal(t, "Login to InitFlow", cmd.Short)
-			assert.Equal(t, "Authenticate with InitFlow using your email and password", cmd.Long)
+			assert.Equal(t, "Login to Initiat", cmd.Short)
+			assert.Equal(t, "Authenticate with Initiat using your email and password", cmd.Long)
 			break
 		}
 	}
@@ -147,16 +147,16 @@ func executeCommand(root *cobra.Command, args ...string) (output string, err err
 }
 
 func TestAuthCmd_Integration(t *testing.T) {
-	rootCmd := &cobra.Command{Use: "initflow"}
+	rootCmd := &cobra.Command{Use: "initiat"}
 	rootCmd.AddCommand(authCmd)
 
 	output, err := executeCommand(rootCmd, "auth", "--help")
 	assert.NoError(t, err)
-	assert.Contains(t, output, "Manage authentication with InitFlow")
+	assert.Contains(t, output, "Manage authentication with Initiat")
 	assert.Contains(t, output, "login")
 
 	output, err = executeCommand(rootCmd, "auth", "login", "--help")
 	assert.NoError(t, err)
-	assert.Contains(t, output, "Authenticate with InitFlow using your email and password")
+	assert.Contains(t, output, "Authenticate with Initiat using your email and password")
 	assert.Contains(t, output, "login <email>")
 }

@@ -11,11 +11,11 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/nacl/secretbox"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/client"
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/encoding"
-	"github.com/DylanBlakemore/initflow-cli/internal/slug"
-	"github.com/DylanBlakemore/initflow-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/client"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
+	"github.com/DylanBlakemore/initiat-cli/internal/slug"
+	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
 const (
@@ -33,7 +33,7 @@ var (
 var secretCmd = &cobra.Command{
 	Use:   "secret",
 	Short: "Manage secrets in workspaces",
-	Long:  `Manage secrets in InitFlow workspaces with client-side encryption.`,
+	Long:  `Manage secrets in Initiat workspaces with client-side encryption.`,
 }
 
 var secretSetCmd = &cobra.Command{
@@ -43,9 +43,9 @@ var secretSetCmd = &cobra.Command{
 before being sent to the server.
 
 Examples:
-  initflow secret set acme-corp/production API_KEY "sk-1234567890abcdef"
-  initflow secret set acme-corp/production DB_PASSWORD "super-secret-pass" --description "Production database password"
-  initflow secret set production API_KEY "new-value" --force  # Uses default org context`,
+  initiat secret set acme-corp/production API_KEY "sk-1234567890abcdef"
+  initiat secret set acme-corp/production DB_PASSWORD "super-secret-pass" --description "Production database password"
+  initiat secret set production API_KEY "new-value" --force  # Uses default org context`,
 	Args: cobra.ExactArgs(secretSetArgsCount),
 	RunE: runSecretSet,
 }
@@ -57,9 +57,9 @@ var secretGetCmd = &cobra.Command{
 Output is always in JSON format.
 
 Examples:
-  initflow secret get acme-corp/production API_KEY
-  initflow secret get acme-corp/production API_KEY --copy
-  initflow secret get production API_KEY  # Uses default org context`,
+  initiat secret get acme-corp/production API_KEY
+  initiat secret get acme-corp/production API_KEY --copy
+  initiat secret get production API_KEY  # Uses default org context`,
 	Args: cobra.ExactArgs(secretGetArgsCount),
 	RunE: runSecretGet,
 }
@@ -71,8 +71,8 @@ var secretListCmd = &cobra.Command{
 Output is always in table format showing key, value preview, and version.
 
 Examples:
-  initflow secret list acme-corp/production
-  initflow secret list production  # Uses default org context`,
+  initiat secret list acme-corp/production
+  initiat secret list production  # Uses default org context`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretList,
 }
@@ -83,8 +83,8 @@ var secretDeleteCmd = &cobra.Command{
 	Long: `Delete a secret from the specified workspace.
 
 Examples:
-  initflow secret delete acme-corp/production API_KEY
-  initflow secret delete production API_KEY --force  # Uses default org context`,
+  initiat secret delete acme-corp/production API_KEY
+  initiat secret delete production API_KEY --force  # Uses default org context`,
 	Args: cobra.ExactArgs(secretGetArgsCount),
 	RunE: runSecretDelete,
 }
@@ -129,7 +129,7 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	workspaceKey, err := getWorkspaceKey(compositeSlug.String(), store)
@@ -168,7 +168,7 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, error) {
 	if !store.HasWorkspaceKey(compositeSlug) {
 		return nil, fmt.Errorf(
-			"workspace key not found locally for workspace '%s'. Please run 'initflow workspace init %s' first",
+			"workspace key not found locally for workspace '%s'. Please run 'initiat workspace init %s' first",
 			compositeSlug, compositeSlug)
 	}
 
@@ -217,7 +217,7 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	workspaceKey, err := getWorkspaceKey(compositeSlug.String(), store)
@@ -275,7 +275,7 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	c := client.New()
@@ -334,7 +334,7 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 
 	store := storage.New()
 	if !store.HasDeviceID() {
-		return fmt.Errorf("❌ Device not registered. Please run 'initflow device register <name>' first")
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
 	c := client.New()

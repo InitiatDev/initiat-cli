@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Setup git hooks for init.Flow CLI development
+# Setup git hooks for Initiat CLI development
 
 set -e
 
@@ -19,7 +19,7 @@ HOOKS_DIR="$(git rev-parse --git-dir)/hooks"
 echo "📝 Creating pre-commit hook..."
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
-# Auto-generated pre-commit hook for init.Flow CLI
+# Auto-generated pre-commit hook for Initiat CLI
 exec ./scripts/pre-commit.sh
 EOF
 

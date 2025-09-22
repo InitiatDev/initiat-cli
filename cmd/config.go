@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
-	"github.com/DylanBlakemore/initflow-cli/internal/slug"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/slug"
 )
 
 var configCmd = &cobra.Command{
@@ -27,12 +27,12 @@ var configUseOrgCmd = &cobra.Command{
 	Long: `Set the default organization for workspace operations.
 
 When a default organization is set, you can use workspace commands with just the workspace slug:
-  initflow workspace init production
-  initflow secret list staging
+  initiat workspace init production
+  initiat secret list staging
 
 Examples:
-  initflow config use org acme-corp
-  initflow config use org my-company`,
+  initiat config use org acme-corp
+  initiat config use org my-company`,
 	Args: cobra.ExactArgs(1),
 	RunE: runConfigUseOrg,
 }
@@ -80,8 +80,8 @@ func runConfigUseOrg(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✅ Default organization set to '%s'\n", orgSlug)
 	fmt.Println("💡 You can now use workspace commands with just the workspace slug:")
-	fmt.Printf("   initflow workspace init <workspace-slug>\n")
-	fmt.Printf("   initflow secret list <workspace-slug>\n")
+	fmt.Printf("   initiat workspace init <workspace-slug>\n")
+	fmt.Printf("   initiat secret list <workspace-slug>\n")
 
 	return nil
 }
@@ -96,7 +96,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Default Organization: %s\n", cfg.DefaultOrgSlug)
 	} else {
 		fmt.Println("  Default Organization: (not set)")
-		fmt.Println("💡 Set a default organization with: initflow config use org <org-slug>")
+		fmt.Println("💡 Set a default organization with: initiat config use org <org-slug>")
 	}
 
 	return nil

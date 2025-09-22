@@ -1,6 +1,6 @@
-# InitFlow Secrets API Specification
+# Initiat Secrets API Specification
 
-This document provides comprehensive documentation for the InitFlow Secrets API, including cryptographic secret management and zero-knowledge architecture.
+This document provides comprehensive documentation for the Initiat Secrets API, including cryptographic secret management and zero-knowledge architecture.
 
 ## Overview
 

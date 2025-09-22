@@ -1,10 +1,10 @@
-# InitFlow API Overview
+# Initiat API Overview
 
-This document provides a high-level overview of the InitFlow API architecture, design principles, and complete endpoint reference.
+This document provides a high-level overview of the Initiat API architecture, design principles, and complete endpoint reference.
 
 ## Architecture Overview
 
-InitFlow implements a **zero-knowledge secret management system** with client-side encryption and device-based authentication. The server never sees plaintext secrets or workspace keys, ensuring maximum security even in the event of server compromise.
+Initiat implements a **zero-knowledge secret management system** with client-side encryption and device-based authentication. The server never sees plaintext secrets or workspace keys, ensuring maximum security even in the event of server compromise.
 
 ### Core Components
 
@@ -23,7 +23,7 @@ InitFlow implements a **zero-knowledge secret management system** with client-si
 
 ## API Structure
 
-**Base URL**: `https://api.initflow.com/api/v1`  
+**Base URL**: `https://api.initiat.com/api/v1`  
 **Protocol**: HTTPS only  
 **Format**: JSON  
 **Authentication**: Ed25519 signatures  
@@ -241,9 +241,9 @@ X-RateLimit-Reset: 1694616000
 
 ### Official SDKs
 
-- **Go**: `github.com/initflow/initflow-go` (Primary CLI implementation)
-- **JavaScript/TypeScript**: `@initflow/sdk` (Browser and Node.js)
-- **Python**: `initflow-python` (Planned)
+- **Go**: `github.com/initiat/initiat-go` (Primary CLI implementation)
+- **JavaScript/TypeScript**: `@initiat/sdk` (Browser and Node.js)
+- **Python**: `initiat-python` (Planned)
 
 ### Community SDKs
 
@@ -319,7 +319,7 @@ X-RateLimit-Reset: 1694616000
 
 ### Development Environment
 
-- **Base URL**: `https://api-dev.initflow.com/api/v1`
+- **Base URL**: `https://api-dev.initiat.com/api/v1`
 - **Rate Limits**: Relaxed for development
 - **Test Data**: Sandbox workspaces and secrets available
 

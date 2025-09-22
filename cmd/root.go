@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/DylanBlakemore/initflow-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/config"
 )
 
 var (
@@ -16,9 +16,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "initflow",
-	Short: "InitFlow CLI",
-	Long:  `InitFlow CLI — secure secrets, onboarding, and policy tooling.`,
+	Use:   "initiat",
+	Short: "Initiat CLI",
+	Long:  `Initiat CLI — secure secrets, onboarding, and policy tooling.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := config.InitConfig(); err != nil {
 			return fmt.Errorf("failed to initialize config: %w", err)
@@ -41,9 +41,9 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.initflow/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://api.initflow.com)")
-	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initflow-cli",
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.initiat/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://api.initiat.com)")
+	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initiat-cli",
 		"keyring service name for credential storage")
 }
 
