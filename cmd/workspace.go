@@ -76,7 +76,7 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(workspaces) == 0 {
-		fmt.Println("No workspaces found. Create one at https://app.initiat.com")
+		fmt.Println("No workspaces found. Create one at https://www.initiat.dev")
 		return nil
 	}
 
@@ -123,7 +123,6 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	workspaceInput := args[0]
 
-	// Resolve the workspace slug (could be composite or workspace-only)
 	defaultOrgSlug := config.GetDefaultOrgSlug()
 	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
 	if err != nil {

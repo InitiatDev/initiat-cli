@@ -2,7 +2,10 @@ package storage
 
 import (
 	"crypto/ed25519"
+	"crypto/sha256"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/zalando/go-keyring"
@@ -16,12 +19,35 @@ type Storage struct {
 	serviceName string
 }
 
-func New() *Storage {
-	serviceName := DefaultServiceName
-	cfg := config.Get()
-	if cfg.ServiceName != "" {
-		serviceName = cfg.ServiceName
+func generateServiceNameFromURL(apiURL string) string {
+	parsed, err := url.Parse(apiURL)
+	if err != nil {
+		parsed = &url.URL{Host: strings.ReplaceAll(apiURL, "://", "-")}
 	}
+
+	host := parsed.Host
+	if host == "" {
+		host = strings.ReplaceAll(apiURL, "://", "-")
+		host = strings.ReplaceAll(host, "/", "-")
+	}
+
+	hasher := sha256.New()
+	hasher.Write([]byte(apiURL))
+	hash := fmt.Sprintf("%x", hasher.Sum(nil))[:8]
+
+	return fmt.Sprintf("initiat-cli-%s-%s", host, hash)
+}
+
+func New() *Storage {
+	cfg := config.Get()
+
+	var serviceName string
+	if cfg.ServiceName != "" && cfg.ServiceName != DefaultServiceName {
+		serviceName = cfg.ServiceName
+	} else {
+		serviceName = generateServiceNameFromURL(cfg.APIBaseURL)
+	}
+
 	return &Storage{
 		serviceName: serviceName,
 	}
@@ -117,13 +143,11 @@ func (s *Storage) HasEncryptionPrivateKey() bool {
 	return err == nil
 }
 
-// StoreWorkspaceKey stores a workspace key using composite slug format
 func (s *Storage) StoreWorkspaceKey(compositeSlug string, key []byte) error {
 	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
 	return keyring.Set(s.serviceName, keyName, string(key))
 }
 
-// GetWorkspaceKey retrieves a workspace key using composite slug format
 func (s *Storage) GetWorkspaceKey(compositeSlug string) ([]byte, error) {
 	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
 	keyStr, err := keyring.Get(s.serviceName, keyName)
@@ -133,19 +157,16 @@ func (s *Storage) GetWorkspaceKey(compositeSlug string) ([]byte, error) {
 	return []byte(keyStr), nil
 }
 
-// DeleteWorkspaceKey deletes a workspace key using composite slug format
 func (s *Storage) DeleteWorkspaceKey(compositeSlug string) error {
 	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
 	return keyring.Delete(s.serviceName, keyName)
 }
 
-// HasWorkspaceKey checks if a workspace key exists using composite slug format
 func (s *Storage) HasWorkspaceKey(compositeSlug string) bool {
 	_, err := s.GetWorkspaceKey(compositeSlug)
 	return err == nil
 }
 
-// ClearDeviceCredentials removes all device-related credentials from local storage
 func (s *Storage) ClearDeviceCredentials() error {
 	var errors []error
 
@@ -161,8 +182,7 @@ func (s *Storage) ClearDeviceCredentials() error {
 		errors = append(errors, fmt.Errorf("failed to delete encryption private key: %w", err))
 	}
 
-	// Also clean up any leftover registration token
-	_ = s.DeleteToken() // Ignore error as token might not exist
+	_ = s.DeleteToken()
 
 	if len(errors) > 0 {
 		return fmt.Errorf("errors clearing device credentials: %v", errors)

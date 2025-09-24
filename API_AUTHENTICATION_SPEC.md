@@ -32,12 +32,16 @@ Content-Type: application/json
 
 ```json
 {
-  "token": "xyz789abc123def456...",
-  "user": {
-    "id": 42,
-    "email": "user@example.com",
-    "name": "John",
-    "surname": "Doe"
+  "success": true,
+  "message": "Authentication successful",
+  "data": {
+    "token": "xyz789abc123def456...",
+    "user": {
+      "id": 42,
+      "email": "user@example.com",
+      "name": "John",
+      "surname": "Doe"
+    }
   }
 }
 ```
@@ -46,7 +50,9 @@ Content-Type: application/json
 
 ```json
 {
-  "message": "Invalid email or password"
+  "success": false,
+  "message": "Invalid email or password",
+  "errors": ["Invalid email or password"]
 }
 ```
 
@@ -54,7 +60,9 @@ Content-Type: application/json
 
 ```json
 {
-  "message": "Email and password are required"
+  "success": false,
+  "message": "Email and password are required",
+  "errors": ["Email and password are required"]
 }
 ```
 
@@ -99,10 +107,13 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "device": {
-    "id": "abc123def456ghi789jkl",
-    "name": "My Laptop",
-    "created_at": "2023-09-20T12:34:56Z"
+  "message": "Device registered successfully",
+  "data": {
+    "device": {
+      "id": "abc123def456ghi789jkl",
+      "name": "My Laptop",
+      "created_at": "2023-09-20T12:34:56Z"
+    }
   }
 }
 ```
@@ -111,9 +122,9 @@ Content-Type: application/json
 
 ```json
 {
-  "error": {
-    "message": "Invalid or expired registration token"
-  }
+  "success": false,
+  "message": "Invalid or expired registration token",
+  "errors": ["Invalid or expired registration token"]
 }
 ```
 
@@ -121,9 +132,9 @@ Content-Type: application/json
 
 ```json
 {
-  "error": {
-    "message": "Invalid ed25519 public key format"
-  }
+  "success": false,
+  "message": "Invalid ed25519 public key format",
+  "errors": ["Invalid ed25519 public key format"]
 }
 ```
 
@@ -132,7 +143,7 @@ Content-Type: application/json
 ```json
 {
   "success": false,
-  "error": "Validation failed",
+  "message": "Validation failed",
   "errors": {
     "name": ["can't be blank"]
   }
@@ -250,36 +261,36 @@ The server verifies signatures using this process:
 #### 401 Unauthorized - Invalid Device
 ```json
 {
-  "error": {
-    "message": "Invalid device ID"
-  }
+  "success": false,
+  "message": "Invalid device ID",
+  "errors": ["Invalid device ID"]
 }
 ```
 
 #### 401 Unauthorized - Invalid Signature
 ```json
 {
-  "error": {
-    "message": "Invalid signature"
-  }
+  "success": false,
+  "message": "Invalid signature",
+  "errors": ["Invalid signature"]
 }
 ```
 
 #### 401 Unauthorized - Timestamp Issues
 ```json
 {
-  "error": {
-    "message": "Request timestamp too old"
-  }
+  "success": false,
+  "message": "Request timestamp too old",
+  "errors": ["Request timestamp too old"]
 }
 ```
 
 #### 403 Forbidden - Access Denied
 ```json
 {
-  "error": {
-    "message": "Device does not have access to this workspace"
-  }
+  "success": false,
+  "message": "Device does not have access to this workspace",
+  "errors": ["Device does not have access to this workspace"]
 }
 ```
 

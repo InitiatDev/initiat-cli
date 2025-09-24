@@ -40,34 +40,39 @@ X-Timestamp: 1694612345
 
 ```json
 {
-  "workspaces": [
-    {
-      "id": 42,
-      "name": "Production Environment",
-      "slug": "production",
-      "description": "Production secrets and configuration",
-      "key_initialized": true,
-      "key_version": 1,
-      "organization": {
-        "id": 1,
-        "name": "Acme Corp",
-        "slug": "acme-corp"
+  "success": true,
+  "data": {
+    "workspaces": [
+      {
+        "id": 42,
+        "name": "Production Environment",
+        "slug": "production",
+        "composite_slug": "acme-corp/production",
+        "description": "Production secrets and configuration",
+        "key_initialized": true,
+        "key_version": 1,
+        "organization": {
+          "id": 1,
+          "name": "Acme Corp",
+          "slug": "acme-corp"
+        }
+      },
+      {
+        "id": 43,
+        "name": "Development Environment", 
+        "slug": "development",
+        "composite_slug": "acme-corp/development",
+        "description": "Development secrets and configuration",
+        "key_initialized": false,
+        "key_version": null,
+        "organization": {
+          "id": 1,
+          "name": "Acme Corp",
+          "slug": "acme-corp"
+        }
       }
-    },
-    {
-      "id": 43,
-      "name": "Development Environment", 
-      "slug": "development",
-      "description": "Development secrets and configuration",
-      "key_initialized": false,
-      "key_version": null,
-      "organization": {
-        "id": 1,
-        "name": "Acme Corp",
-        "slug": "acme-corp"
-      }
-    }
-  ]
+    ]
+  }
 }
 ```
 
@@ -77,7 +82,8 @@ X-Timestamp: 1694612345
 |-------|------|-------------|
 | `id` | integer | Unique workspace identifier |
 | `name` | string | Human-readable workspace name |
-| `slug` | string | URL-friendly workspace identifier |
+| `slug` | string | URL-friendly workspace identifier (unique within organization) |
+| `composite_slug` | string | Globally unique identifier in format `org-slug/workspace-slug` |
 | `description` | string | Workspace description (nullable) |
 | `key_initialized` | boolean | Whether workspace key has been initialized |
 | `key_version` | integer | Current workspace key version (null if not initialized) |
@@ -96,20 +102,20 @@ A device has access to a workspace if:
 **401 Unauthorized** - Invalid authentication
 ```json
 {
-  "error": {
-    "message": "Invalid signature"
-  }
+  "success": false,
+  "message": "Invalid signature",
+  "errors": ["Invalid signature"]
 }
 ```
 
-### POST /workspaces/:workspace_id/initialize
+### POST /workspaces/:org_slug/:workspace_slug/initialize
 
 Initializes the workspace key for a workspace. This is a critical security operation that establishes the cryptographic foundation for secret storage.
 
 #### Request
 
 ```http
-POST /api/v1/workspaces/42/initialize
+POST /api/v1/workspaces/acme-corp/production/initialize
 Authorization: Device abc123def456ghi789jkl
 X-Signature: MEUCIQDx...
 X-Timestamp: 1694612345
@@ -140,12 +146,14 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Workspace key initialized successfully",
-  "workspace": {
-    "id": 42,
-    "name": "Production Environment",
-    "slug": "production", 
-    "key_initialized": true,
-    "key_version": 1
+  "data": {
+    "workspace": {
+      "id": 42,
+      "name": "Production Environment",
+      "slug": "production", 
+      "key_initialized": true,
+      "key_version": 1
+    }
   }
 }
 ```
@@ -162,35 +170,54 @@ Only workspace owners can initialize keys. The server verifies:
 **403 Forbidden** - Not workspace owner
 ```json
 {
-  "error": {
-    "message": "Only workspace owners can initialize keys"
-  }
+  "success": false,
+  "message": "Only workspace owners can initialize keys",
+  "errors": ["Only workspace owners can initialize keys"]
 }
 ```
 
 **409 Conflict** - Already initialized
 ```json
 {
-  "error": {
-    "message": "Workspace key already initialized"
-  }
+  "success": false,
+  "message": "Workspace key already initialized",
+  "errors": ["Workspace key already initialized"]
 }
 ```
 
 **404 Not Found** - Workspace doesn't exist
 ```json
 {
-  "error": {
-    "message": "Workspace not found"
-  }
+  "success": false,
+  "message": "Workspace not found",
+  "errors": ["Workspace not found"]
 }
 ```
+
+**404 Not Found** - Organization doesn't exist (composite slug format)
+```json
+{
+  "success": false,
+  "message": "Organization 'invalid-org' not found",
+  "errors": ["Organization 'invalid-org' not found"]
+}
+```
+
+**404 Not Found** - Workspace doesn't exist in organization (composite slug format)
+```json
+{
+  "success": false,
+  "message": "Workspace 'invalid-workspace' not found in organization 'acme-corp'",
+  "errors": ["Workspace 'invalid-workspace' not found in organization 'acme-corp'"]
+}
+```
+
 
 **422 Unprocessable Entity** - Validation errors
 ```json
 {
   "success": false,
-  "error": "Validation failed",
+  "message": "Validation failed",
   "errors": {
     "wrapped_workspace_key": ["can't be blank"]
   }

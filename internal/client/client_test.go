@@ -48,8 +48,8 @@ func TestLogin_Success(t *testing.T) {
 		assert.Equal(t, "test@example.com", loginReq.Email)
 		assert.Equal(t, "password123", loginReq.Password)
 
-		// Return success response
-		response := LoginResponse{
+		// Return success response in new format
+		loginData := LoginResponse{
 			Token: "test-token-123",
 			User: struct {
 				ID      int    `json:"id"`
@@ -62,6 +62,12 @@ func TestLogin_Success(t *testing.T) {
 				Name:    "John",
 				Surname: "Doe",
 			},
+		}
+
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Authentication successful",
+			"data":    loginData,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -87,9 +93,10 @@ func TestLogin_Success(t *testing.T) {
 func TestLogin_InvalidCredentials(t *testing.T) {
 	// Create test server that returns 401
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := ErrorResponse{
-			Error:   "unauthorized",
-			Message: "Invalid email or password",
+		response := map[string]interface{}{
+			"success": false,
+			"message": "Invalid email or password",
+			"errors":  []string{"Invalid email or password"},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -123,7 +130,7 @@ func TestLogin_ServerError(t *testing.T) {
 	resp, err := client.Login("test@example.com", "password123")
 	assert.Error(t, err)
 	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "login failed with status 500")
+	assert.Contains(t, err.Error(), "failed to parse error response")
 }
 
 func TestLogin_NetworkError(t *testing.T) {
@@ -172,13 +179,13 @@ func TestLogin_InvalidJSON(t *testing.T) {
 	resp, err := client.Login("test@example.com", "password123")
 	assert.Error(t, err)
 	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "failed to unmarshal response")
+	assert.Contains(t, err.Error(), "failed to parse API response")
 }
 
 func TestLogin_EmptyCredentials(t *testing.T) {
 	// Create test server that accepts any credentials for this test
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := LoginResponse{
+		loginData := LoginResponse{
 			Token: "test-token",
 			User: struct {
 				ID      int    `json:"id"`
@@ -191,6 +198,12 @@ func TestLogin_EmptyCredentials(t *testing.T) {
 				Name:    "Test",
 				Surname: "User",
 			},
+		}
+
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Authentication successful",
+			"data":    loginData,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -229,7 +242,7 @@ func TestRegisterDevice_Success(t *testing.T) {
 		assert.NotEmpty(t, req.PublicKeyX25519)
 
 		// Mock successful response
-		resp := DeviceRegistrationResponse{
+		deviceData := DeviceRegistrationResponse{
 			Success: true,
 			Message: "Device registered successfully",
 			Device: struct {
@@ -243,9 +256,15 @@ func TestRegisterDevice_Success(t *testing.T) {
 			},
 		}
 
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Device registered successfully",
+			"data":    deviceData,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated) // Device registration typically returns 201 Created
-		json.NewEncoder(w).Encode(resp)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -273,12 +292,15 @@ func TestRegisterDevice_Success(t *testing.T) {
 func TestRegisterDevice_ServerError(t *testing.T) {
 	// Mock server that returns error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"success": false,
+			"message": "Invalid device name",
+			"errors":  []string{"Invalid device name"},
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{
-			Error:   "validation_error",
-			Message: "Invalid device name",
-		})
+		json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -319,7 +341,7 @@ func TestRegisterDevice_NetworkError(t *testing.T) {
 func TestRegisterDevice_Success_With200(t *testing.T) {
 	// Test that we also accept 200 OK responses (some servers might return this)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := DeviceRegistrationResponse{
+		deviceData := DeviceRegistrationResponse{
 			Success: true,
 			Message: "Device registered successfully",
 			Device: struct {
@@ -333,9 +355,15 @@ func TestRegisterDevice_Success_With200(t *testing.T) {
 			},
 		}
 
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Device registered successfully",
+			"data":    deviceData,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK) // Test 200 OK response
-		json.NewEncoder(w).Encode(resp)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

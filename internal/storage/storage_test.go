@@ -211,3 +211,48 @@ func TestStorage_EncryptionPrivateKeyOperations(t *testing.T) {
 	_, err = storage.GetEncryptionPrivateKey()
 	assert.Error(t, err)
 }
+
+func TestURLBasedServiceNameUniqueness(t *testing.T) {
+	urls := []string{
+		"https://www.initiat.dev",
+		"http://localhost:8080",
+		"https://staging.initiat.dev",
+		"http://192.168.1.100:3000",
+	}
+
+	serviceNames := make(map[string]bool)
+
+	for _, url := range urls {
+		serviceName := generateServiceNameFromURL(url)
+		assert.False(t, serviceNames[serviceName],
+			"Service name %q should be unique for URL %q", serviceName, url)
+		serviceNames[serviceName] = true
+	}
+}
+
+func TestStorageNewWithDifferentAPIURLs(t *testing.T) {
+	serviceName1 := generateServiceNameFromURL("https://www.initiat.dev")
+	serviceName2 := generateServiceNameFromURL("http://localhost:8080")
+
+	assert.NotEqual(t, serviceName1, serviceName2,
+		"Different API URLs should generate different service names")
+
+	assert.Contains(t, serviceName1, "initiat-cli")
+	assert.Contains(t, serviceName2, "initiat-cli")
+}
+
+func TestStorageNewWithExplicitServiceName(t *testing.T) {
+	storage := NewWithServiceName("my-custom-service")
+	assert.Equal(t, "my-custom-service", storage.serviceName,
+		"Explicit service name should be used as-is")
+}
+
+func TestStorageNewWithDefaultServiceName(t *testing.T) {
+	expectedServiceName := generateServiceNameFromURL("https://www.initiat.dev")
+	storage := New()
+
+	assert.Equal(t, expectedServiceName, storage.serviceName,
+		"Default service name should trigger URL-based generation")
+	assert.Contains(t, storage.serviceName, "initiat-cli",
+		"URL-based service name should contain base name")
+}

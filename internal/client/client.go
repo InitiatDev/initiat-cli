@@ -46,6 +46,59 @@ func NewWithBaseURL(baseURL string) *Client {
 	}
 }
 
+func parseAPIResponse(body []byte, target interface{}) error {
+	var apiResp APIResponse
+	if err := json.Unmarshal(body, &apiResp); err != nil {
+		return fmt.Errorf("failed to parse API response: %w", err)
+	}
+
+	if !apiResp.Success {
+		if len(apiResp.Errors) > 0 {
+			return fmt.Errorf("API error: %s", apiResp.Errors[0])
+		}
+		return fmt.Errorf("API error: %s", apiResp.Message)
+	}
+
+	if target != nil && len(apiResp.Data) > 0 {
+		if err := json.Unmarshal(apiResp.Data, target); err != nil {
+			return fmt.Errorf("failed to parse response data: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func parseValidationErrorResponse(body []byte) error {
+	var validationResp ValidationErrorResponse
+	if err := json.Unmarshal(body, &validationResp); err != nil {
+		var apiResp APIResponse
+		if err := json.Unmarshal(body, &apiResp); err != nil {
+			return fmt.Errorf("failed to parse error response: %w", err)
+		}
+		if len(apiResp.Errors) > 0 {
+			return fmt.Errorf("validation error: %s", apiResp.Errors[0])
+		}
+		return fmt.Errorf("validation error: %s", apiResp.Message)
+	}
+
+	if validationResp.Success {
+		return nil
+	}
+	if len(validationResp.Errors) > 0 {
+		var errorMessages []string
+		for field, messages := range validationResp.Errors {
+			for _, msg := range messages {
+				errorMessages = append(errorMessages, fmt.Sprintf("%s: %s", field, msg))
+			}
+		}
+		if len(errorMessages) > 0 {
+			return fmt.Errorf("validation failed: %s", errorMessages[0])
+		}
+	}
+
+	return fmt.Errorf("validation error: %s", validationResp.Message)
+}
+
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -64,6 +117,19 @@ type LoginResponse struct {
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
+}
+
+type APIResponse struct {
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Errors  []string        `json:"errors,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
+type ValidationErrorResponse struct {
+	Success bool                `json:"success"`
+	Message string              `json:"message"`
+	Errors  map[string][]string `json:"errors,omitempty"`
 }
 
 type DeviceRegistrationRequest struct {
@@ -187,16 +253,12 @@ func (c *Client) Login(email, password string) (*LoginResponse, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("login failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("login failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var loginResp LoginResponse
-	if err := json.Unmarshal(body, &loginResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &loginResp); err != nil {
+		return nil, fmt.Errorf("login failed: %w", err)
 	}
 
 	return &loginResp, nil
@@ -230,20 +292,12 @@ func (c *Client) encodeKeys(signingPublicKey ed25519.PublicKey, encryptionPublic
 
 func (c *Client) handleRegistrationResponse(resp *http.Response, body []byte) (*DeviceRegistrationResponse, error) {
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("device registration failed with status %d, raw response: %s", resp.StatusCode, string(body))
-		}
-		if errResp.Message == "" {
-			return nil, fmt.Errorf("device registration failed with status %d, error: %s, raw response: %s",
-				resp.StatusCode, errResp.Error, string(body))
-		}
-		return nil, fmt.Errorf("device registration failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var deviceResp DeviceRegistrationResponse
-	if err := json.Unmarshal(body, &deviceResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &deviceResp); err != nil {
+		return nil, fmt.Errorf("device registration failed: %w", err)
 	}
 
 	return &deviceResp, nil
@@ -358,16 +412,12 @@ func (c *Client) ListWorkspaces() ([]Workspace, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("list workspaces failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("list workspaces failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var workspacesResp ListWorkspacesResponse
-	if err := json.Unmarshal(body, &workspacesResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &workspacesResp); err != nil {
+		return nil, fmt.Errorf("list workspaces failed: %w", err)
 	}
 
 	return workspacesResp.Workspaces, nil
@@ -400,16 +450,12 @@ func (c *Client) GetWorkspaceBySlug(orgSlug, workspaceSlug string) (*Workspace, 
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("get workspace failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("get workspace failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var workspace Workspace
-	if err := json.Unmarshal(body, &workspace); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &workspace); err != nil {
+		return nil, fmt.Errorf("get workspace failed: %w", err)
 	}
 
 	return &workspace, nil
@@ -452,14 +498,10 @@ func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKe
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return fmt.Errorf("initialize workspace key failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return fmt.Errorf("initialize workspace key failed: %s", errResp.Message)
+		return parseValidationErrorResponse(body)
 	}
 
-	return nil
+	return parseAPIResponse(body, nil)
 }
 
 func (c *Client) SetSecret(
@@ -504,16 +546,12 @@ func (c *Client) SetSecret(
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("set secret failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("set secret failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var setResp SetSecretResponse
-	if err := json.Unmarshal(body, &setResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &setResp); err != nil {
+		return nil, fmt.Errorf("set secret failed: %w", err)
 	}
 
 	return &setResp.Secret, nil
@@ -546,16 +584,12 @@ func (c *Client) GetSecret(orgSlug, workspaceSlug, secretKey string) (*SecretWit
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("get secret failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("get secret failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var getResp GetSecretResponse
-	if err := json.Unmarshal(body, &getResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &getResp); err != nil {
+		return nil, fmt.Errorf("get secret failed: %w", err)
 	}
 
 	return &getResp.Secret, nil
@@ -588,16 +622,12 @@ func (c *Client) ListSecrets(orgSlug, workspaceSlug string) ([]Secret, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("list secrets failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("list secrets failed: %s", errResp.Message)
+		return nil, parseValidationErrorResponse(body)
 	}
 
 	var listResp ListSecretsResponse
-	if err := json.Unmarshal(body, &listResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := parseAPIResponse(body, &listResp); err != nil {
+		return nil, fmt.Errorf("list secrets failed: %w", err)
 	}
 
 	return listResp.Secrets, nil
@@ -630,12 +660,8 @@ func (c *Client) DeleteSecret(orgSlug, workspaceSlug, secretKey string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return fmt.Errorf("delete secret failed with status %d: %s", resp.StatusCode, string(body))
-		}
-		return fmt.Errorf("delete secret failed: %s", errResp.Message)
+		return parseValidationErrorResponse(body)
 	}
 
-	return nil
+	return parseAPIResponse(body, nil)
 }

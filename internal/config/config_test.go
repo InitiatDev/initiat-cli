@@ -12,17 +12,14 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
-	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
 }
 
 func TestInitConfig_WithDefaults(t *testing.T) {
-	// Reset viper for clean test
 	viper.Reset()
 
-	// Create temporary directory for config
 	tmpDir := t.TempDir()
 
-	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
@@ -31,26 +28,22 @@ func TestInitConfig_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
 }
 
 func TestInitConfig_WithConfigFile(t *testing.T) {
-	// Reset viper for clean test
 	viper.Reset()
 
-	// Create temporary directory for config
 	tmpDir := t.TempDir()
 	configDir := filepath.Join(tmpDir, ".initiat")
 	err := os.MkdirAll(configDir, 0750)
 	require.NoError(t, err)
 
-	// Create config file
 	configFile := filepath.Join(configDir, "config.yaml")
 	configContent := `api_base_url: "http://localhost:4000"`
 	err = os.WriteFile(configFile, []byte(configContent), 0600)
 	require.NoError(t, err)
 
-	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
@@ -63,13 +56,10 @@ func TestInitConfig_WithConfigFile(t *testing.T) {
 }
 
 func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
-	// Reset viper for clean test
 	viper.Reset()
 
-	// Create temporary directory for config
 	tmpDir := t.TempDir()
 
-	// Set environment variable
 	originalEnv := os.Getenv("INITIAT_API_BASE_URL")
 	_ = os.Setenv("INITIAT_API_BASE_URL", "http://localhost:3000")
 	defer func() {
@@ -80,7 +70,6 @@ func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
 		}
 	}()
 
-	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
@@ -93,13 +82,10 @@ func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	// Reset viper for clean test
 	viper.Reset()
 
-	// Create temporary directory for config
 	tmpDir := t.TempDir()
 
-	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
@@ -107,7 +93,6 @@ func TestSet(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	// Test setting a value
 	err = Set("api_base_url", "http://localhost:8080")
 	require.NoError(t, err)
 
@@ -116,13 +101,10 @@ func TestSet(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	// Reset viper for clean test
 	viper.Reset()
 
-	// Create temporary directory for config
 	tmpDir := t.TempDir()
 
-	// Set home directory to temp dir
 	originalHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
@@ -130,29 +112,24 @@ func TestSave(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	// Set a custom value
 	err = Set("api_base_url", "http://localhost:9000")
 	require.NoError(t, err)
 
-	// Save config
 	err = Save()
 	require.NoError(t, err)
 
-	// Verify config file was created
 	configFile := filepath.Join(tmpDir, ".initiat", "config.yaml")
 	_, err = os.Stat(configFile)
 	assert.NoError(t, err)
 
-	// Read and verify content
-	content, err := os.ReadFile(configFile) // #nosec G304 - test file path is controlled
+	content, err := os.ReadFile(configFile)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "http://localhost:9000")
 }
 
 func TestGet_BeforeInit(t *testing.T) {
-	// Reset global config
 	globalConfig = nil
 
 	cfg := Get()
-	assert.Equal(t, "https://api.initiat.com", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
 }

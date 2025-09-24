@@ -196,22 +196,35 @@ Organization
 | **422** | Unprocessable Entity | Validation errors |
 | **500** | Internal Server Error | Server-side errors |
 
-### Error Response Format
+### Response Format
 
+All API responses follow a consistent format:
+
+#### Success Response Format
 ```json
 {
-  "error": {
-    "message": "Human-readable error description"
+  "success": true,
+  "message": "Optional success message",
+  "data": {
+    // Response data here
   }
 }
 ```
 
-### Validation Error Format
-
+#### Error Response Format
 ```json
 {
   "success": false,
-  "error": "Validation failed",
+  "message": "Human-readable error description",
+  "errors": ["error message 1", "error message 2"]
+}
+```
+
+#### Validation Error Format
+```json
+{
+  "success": false,
+  "message": "Validation failed",
   "errors": {
     "field_name": ["error message 1", "error message 2"]
   }

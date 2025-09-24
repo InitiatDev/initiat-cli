@@ -254,7 +254,7 @@ The CLI automatically creates and uses a configuration file at:
 
 ```yaml
 # ~/.initiat/config.yaml
-api_base_url: "https://api.initiat.com"
+api_base_url: "https://www.initiat.dev"
 ```
 
 ### Environment Variables
@@ -285,7 +285,7 @@ initiat --config /path/to/custom-config.yaml auth login user@example.com
 
 | Option | Flag | Environment Variable | Default | Description |
 |--------|------|---------------------|---------|-------------|
-| API Base URL | `--api-url` | `INITIAT_API_BASE_URL` | `https://api.initiat.com` | Base URL for Initiat API |
+| API Base URL | `--api-url` | `INITIAT_API_BASE_URL` | `https://www.initiat.dev` | Base URL for Initiat API |
 | Config File | `--config` | N/A | `~/.initiat/config.yaml` | Path to configuration file |
 
 ### Development Configuration
@@ -571,10 +571,10 @@ Check your API URL configuration:
 
 ```bash
 # Verify current configuration
-initiat --api-url https://api.initiat.com auth login --help
+initiat --api-url https://www.initiat.dev auth login --help
 
 # Test with explicit URL
-initiat --api-url https://api.initiat.com auth login user@example.com
+initiat --api-url https://www.initiat.dev auth login user@example.com
 ```
 
 #### "Configuration file not found"
@@ -587,7 +587,7 @@ mkdir -p ~/.initiat
 
 # Create basic config file
 cat > ~/.initiat/config.yaml << EOF
-api_base_url: "https://api.initiat.com"
+api_base_url: "https://www.initiat.dev"
 EOF
 ```
 

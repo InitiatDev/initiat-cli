@@ -24,14 +24,14 @@ X-Timestamp: {timestamp}
 
 ## Endpoints
 
-### GET /workspaces/:workspace_id/secrets
+### GET /workspaces/:org_slug/:workspace_slug/secrets
 
 Lists all secrets in a workspace (metadata only, no encrypted values).
 
 #### Request
 
 ```http
-GET /api/v1/workspaces/42/secrets
+GET /api/v1/workspaces/acme-corp/production/secrets
 Authorization: Device abc123def456ghi789jkl
 X-Signature: MEUCIQDx...
 X-Timestamp: 1694612345
@@ -41,30 +41,34 @@ X-Timestamp: 1694612345
 
 ```json
 {
-  "secrets": [
-    {
-      "key": "DATABASE_URL",
-      "version": 2,
-      "workspace_id": 42,
-      "created_at": "2023-09-20T12:34:56Z",
-      "updated_at": "2023-09-20T14:22:10Z",
-      "created_by_device": {
-        "id": "abc123def456ghi789jkl",
-        "name": "My Laptop"
+  "success": true,
+  "data": {
+    "secrets": [
+      {
+        "key": "DATABASE_URL",
+        "version": 2,
+        "workspace_id": 42,
+        "created_at": "2023-09-20T12:34:56Z",
+        "updated_at": "2023-09-20T14:22:10Z",
+        "created_by_device": {
+          "id": "abc123def456ghi789jkl",
+          "name": "My Laptop"
+        }
+      },
+      {
+        "key": "API_SECRET_KEY",
+        "version": 1,
+        "workspace_id": 42,
+        "created_at": "2023-09-20T10:15:30Z",
+        "updated_at": "2023-09-20T10:15:30Z",
+        "created_by_device": {
+          "id": "def456ghi789jkl123abc",
+          "name": "CI Server"
+        }
       }
-    },
-    {
-      "key": "API_SECRET_KEY",
-      "version": 1,
-      "workspace_id": 42,
-      "created_at": "2023-09-20T10:15:30Z",
-      "updated_at": "2023-09-20T10:15:30Z",
-      "created_by_device": {
-        "id": "def456ghi789jkl123abc",
-        "name": "CI Server"
-      }
-    }
-  ]
+    ],
+    "count": 2
+  }
 }
 ```
 
@@ -86,14 +90,14 @@ Device must have access to the workspace:
 1. Device's user is a member of the workspace's organization
 2. Device has a workspace key for this workspace
 
-### GET /workspaces/:workspace_id/secrets/:key
+### GET /workspaces/:org_slug/:workspace_slug/secrets/:key
 
 Retrieves a specific secret with encrypted value and nonce for client-side decryption.
 
 #### Request
 
 ```http
-GET /api/v1/workspaces/42/secrets/DATABASE_URL
+GET /api/v1/workspaces/acme-corp/production/secrets/DATABASE_URL
 Authorization: Device abc123def456ghi789jkl
 X-Signature: MEUCIQDx...
 X-Timestamp: 1694612345
@@ -103,17 +107,20 @@ X-Timestamp: 1694612345
 
 ```json
 {
-  "secret": {
-    "key": "DATABASE_URL",
-    "version": 2,
-    "workspace_id": 42,
-    "encrypted_value": "dGVzdF9lbmNyeXB0ZWRfdmFsdWU",
-    "nonce": "dGVzdF9ub25jZQ",
-    "created_at": "2023-09-20T12:34:56Z",
-    "updated_at": "2023-09-20T14:22:10Z",
-    "created_by_device": {
-      "id": "abc123def456ghi789jkl",
-      "name": "My Laptop"
+  "success": true,
+  "data": {
+    "secret": {
+      "key": "DATABASE_URL",
+      "version": 2,
+      "workspace_id": 42,
+      "encrypted_value": "dGVzdF9lbmNyeXB0ZWRfdmFsdWU",
+      "nonce": "dGVzdF9ub25jZQ",
+      "created_at": "2023-09-20T12:34:56Z",
+      "updated_at": "2023-09-20T14:22:10Z",
+      "created_by_device": {
+        "id": "abc123def456ghi789jkl",
+        "name": "My Laptop"
+      }
     }
   }
 }
@@ -132,20 +139,20 @@ X-Timestamp: 1694612345
 **404 Not Found** - Secret doesn't exist
 ```json
 {
-  "error": {
-    "message": "Secret not found"
-  }
+  "success": false,
+  "message": "Secret not found",
+  "errors": ["Secret not found"]
 }
 ```
 
-### POST /workspaces/:workspace_id/secrets
+### POST /workspaces/:org_slug/:workspace_slug/secrets
 
 Creates a new secret or updates an existing one (creates new version).
 
 #### Request
 
 ```http
-POST /api/v1/workspaces/42/secrets
+POST /api/v1/workspaces/acme-corp/production/secrets
 Authorization: Device abc123def456ghi789jkl
 X-Signature: MEUCIQDx...
 X-Timestamp: 1694612345
@@ -170,17 +177,20 @@ Content-Type: application/json
 
 ```json
 {
-  "secret": {
-    "key": "NEW_API_KEY",
-    "version": 1,
-    "workspace_id": 42,
-    "encrypted_value": "dGVzdF9lbmNyeXB0ZWRfdmFsdWU",
-    "nonce": "dGVzdF9ub25jZQ",
-    "created_at": "2023-09-20T15:30:45Z",
-    "updated_at": "2023-09-20T15:30:45Z",
-    "created_by_device": {
-      "id": "abc123def456ghi789jkl",
-      "name": "My Laptop"
+  "success": true,
+  "data": {
+    "secret": {
+      "key": "NEW_API_KEY",
+      "version": 1,
+      "workspace_id": 42,
+      "encrypted_value": "dGVzdF9lbmNyeXB0ZWRfdmFsdWU",
+      "nonce": "dGVzdF9ub25jZQ",
+      "created_at": "2023-09-20T15:30:45Z",
+      "updated_at": "2023-09-20T15:30:45Z",
+      "created_by_device": {
+        "id": "abc123def456ghi789jkl",
+        "name": "My Laptop"
+      }
     }
   }
 }
@@ -197,9 +207,9 @@ Content-Type: application/json
 **400 Bad Request** - Invalid Base64 encoding
 ```json
 {
-  "error": {
-    "message": "Invalid Base64 encoding for encrypted_value"
-  }
+  "success": false,
+  "message": "Invalid Base64 encoding for encrypted_value",
+  "errors": ["Invalid Base64 encoding for encrypted_value"]
 }
 ```
 
@@ -207,7 +217,7 @@ Content-Type: application/json
 ```json
 {
   "success": false,
-  "error": "Validation failed",
+  "message": "Validation failed",
   "errors": {
     "key": ["can't be blank"],
     "encrypted_value": ["can't be blank"]
@@ -215,14 +225,14 @@ Content-Type: application/json
 }
 ```
 
-### DELETE /workspaces/:workspace_id/secrets/:key
+### DELETE /workspaces/:org_slug/:workspace_slug/secrets/:key
 
 Soft deletes a secret (marks as deleted, preserves for audit).
 
 #### Request
 
 ```http
-DELETE /api/v1/workspaces/42/secrets/OLD_API_KEY
+DELETE /api/v1/workspaces/acme-corp/production/secrets/OLD_API_KEY
 Authorization: Device abc123def456ghi789jkl
 X-Signature: MEUCIQDx...
 X-Timestamp: 1694612345
@@ -237,9 +247,9 @@ Empty response body.
 **404 Not Found** - Secret doesn't exist
 ```json
 {
-  "error": {
-    "message": "Secret not found"
-  }
+  "success": false,
+  "message": "Secret not found",
+  "errors": ["Secret not found"]
 }
 ```
 

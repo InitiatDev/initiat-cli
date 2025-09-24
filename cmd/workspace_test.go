@@ -31,7 +31,7 @@ func TestWorkspaceList(t *testing.T) {
 		if r.Header.Get("X-Timestamp") == "" {
 			t.Error("Expected X-Timestamp header")
 		}
-		response := client.ListWorkspacesResponse{
+		workspacesData := client.ListWorkspacesResponse{
 			Workspaces: []client.Workspace{
 				{
 					ID:             1,
@@ -72,6 +72,12 @@ func TestWorkspaceList(t *testing.T) {
 			},
 		}
 
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Workspaces retrieved successfully",
+			"data":    workspacesData,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	}))
@@ -108,8 +114,15 @@ func TestWorkspaceInitKey(t *testing.T) {
 					Slug: "test-org",
 				},
 			}
+
+			response := map[string]interface{}{
+				"success": true,
+				"message": "Workspace retrieved successfully",
+				"data":    workspace,
+			}
+
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(workspace)
+			json.NewEncoder(w).Encode(response)
 
 		case "/api/v1/workspaces/test-org/my-project/initialize":
 			if r.Method != "POST" {
@@ -128,16 +141,18 @@ func TestWorkspaceInitKey(t *testing.T) {
 			if _, err := encoding.Decode(req.WrappedWorkspaceKey); err != nil {
 				t.Errorf("Invalid encoded wrapped key: %v", err)
 			}
-			response := client.InitializeWorkspaceKeyResponse{
-				Success: true,
-				Message: "Workspace key initialized successfully",
-				Workspace: client.Workspace{
-					ID:             1,
-					Name:           "My Project",
-					Slug:           "my-project",
-					KeyInitialized: true,
-					KeyVersion:     1,
-				},
+			workspaceData := client.Workspace{
+				ID:             1,
+				Name:           "My Project",
+				Slug:           "my-project",
+				KeyInitialized: true,
+				KeyVersion:     1,
+			}
+
+			response := map[string]interface{}{
+				"success": true,
+				"message": "Workspace key initialized successfully",
+				"data":    map[string]interface{}{"workspace": workspaceData},
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(response)
@@ -174,8 +189,15 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 				KeyVersion:     1,
 				Role:           "Owner",
 			}
+
+			response := map[string]interface{}{
+				"success": true,
+				"message": "Workspace retrieved successfully",
+				"data":    workspace,
+			}
+
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(workspace)
+			json.NewEncoder(w).Encode(response)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
