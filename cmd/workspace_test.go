@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
 func TestWorkspaceList(t *testing.T) {
@@ -31,8 +31,8 @@ func TestWorkspaceList(t *testing.T) {
 		if r.Header.Get("X-Timestamp") == "" {
 			t.Error("Expected X-Timestamp header")
 		}
-		workspacesData := client.ListWorkspacesResponse{
-			Workspaces: []client.Workspace{
+		workspacesData := types.ListWorkspacesResponse{
+			Workspaces: []types.Workspace{
 				{
 					ID:             1,
 					Name:           "My Project",
@@ -95,7 +95,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/workspaces/test-org/my-project":
-			workspace := client.Workspace{
+			workspace := types.Workspace{
 				ID:             1,
 				Name:           "My Project",
 				Slug:           "my-project",
@@ -129,7 +129,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 				t.Errorf("Expected POST, got %s", r.Method)
 			}
 
-			var req client.InitializeWorkspaceKeyRequest
+			var req types.InitializeWorkspaceKeyRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				t.Fatalf("Failed to decode request: %v", err)
 			}
@@ -141,7 +141,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 			if _, err := encoding.Decode(req.WrappedWorkspaceKey); err != nil {
 				t.Errorf("Invalid encoded wrapped key: %v", err)
 			}
-			workspaceData := client.Workspace{
+			workspaceData := types.Workspace{
 				ID:             1,
 				Name:           "My Project",
 				Slug:           "my-project",
@@ -180,7 +180,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/api/v1/workspaces/test-org/my-project") {
-			workspace := client.Workspace{
+			workspace := types.Workspace{
 				ID:             1,
 				Name:           "My Project",
 				Slug:           "my-project",

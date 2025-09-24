@@ -17,6 +17,7 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/slug"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
 var workspaceCmd = &cobra.Command{
@@ -157,7 +158,7 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	return initializeWorkspaceKey(c, store, workspace, compositeSlug)
 }
 
-func checkWorkspaceInitStatus(workspace *client.Workspace, store *storage.Storage, compositeSlug string) (bool, error) {
+func checkWorkspaceInitStatus(workspace *types.Workspace, store *storage.Storage, compositeSlug string) (bool, error) {
 	if workspace.KeyInitialized {
 		if store.HasWorkspaceKey(compositeSlug) {
 			fmt.Println("ℹ️ Workspace key already exists locally and is initialized on server")
@@ -188,7 +189,7 @@ func handleForceFlag(store *storage.Storage, compositeSlug string) error {
 }
 
 func initializeWorkspaceKey(
-	c *client.Client, store *storage.Storage, _ *client.Workspace, compositeSlug slug.CompositeSlug,
+	c *client.Client, store *storage.Storage, _ *types.Workspace, compositeSlug slug.CompositeSlug,
 ) error {
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
 	workspaceKey := make([]byte, encoding.WorkspaceKeySize)

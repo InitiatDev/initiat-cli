@@ -15,6 +15,7 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
 var deviceCmd = &cobra.Command{
@@ -167,7 +168,7 @@ func performDeviceRegistration(
 	signingPublicKey ed25519.PublicKey,
 	encryptionPublicKey []byte,
 	storage *storage.Storage,
-) (*client.DeviceRegistrationResponse, error) {
+) (*types.DeviceRegistrationResponse, error) {
 	fmt.Println("📡 Registering device with server...")
 	apiClient := client.New()
 

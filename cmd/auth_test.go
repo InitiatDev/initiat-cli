@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
 func TestLoginCmd_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := client.LoginResponse{
+		response := types.LoginResponse{
 			Token: "test-token-123",
 			User: struct {
 				ID      int    `json:"id"`
@@ -114,7 +114,7 @@ func TestLoginCmd_NetworkError(t *testing.T) {
 
 func TestLoginCmd_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := client.ErrorResponse{
+		response := types.ErrorResponse{
 			Error:   "unauthorized",
 			Message: "Invalid credentials",
 		}
