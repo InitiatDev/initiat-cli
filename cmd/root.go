@@ -42,7 +42,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.initiat/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://api.initiat.com)")
+	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://www.initiat.dev/api)")
 	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initiat-cli",
 		"keyring service name for credential storage")
 }

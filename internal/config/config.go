@@ -22,7 +22,7 @@ var globalConfig *Config
 
 func DefaultConfig() *Config {
 	return &Config{
-		APIBaseURL:     "https://api.initiat.com",
+		APIBaseURL:     "https://www.initiat.dev",
 		ServiceName:    "initiat-cli",
 		DefaultOrgSlug: "",
 	}
