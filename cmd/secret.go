@@ -12,19 +12,13 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/slug"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 )
 
-const (
-	secretSetArgsCount    = 3 // workspace, key, value
-	secretGetArgsCount    = 2 // workspace, key
-	secretDeleteArgsCount = 2 // workspace, key
-)
-
 var (
+	secretKey     string
+	secretValue   string
 	description   string
 	forceOverride bool
 	copyToClip    bool
@@ -37,55 +31,56 @@ var secretCmd = &cobra.Command{
 }
 
 var secretSetCmd = &cobra.Command{
-	Use:   "set <org-slug/workspace-slug> <KEY> <VALUE>",
+	Use:   "set",
 	Short: "Set a secret value",
 	Long: `Set a secret value in the specified workspace. The value is encrypted client-side 
 before being sent to the server.
 
 Examples:
-  initiat secret set acme-corp/production API_KEY "sk-1234567890abcdef"
-  initiat secret set acme-corp/production DB_PASSWORD "super-secret-pass" --description "Production database password"
-  initiat secret set production API_KEY "new-value" --force  # Uses default org context`,
-	Args: cobra.ExactArgs(secretSetArgsCount),
+  initiat secret set --workspace-path acme-corp/production --key API_KEY --value "sk-1234567890abcdef"
+  initiat secret set -W acme-corp/production -k API_KEY -v "sk-1234567890abcdef"
+  initiat secret set --org acme-corp --workspace production --key DB_PASSWORD \
+    --value "super-secret-pass" --description "Production database password"
+  initiat secret set -w production -k API_KEY -v "new-value" --force`,
 	RunE: runSecretSet,
 }
 
 var secretGetCmd = &cobra.Command{
-	Use:   "get <org-slug/workspace-slug> <KEY>",
+	Use:   "get",
 	Short: "Get a secret value (JSON output)",
 	Long: `Get and decrypt a secret value from the specified workspace.
 Output is always in JSON format.
 
 Examples:
-  initiat secret get acme-corp/production API_KEY
-  initiat secret get acme-corp/production API_KEY --copy
-  initiat secret get production API_KEY  # Uses default org context`,
-	Args: cobra.ExactArgs(secretGetArgsCount),
+  initiat secret get --workspace-path acme-corp/production --key API_KEY
+  initiat secret get -W acme-corp/production -k API_KEY
+  initiat secret get --workspace production --key DB_PASSWORD
+  initiat secret get -w production -k API_KEY --copy`,
 	RunE: runSecretGet,
 }
 
 var secretListCmd = &cobra.Command{
-	Use:   "list <org-slug/workspace-slug>",
+	Use:   "list",
 	Short: "List all secrets (table format)",
 	Long: `List all secrets in the specified workspace (metadata only, no values).
 Output is always in table format showing key, value preview, and version.
 
 Examples:
-  initiat secret list acme-corp/production
-  initiat secret list production  # Uses default org context`,
-	Args: cobra.ExactArgs(1),
+  initiat secret list --workspace-path acme-corp/production
+  initiat secret list -W acme-corp/production
+  initiat secret list --workspace production`,
 	RunE: runSecretList,
 }
 
 var secretDeleteCmd = &cobra.Command{
-	Use:   "delete <org-slug/workspace-slug> <KEY>",
+	Use:   "delete",
 	Short: "Delete a secret",
 	Long: `Delete a secret from the specified workspace.
 
 Examples:
-  initiat secret delete acme-corp/production API_KEY
-  initiat secret delete production API_KEY --force  # Uses default org context`,
-	Args: cobra.ExactArgs(secretGetArgsCount),
+  initiat secret delete --workspace-path acme-corp/production --key API_KEY
+  initiat secret delete -W acme-corp/production -k API_KEY
+  initiat secret delete --workspace production --key OLD_API_KEY`,
 	RunE: runSecretDelete,
 }
 
@@ -96,50 +91,53 @@ func init() {
 	secretCmd.AddCommand(secretListCmd)
 	secretCmd.AddCommand(secretDeleteCmd)
 
-	// Add flags for secret set command
+	secretSetCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
+	secretSetCmd.Flags().StringVarP(&secretValue, "value", "v", "", "Secret value (required)")
 	secretSetCmd.Flags().StringVarP(&description, "description", "d", "", "Optional description for the secret")
 	secretSetCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Overwrite existing secret without confirmation")
+	_ = secretSetCmd.MarkFlagRequired("key")
+	_ = secretSetCmd.MarkFlagRequired("value")
 
-	// Add flags for secret get command
+	secretGetCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
 	secretGetCmd.Flags().BoolVarP(&copyToClip, "copy", "c", false, "Copy value to clipboard instead of printing")
+	_ = secretGetCmd.MarkFlagRequired("key")
 
-	// Add flags for secret delete command
+	secretDeleteCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
 	secretDeleteCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Skip confirmation prompt")
+	_ = secretDeleteCmd.MarkFlagRequired("key")
 }
 
 func runSecretSet(cmd *cobra.Command, args []string) error {
-	workspaceInput := args[0]
-	secretKey := args[1]
-	secretValue := args[2]
-
-	if secretKey == "" {
-		return fmt.Errorf("❌ Secret key cannot be empty")
-	}
-	if secretValue == "" {
-		return fmt.Errorf("❌ Secret value cannot be empty")
-	}
-
-	defaultOrgSlug := config.GetDefaultOrgSlug()
-	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	workspaceCtx, err := GetWorkspaceContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔐 Setting secret '%s' in workspace %s...\n", secretKey, compositeSlug.String())
+	key := strings.TrimSpace(secretKey)
+	value := strings.TrimSpace(secretValue)
+
+	if key == "" {
+		return fmt.Errorf("secret key cannot be empty")
+	}
+	if value == "" {
+		return fmt.Errorf("secret value cannot be empty")
+	}
+
+	fmt.Printf("🔐 Setting secret '%s' in workspace %s...\n", key, workspaceCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
-	workspaceKey, err := getWorkspaceKey(compositeSlug.String(), store)
+	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
 	}
 
 	fmt.Println("🔒 Encrypting secret value...")
 
-	encryptedValue, nonce, err := encryptSecretValue(secretValue, workspaceKey)
+	encryptedValue, nonce, err := encryptSecretValue(value, workspaceKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to encrypt secret: %w", err)
 	}
@@ -148,14 +146,14 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 
 	c := client.New()
 	secret, err := c.SetSecret(
-		compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug, secretKey,
+		workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key,
 		encryptedValue, nonce, description, forceOverride,
 	)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to set secret: %w", err)
 	}
 
-	fmt.Printf("✅ Secret '%s' set successfully!\n", secretKey)
+	fmt.Printf("✅ Secret '%s' set successfully!\n", key)
 	fmt.Printf("   Version: %d\n", secret.Version)
 	fmt.Printf("   Updated: %s\n", secret.UpdatedAt)
 	if secret.CreatedByDevice.Name != "" {
@@ -200,33 +198,30 @@ func encryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, erro
 }
 
 func runSecretGet(cmd *cobra.Command, args []string) error {
-	workspaceInput := args[0]
-	secretKey := args[1]
-
-	if secretKey == "" {
-		return fmt.Errorf("❌ Secret key cannot be empty")
-	}
-
-	defaultOrgSlug := config.GetDefaultOrgSlug()
-	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	workspaceCtx, err := GetWorkspaceContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", secretKey, compositeSlug.String())
+	key := strings.TrimSpace(secretKey)
+	if key == "" {
+		return fmt.Errorf("secret key cannot be empty")
+	}
+
+	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
-	workspaceKey, err := getWorkspaceKey(compositeSlug.String(), store)
+	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
 	}
 
 	c := client.New()
-	secretData, err := c.GetSecret(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug, secretKey)
+	secretData, err := c.GetSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get secret: %w", err)
 	}
@@ -263,15 +258,12 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 }
 
 func runSecretList(cmd *cobra.Command, args []string) error {
-	workspaceInput := args[0]
-
-	defaultOrgSlug := config.GetDefaultOrgSlug()
-	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	workspaceCtx, err := GetWorkspaceContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔍 Listing secrets in workspace %s...\n", compositeSlug.String())
+	fmt.Printf("🔍 Listing secrets in workspace %s...\n", workspaceCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -279,7 +271,7 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	secrets, err := c.ListSecrets(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug)
+	secrets, err := c.ListSecrets(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to list secrets: %w", err)
 	}
@@ -305,22 +297,19 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 }
 
 func runSecretDelete(cmd *cobra.Command, args []string) error {
-	workspaceInput := args[0]
-	secretKey := args[1]
-
-	if secretKey == "" {
-		return fmt.Errorf("❌ Secret key cannot be empty")
-	}
-
-	defaultOrgSlug := config.GetDefaultOrgSlug()
-	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	workspaceCtx, err := GetWorkspaceContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
+	key := strings.TrimSpace(secretKey)
+	if key == "" {
+		return fmt.Errorf("secret key cannot be empty")
+	}
+
 	if !forceOverride {
 		fmt.Printf("⚠️  Are you sure you want to delete secret '%s' from workspace %s? (y/N): ",
-			secretKey, compositeSlug.String())
+			key, workspaceCtx.String())
 		var response string
 		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -330,7 +319,7 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("🗑️  Deleting secret '%s' from workspace %s...\n", secretKey, compositeSlug.String())
+	fmt.Printf("🗑️  Deleting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -338,11 +327,11 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	if err := c.DeleteSecret(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug, secretKey); err != nil {
+	if err := c.DeleteSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key); err != nil {
 		return fmt.Errorf("❌ Failed to delete secret: %w", err)
 	}
 
-	fmt.Printf("✅ Secret '%s' deleted successfully!\n", secretKey)
+	fmt.Printf("✅ Secret '%s' deleted successfully!\n", key)
 	return nil
 }
 

@@ -25,11 +25,14 @@ var deviceCmd = &cobra.Command{
 }
 
 var registerDeviceCmd = &cobra.Command{
-	Use:   "register <device-name>",
+	Use:   "register",
 	Short: "Register this device with Initiat",
-	Long:  "Register this device with Initiat to enable secure secret access",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runRegisterDevice,
+	Long: `Register this device with Initiat to enable secure secret access.
+
+Examples:
+  initiat device register --name "my-laptop"
+  initiat device register -n "work-macbook"`,
+	RunE: runRegisterDevice,
 }
 
 var unregisterDeviceCmd = &cobra.Command{
@@ -48,11 +51,18 @@ var clearTokenCmd = &cobra.Command{
 	RunE: runClearToken,
 }
 
+var (
+	deviceName string
+)
+
 func init() {
 	rootCmd.AddCommand(deviceCmd)
 	deviceCmd.AddCommand(registerDeviceCmd)
 	deviceCmd.AddCommand(unregisterDeviceCmd)
 	deviceCmd.AddCommand(clearTokenCmd)
+
+	registerDeviceCmd.Flags().StringVarP(&deviceName, "name", "n", "", "Name for this device (required)")
+	_ = registerDeviceCmd.MarkFlagRequired("name")
 }
 
 func ensureAuthenticated() error {
@@ -218,8 +228,8 @@ func storeDeviceCredentials(
 }
 
 func runRegisterDevice(cmd *cobra.Command, args []string) error {
-	deviceName := strings.TrimSpace(args[0])
-	if deviceName == "" {
+	name := strings.TrimSpace(deviceName)
+	if name == "" {
 		return fmt.Errorf("device name cannot be empty")
 	}
 
@@ -233,14 +243,14 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return nil // Not a real error, just early return
 	}
 
-	fmt.Printf("🔑 Registering device: %s\n", deviceName)
+	fmt.Printf("🔑 Registering device: %s\n", name)
 
 	signingPublicKey, signingPrivateKey, encryptionPublicKey, encryptionPrivateKey, err := generateKeypairs()
 	if err != nil {
 		return err
 	}
 
-	deviceResp, err := performDeviceRegistration(deviceName, signingPublicKey, encryptionPublicKey, storage)
+	deviceResp, err := performDeviceRegistration(name, signingPublicKey, encryptionPublicKey, storage)
 	if err != nil {
 		return err
 	}

@@ -10,9 +10,12 @@ import (
 )
 
 var (
-	cfgFile     string
-	apiURL      string
-	serviceName string
+	cfgFile       string
+	apiURL        string
+	serviceName   string
+	workspacePath string
+	workspace     string
+	org           string
 )
 
 var rootCmd = &cobra.Command{
@@ -25,7 +28,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if apiURL != "" {
-			if err := config.Set("api_base_url", apiURL); err != nil {
+			if err := config.Set("api.base_url", apiURL); err != nil {
 				return fmt.Errorf("failed to set API URL: %w", err)
 			}
 		}
@@ -45,6 +48,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (default: https://www.initiat.dev/api)")
 	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initiat-cli",
 		"keyring service name for credential storage")
+
+	rootCmd.PersistentFlags().StringVarP(&workspacePath, "workspace-path", "W", "",
+		"full workspace path (org/workspace) or alias")
+	rootCmd.PersistentFlags().StringVarP(&workspace, "workspace", "w", "", "workspace name (uses default org or --org)")
+	rootCmd.PersistentFlags().StringVarP(&org, "org", "o", "", "organization slug (used with --workspace)")
+
+	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "workspace")
+	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "org")
+}
+
+func GetWorkspaceContext() (*config.WorkspaceContext, error) {
+	return config.ResolveWorkspaceContext(workspacePath, org, workspace)
 }
 
 func Execute() {

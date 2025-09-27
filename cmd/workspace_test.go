@@ -166,7 +166,8 @@ func TestWorkspaceInitKey(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/my-project"})
+	workspacePath = "test-org/my-project"
+	err := runWorkspaceInit(workspaceInitCmd, []string{})
 	if err != nil {
 		t.Fatalf("runWorkspaceInit failed: %v", err)
 	}
@@ -210,7 +211,9 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 	store := storage.New()
 	store.DeleteWorkspaceKey("test-org/my-project")
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/my-project"})
+	// Set global workspace context flags
+	workspacePath = "test-org/my-project"
+	err := runWorkspaceInit(workspaceInitCmd, []string{})
 	if err == nil {
 		t.Error("Expected error for already initialized workspace")
 		return
@@ -232,7 +235,8 @@ func TestWorkspaceInitKeyNotFound(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	err := runWorkspaceInit(workspaceInitCmd, []string{"test-org/non-existent"})
+	workspacePath = "test-org/non-existent"
+	err := runWorkspaceInit(workspaceInitCmd, []string{})
 	if err == nil {
 		t.Error("Expected error for non-existent workspace")
 		return

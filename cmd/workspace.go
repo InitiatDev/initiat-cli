@@ -15,7 +15,6 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/slug"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
@@ -34,14 +33,18 @@ var workspaceListCmd = &cobra.Command{
 }
 
 var workspaceInitCmd = &cobra.Command{
-	Use:   "init <org-slug/workspace-slug>",
+	Use:   "init",
 	Short: "Initialize workspace key",
 	Long: `Initialize a new workspace key for secure secret storage.
 
 Examples:
-  initiat workspace init acme-corp/production
-  initiat workspace init production  # Uses default org context`,
-	Args: cobra.ExactArgs(1),
+  initiat workspace init --workspace-path acme-corp/production
+  initiat workspace init -W acme-corp/production
+  initiat workspace init --org acme-corp --workspace production
+  initiat workspace init -o acme-corp -w production
+  initiat workspace init --workspace production  # Uses default org
+  initiat workspace init -w production
+  initiat workspace init -W prod  # Using alias`,
 	RunE: runWorkspaceInit,
 }
 
@@ -122,15 +125,12 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 }
 
 func runWorkspaceInit(cmd *cobra.Command, args []string) error {
-	workspaceInput := args[0]
-
-	defaultOrgSlug := config.GetDefaultOrgSlug()
-	compositeSlug, err := slug.ResolveWorkspaceSlug(workspaceInput, defaultOrgSlug)
+	workspaceCtx, err := GetWorkspaceContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔐 Initializing workspace key for \"%s\"...\n", compositeSlug.String())
+	fmt.Printf("🔐 Initializing workspace key for \"%s\"...\n", workspaceCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -138,12 +138,12 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	workspace, err := c.GetWorkspaceBySlug(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug)
+	workspace, err := c.GetWorkspaceBySlug(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get workspace info: %w", err)
 	}
 
-	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, compositeSlug.String())
+	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, workspaceCtx.String())
 	if err != nil {
 		return err
 	}
@@ -151,11 +151,11 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := handleForceFlag(store, compositeSlug.String()); err != nil {
+	if err := handleForceFlag(store, workspaceCtx.String()); err != nil {
 		return err
 	}
 
-	return initializeWorkspaceKey(c, store, workspace, compositeSlug)
+	return initializeWorkspaceKey(c, store, workspace, workspaceCtx)
 }
 
 func checkWorkspaceInitStatus(workspace *types.Workspace, store *storage.Storage, compositeSlug string) (bool, error) {
@@ -189,7 +189,7 @@ func handleForceFlag(store *storage.Storage, compositeSlug string) error {
 }
 
 func initializeWorkspaceKey(
-	c *client.Client, store *storage.Storage, _ *types.Workspace, compositeSlug slug.CompositeSlug,
+	c *client.Client, store *storage.Storage, _ *types.Workspace, workspaceCtx *config.WorkspaceContext,
 ) error {
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
 	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
@@ -204,11 +204,11 @@ func initializeWorkspaceKey(
 	}
 
 	fmt.Println("📡 Uploading encrypted key to server...")
-	if err := c.InitializeWorkspaceKey(compositeSlug.OrgSlug, compositeSlug.WorkspaceSlug, wrappedKey); err != nil {
+	if err := c.InitializeWorkspaceKey(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, wrappedKey); err != nil {
 		return fmt.Errorf("❌ Failed to initialize workspace key: %w", err)
 	}
 
-	if err := store.StoreWorkspaceKey(compositeSlug.String(), workspaceKey); err != nil {
+	if err := store.StoreWorkspaceKey(workspaceCtx.String(), workspaceKey); err != nil {
 		return fmt.Errorf("❌ Failed to store workspace key locally: %w", err)
 	}
 

@@ -56,32 +56,21 @@ func TestLoginCmd_Success(t *testing.T) {
 
 	loginSubCmd, _, err := authCmd.Find([]string{"login"})
 	require.NoError(t, err)
-	assert.Equal(t, "login <email>", loginSubCmd.Use)
+	assert.Equal(t, "login", loginSubCmd.Use)
 	assert.Equal(t, "Login to Initiat", loginSubCmd.Short)
 }
 
 func TestLoginCmd_InvalidArgs(t *testing.T) {
-	assert.NotNil(t, loginCmd.Args)
-	err := loginCmd.Args(loginCmd, []string{})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
-
-	err = loginCmd.Args(loginCmd, []string{"email1", "email2"})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 2")
-
-	err = loginCmd.Args(loginCmd, []string{"test@example.com"})
-	assert.NoError(t, err)
+	// With flag-based approach, Args should be nil (no positional args required)
+	assert.Nil(t, loginCmd.Args)
 }
 
 func TestLoginCmd_EmptyEmail(t *testing.T) {
-	err := runLogin(loginCmd, []string{""})
+	// Test that empty email triggers prompting (which fails in test environment)
+	loginEmail = ""
+	err := runLogin(loginCmd, []string{})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "email cannot be empty")
-
-	err = runLogin(loginCmd, []string{"   "})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "email cannot be empty")
+	assert.Contains(t, err.Error(), "failed to read email")
 }
 
 func TestAuthCmd_Structure(t *testing.T) {
@@ -90,10 +79,10 @@ func TestAuthCmd_Structure(t *testing.T) {
 	assert.Equal(t, "Manage authentication with Initiat", authCmd.Long)
 	var loginFound bool
 	for _, cmd := range authCmd.Commands() {
-		if cmd.Use == "login <email>" {
+		if cmd.Use == "login" {
 			loginFound = true
 			assert.Equal(t, "Login to Initiat", cmd.Short)
-			assert.Equal(t, "Authenticate with Initiat using your email and password", cmd.Long)
+			assert.Contains(t, cmd.Long, "Authenticate with Initiat using your email and password")
 			break
 		}
 	}
@@ -158,5 +147,5 @@ func TestAuthCmd_Integration(t *testing.T) {
 	output, err = executeCommand(rootCmd, "auth", "login", "--help")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "Authenticate with Initiat using your email and password")
-	assert.Contains(t, output, "login <email>")
+	assert.Contains(t, output, "--email")
 }

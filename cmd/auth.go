@@ -19,20 +19,43 @@ var authCmd = &cobra.Command{
 }
 
 var loginCmd = &cobra.Command{
-	Use:   "login <email>",
+	Use:   "login",
 	Short: "Login to Initiat",
-	Long:  "Authenticate with Initiat using your email and password",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runLogin,
+	Long: `Authenticate with Initiat using your email and password.
+
+If --email is not provided, you will be prompted for it.
+Password is always prompted securely.
+
+Examples:
+  initiat auth login --email user@example.com
+  initiat auth login -e user@example.com
+  initiat auth login  # Will prompt for email`,
+	RunE: runLogin,
 }
+
+var (
+	loginEmail string
+)
 
 func init() {
 	rootCmd.AddCommand(authCmd)
 	authCmd.AddCommand(loginCmd)
+
+	loginCmd.Flags().StringVarP(&loginEmail, "email", "e", "", "Email address for login")
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
-	email := strings.TrimSpace(args[0])
+	email := strings.TrimSpace(loginEmail)
+
+	if email == "" {
+		fmt.Print("Email: ")
+		_, err := fmt.Scanln(&email)
+		if err != nil {
+			return fmt.Errorf("failed to read email: %w", err)
+		}
+		email = strings.TrimSpace(email)
+	}
+
 	if email == "" {
 		return fmt.Errorf("email cannot be empty")
 	}
