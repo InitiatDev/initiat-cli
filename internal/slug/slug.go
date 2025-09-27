@@ -7,28 +7,24 @@ import (
 )
 
 const (
-	compositeSlugParts = 2 // org-slug and workspace-slug
+	compositeSlugParts = 2
 )
 
-// CompositeSlug represents a parsed org-slug/workspace-slug combination
 type CompositeSlug struct {
 	OrgSlug       string
 	WorkspaceSlug string
 }
 
-// String returns the composite slug in org-slug/workspace-slug format
 func (cs CompositeSlug) String() string {
 	return fmt.Sprintf("%s/%s", cs.OrgSlug, cs.WorkspaceSlug)
 }
 
-// IsEmpty returns true if either org or workspace slug is empty
 func (cs CompositeSlug) IsEmpty() bool {
 	return cs.OrgSlug == "" || cs.WorkspaceSlug == ""
 }
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 
-// ValidateSlug validates that a slug matches the required pattern
 func ValidateSlug(slug string) error {
 	if slug == "" {
 		return fmt.Errorf("slug cannot be empty")
@@ -78,12 +74,10 @@ func ResolveWorkspaceSlug(input string, defaultOrgSlug string) (CompositeSlug, e
 		return CompositeSlug{}, fmt.Errorf("workspace identifier cannot be empty")
 	}
 
-	// Check if input contains a slash (composite slug format)
 	if strings.Contains(input, "/") {
 		return ParseCompositeSlug(input)
 	}
 
-	// Single slug - requires default organization context
 	if defaultOrgSlug == "" {
 		return CompositeSlug{}, fmt.Errorf(
 			"workspace slug '%s' requires organization context. "+
@@ -91,12 +85,10 @@ func ResolveWorkspaceSlug(input string, defaultOrgSlug string) (CompositeSlug, e
 			input)
 	}
 
-	// Validate the workspace slug
 	if err := ValidateSlug(input); err != nil {
 		return CompositeSlug{}, fmt.Errorf("invalid workspace slug: %w", err)
 	}
 
-	// Validate the default org slug
 	if err := ValidateSlug(defaultOrgSlug); err != nil {
 		return CompositeSlug{}, fmt.Errorf("invalid default organization slug: %w", err)
 	}
@@ -107,7 +99,6 @@ func ResolveWorkspaceSlug(input string, defaultOrgSlug string) (CompositeSlug, e
 	}, nil
 }
 
-// BuildCompositeSlug creates a composite slug from separate org and workspace slugs
 func BuildCompositeSlug(orgSlug, workspaceSlug string) (CompositeSlug, error) {
 	if err := ValidateSlug(orgSlug); err != nil {
 		return CompositeSlug{}, fmt.Errorf("invalid organization slug: %w", err)

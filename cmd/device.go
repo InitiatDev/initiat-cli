@@ -174,7 +174,7 @@ func performDeviceRegistration(
 
 	// Debug: show current config
 	cfg := config.Get()
-	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.APIBaseURL)
+	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.API.BaseURL)
 
 	token, err := storage.GetToken()
 	if err != nil {

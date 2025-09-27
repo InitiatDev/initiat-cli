@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +13,12 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
-	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
+	assert.Equal(t, "30s", cfg.API.Timeout)
+	assert.Equal(t, "initiat-cli", cfg.ServiceName)
+	assert.Equal(t, "", cfg.Workspace.DefaultOrg)
+	assert.Equal(t, "", cfg.Workspace.DefaultWorkspace)
+	assert.NotNil(t, cfg.Aliases)
 }
 
 func TestInitConfig_WithDefaults(t *testing.T) {
@@ -28,7 +34,7 @@ func TestInitConfig_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
 }
 
 func TestInitConfig_WithConfigFile(t *testing.T) {
@@ -40,7 +46,8 @@ func TestInitConfig_WithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 
 	configFile := filepath.Join(configDir, "config.yaml")
-	configContent := `api_base_url: "http://localhost:4000"`
+	configContent := `api:
+  base_url: "http://localhost:4000"`
 	err = os.WriteFile(configFile, []byte(configContent), 0600)
 	require.NoError(t, err)
 
@@ -52,7 +59,7 @@ func TestInitConfig_WithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "http://localhost:4000", cfg.APIBaseURL)
+	assert.Equal(t, "http://localhost:4000", cfg.API.BaseURL)
 }
 
 func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
@@ -78,7 +85,7 @@ func TestInitConfig_WithEnvironmentVariable(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "http://localhost:3000", cfg.APIBaseURL)
+	assert.Equal(t, "http://localhost:3000", cfg.API.BaseURL)
 }
 
 func TestSet(t *testing.T) {
@@ -93,11 +100,11 @@ func TestSet(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	err = Set("api_base_url", "http://localhost:8080")
+	err = Set("api.base_url", "http://localhost:8080")
 	require.NoError(t, err)
 
 	cfg := Get()
-	assert.Equal(t, "http://localhost:8080", cfg.APIBaseURL)
+	assert.Equal(t, "http://localhost:8080", cfg.API.BaseURL)
 }
 
 func TestSave(t *testing.T) {
@@ -112,7 +119,7 @@ func TestSave(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	err = Set("api_base_url", "http://localhost:9000")
+	err = Set("api.base_url", "http://localhost:9000")
 	require.NoError(t, err)
 
 	err = Save()
@@ -131,5 +138,142 @@ func TestGet_BeforeInit(t *testing.T) {
 	globalConfig = nil
 
 	cfg := Get()
-	assert.Equal(t, "https://www.initiat.dev", cfg.APIBaseURL)
+	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
+}
+
+func TestAliasManagement(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	err := InitConfig()
+	require.NoError(t, err)
+
+	err = SetAlias("prod", "acme-corp/production")
+	require.NoError(t, err)
+
+	alias := GetAlias("prod")
+	assert.Equal(t, "acme-corp/production", alias)
+
+	nonExistent := GetAlias("nonexistent")
+	assert.Equal(t, "", nonExistent)
+
+	aliases := ListAliases()
+	assert.Equal(t, "acme-corp/production", aliases["prod"])
+
+	err = RemoveAlias("prod")
+	require.NoError(t, err)
+
+	alias = GetAlias("prod")
+	assert.Equal(t, "", alias)
+}
+
+func TestWorkspaceContextResolution(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	err := InitConfig()
+	require.NoError(t, err)
+
+	err = SetDefaultOrgSlug("default-org")
+	require.NoError(t, err)
+	err = SetDefaultWorkspaceSlug("default-workspace")
+	require.NoError(t, err)
+	err = SetAlias("prod", "acme-corp/production")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		workspacePath string
+		org           string
+		workspace     string
+		expectedOrg   string
+		expectedWS    string
+		expectError   bool
+	}{
+		{
+			name:          "explicit workspace path",
+			workspacePath: "acme-corp/production",
+			expectedOrg:   "acme-corp",
+			expectedWS:    "production",
+		},
+		{
+			name:          "workspace path via alias",
+			workspacePath: "prod",
+			expectedOrg:   "acme-corp",
+			expectedWS:    "production",
+		},
+		{
+			name:        "explicit org and workspace",
+			org:         "test-org",
+			workspace:   "test-workspace",
+			expectedOrg: "test-org",
+			expectedWS:  "test-workspace",
+		},
+		{
+			name:        "default org with explicit workspace",
+			workspace:   "staging",
+			expectedOrg: "default-org",
+			expectedWS:  "staging",
+		},
+		{
+			name:        "full defaults",
+			expectedOrg: "default-org",
+			expectedWS:  "default-workspace",
+		},
+		{
+			name:          "invalid workspace path format",
+			workspacePath: "invalid-format",
+			expectError:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, err := ResolveWorkspaceContext(tt.workspacePath, tt.org, tt.workspace)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, ctx)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, ctx)
+				assert.Equal(t, tt.expectedOrg, ctx.OrgSlug)
+				assert.Equal(t, tt.expectedWS, ctx.WorkspaceSlug)
+				assert.Equal(t, fmt.Sprintf("%s/%s", tt.expectedOrg, tt.expectedWS), ctx.String())
+			}
+		})
+	}
+}
+
+func TestWorkspaceContextResolution_ErrorCases(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	err := InitConfig()
+	require.NoError(t, err)
+
+	ctx, err := ResolveWorkspaceContext("", "", "test-workspace")
+	assert.Error(t, err)
+	assert.Nil(t, ctx)
+	assert.Contains(t, err.Error(), "no default organization configured")
+
+	ctx, err = ResolveWorkspaceContext("", "", "")
+	assert.Error(t, err)
+	assert.Nil(t, ctx)
+	assert.Contains(t, err.Error(), "no workspace context available")
 }

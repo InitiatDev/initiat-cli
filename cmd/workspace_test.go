@@ -286,7 +286,7 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		t.Fatalf("Failed to init config: %v", err)
 	}
 
-	if err := config.Set("api_base_url", serverURL); err != nil {
+	if err := config.Set("api.base_url", serverURL); err != nil {
 		t.Fatalf("Failed to set API URL: %v", err)
 	}
 

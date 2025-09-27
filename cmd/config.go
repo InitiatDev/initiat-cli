@@ -2,86 +2,182 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
-	"github.com/DylanBlakemore/initiat-cli/internal/slug"
+)
+
+const (
+	configSetArgsCount         = 2
+	workspacePathPartsExpected = 2
 )
 
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage CLI configuration",
-	Long:  `Manage CLI configuration including default organization context.`,
+	Long:  `Manage CLI configuration including API settings, workspace defaults, and aliases.`,
 }
 
-var configUseCmd = &cobra.Command{
-	Use:   "use",
-	Short: "Set configuration values",
-	Long:  `Set configuration values for the CLI.`,
-}
-
-var configUseOrgCmd = &cobra.Command{
-	Use:   "org <org-slug>",
-	Short: "Set default organization",
-	Long: `Set the default organization for workspace operations.
-
-When a default organization is set, you can use workspace commands with just the workspace slug:
-  initiat workspace init production
-  initiat secret list staging
+var configSetCmd = &cobra.Command{
+	Use:   "set <key> <value>",
+	Short: "Set a configuration value",
+	Long: `Set a configuration value using dot notation for nested keys.
 
 Examples:
-  initiat config use org acme-corp
-  initiat config use org my-company`,
+  initiat config set api.url "https://api.initiat.dev"
+  initiat config set api.timeout "60s"
+  initiat config set org "my-company"
+  initiat config set workspace "production"
+  initiat config set service "my-custom-service"`,
+	Args: cobra.ExactArgs(configSetArgsCount),
+	RunE: runConfigSet,
+}
+
+var configGetCmd = &cobra.Command{
+	Use:   "get <key>",
+	Short: "Get a configuration value",
+	Long: `Get a configuration value using dot notation for nested keys.
+
+Examples:
+  initiat config get api.url
+  initiat config get org
+  initiat config get workspace`,
 	Args: cobra.ExactArgs(1),
-	RunE: runConfigUseOrg,
+	RunE: runConfigGet,
 }
 
 var configShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "Show current configuration",
-	Long:  `Show the current CLI configuration including default organization.`,
+	Short: "Show all configuration",
+	Long:  `Show all current CLI configuration values.`,
 	RunE:  runConfigShow,
 }
 
 var configClearCmd = &cobra.Command{
-	Use:   "clear",
-	Short: "Clear configuration values",
-	Long:  `Clear configuration values.`,
+	Use:   "clear <key>",
+	Short: "Clear a configuration value",
+	Long: `Clear a configuration value using dot notation for nested keys.
+
+Examples:
+  initiat config clear org
+  initiat config clear api.timeout`,
+	Args: cobra.ExactArgs(1),
+	RunE: runConfigClear,
 }
 
-var configClearOrgCmd = &cobra.Command{
-	Use:   "org",
-	Short: "Clear default organization",
-	Long:  `Clear the default organization setting.`,
-	RunE:  runConfigClearOrg,
+var configAliasCmd = &cobra.Command{
+	Use:   "alias",
+	Short: "Manage workspace aliases",
+	Long:  `Manage workspace aliases for convenient workspace references.`,
 }
+
+var configAliasSetCmd = &cobra.Command{
+	Use:   "set <alias> <workspace-path>",
+	Short: "Set a workspace alias",
+	Long: `Set a workspace alias to a full workspace path.
+
+Examples:
+  initiat config alias set prod "acme-corp/production"
+  initiat config alias set staging "acme-corp/staging"
+  initiat config alias set dev "acme-corp/development"`,
+	Args: cobra.ExactArgs(configSetArgsCount),
+	RunE: runConfigAliasSet,
+}
+
+var configAliasGetCmd = &cobra.Command{
+	Use:   "get <alias>",
+	Short: "Get a workspace alias",
+	Long: `Get the workspace path for a specific alias.
+
+Examples:
+  initiat config alias get prod`,
+	Args: cobra.ExactArgs(1),
+	RunE: runConfigAliasGet,
+}
+
+var configAliasListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all workspace aliases",
+	Long:  `List all configured workspace aliases.`,
+	RunE:  runConfigAliasList,
+}
+
+var configAliasRemoveCmd = &cobra.Command{
+	Use:   "remove <alias>",
+	Short: "Remove a workspace alias",
+	Long: `Remove a workspace alias.
+
+Examples:
+  initiat config alias remove prod`,
+	Args: cobra.ExactArgs(1),
+	RunE: runConfigAliasRemove,
+}
+
+var (
+	clearAll bool
+)
 
 func init() {
 	rootCmd.AddCommand(configCmd)
-	configCmd.AddCommand(configUseCmd)
+	configCmd.AddCommand(configSetCmd)
+	configCmd.AddCommand(configGetCmd)
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configClearCmd)
+	configCmd.AddCommand(configAliasCmd)
 
-	configUseCmd.AddCommand(configUseOrgCmd)
-	configClearCmd.AddCommand(configClearOrgCmd)
+	configAliasCmd.AddCommand(configAliasSetCmd)
+	configAliasCmd.AddCommand(configAliasGetCmd)
+	configAliasCmd.AddCommand(configAliasListCmd)
+	configAliasCmd.AddCommand(configAliasRemoveCmd)
+
+	configClearCmd.Flags().BoolVar(&clearAll, "all", false, "Clear all configuration values")
 }
 
-func runConfigUseOrg(cmd *cobra.Command, args []string) error {
-	orgSlug := args[0]
+func runConfigSet(cmd *cobra.Command, args []string) error {
+	key := args[0]
+	value := args[1]
 
-	if err := slug.ValidateSlug(orgSlug); err != nil {
-		return fmt.Errorf("❌ Invalid organization slug: %w", err)
+	if !config.IsValidConfigKey(key) {
+		return fmt.Errorf("❌ Unknown configuration key: %s\nValid keys: %s",
+			key, strings.Join(config.GetAllConfigKeys(), ", "))
 	}
 
-	if err := config.SetDefaultOrgSlug(orgSlug); err != nil {
-		return fmt.Errorf("❌ Failed to set default organization: %w", err)
+	if err := config.EnsureConfigFileExists(); err != nil {
+		return err
 	}
 
-	fmt.Printf("✅ Default organization set to '%s'\n", orgSlug)
-	fmt.Println("💡 You can now use workspace commands with just the workspace slug:")
-	fmt.Printf("   initiat workspace init <workspace-slug>\n")
-	fmt.Printf("   initiat secret list <workspace-slug>\n")
+	actualKey := config.MapSimplifiedKey(key)
+	if err := config.Set(actualKey, value); err != nil {
+		return fmt.Errorf("❌ Failed to set configuration: %w", err)
+	}
+
+	if err := config.Save(); err != nil {
+		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+	}
+
+	fmt.Printf("✅ Set %s = %s\n", key, value)
+	return nil
+}
+
+func runConfigGet(cmd *cobra.Command, args []string) error {
+	key := args[0]
+
+	if !config.IsValidConfigKey(key) {
+		return fmt.Errorf("❌ Unknown configuration key: %s\nValid keys: %s",
+			key, strings.Join(config.GetAllConfigKeys(), ", "))
+	}
+
+	actualKey := config.MapSimplifiedKey(key)
+	value := viper.Get(actualKey)
+
+	if str, ok := value.(string); ok && str == "" {
+		fmt.Printf("%s: (not set)\n", key)
+	} else {
+		fmt.Printf("%s: %v\n", key, value)
+	}
 
 	return nil
 }
@@ -90,25 +186,159 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	cfg := config.Get()
 
 	fmt.Println("Current configuration:")
-	fmt.Printf("  API Base URL: %s\n", cfg.APIBaseURL)
+	fmt.Printf("  api.url: %s\n", cfg.API.BaseURL)
+	fmt.Printf("  api.timeout: %s\n", cfg.API.Timeout)
+	fmt.Printf("  service: %s\n", cfg.ServiceName)
 
-	if cfg.DefaultOrgSlug != "" {
-		fmt.Printf("  Default Organization: %s\n", cfg.DefaultOrgSlug)
+	if cfg.Workspace.DefaultOrg != "" {
+		fmt.Printf("  org: %s\n", cfg.Workspace.DefaultOrg)
 	} else {
-		fmt.Println("  Default Organization: (not set)")
-		fmt.Println("💡 Set a default organization with: initiat config use org <org-slug>")
+		fmt.Printf("  org: (not set)\n")
+	}
+
+	if cfg.Workspace.DefaultWorkspace != "" {
+		fmt.Printf("  workspace: %s\n", cfg.Workspace.DefaultWorkspace)
+	} else {
+		fmt.Printf("  workspace: (not set)\n")
+	}
+
+	aliases := config.ListAliases()
+	if len(aliases) > 0 {
+		fmt.Println("\nWorkspace aliases:")
+		for alias, path := range aliases {
+			fmt.Printf("  %s: %s\n", alias, path)
+		}
+	} else {
+		fmt.Println("\nWorkspace aliases: (none configured)")
 	}
 
 	return nil
 }
 
-func runConfigClearOrg(cmd *cobra.Command, args []string) error {
-	if err := config.ClearDefaultOrgSlug(); err != nil {
-		return fmt.Errorf("❌ Failed to clear default organization: %w", err)
+func runConfigClear(cmd *cobra.Command, args []string) error {
+	if clearAll {
+		return runConfigClearAll()
 	}
 
-	fmt.Println("✅ Default organization cleared")
-	fmt.Println("💡 You'll need to use full composite slugs: org-slug/workspace-slug")
+	key := args[0]
 
+	if err := config.EnsureConfigFileExists(); err != nil {
+		return err
+	}
+
+	actualKey := config.MapSimplifiedKey(key)
+	if err := config.Set(actualKey, ""); err != nil {
+		return fmt.Errorf("❌ Failed to clear configuration: %w", err)
+	}
+
+	if err := config.Save(); err != nil {
+		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+	}
+
+	fmt.Printf("✅ Cleared %s\n", key)
+	return nil
+}
+
+func runConfigClearAll() error {
+	if err := config.EnsureConfigFileExists(); err != nil {
+		return err
+	}
+
+	fmt.Print("⚠️  Are you sure you want to clear all configuration? (y/N): ")
+	var response string
+	_, _ = fmt.Scanln(&response)
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	if response != "y" && response != "yes" {
+		fmt.Println("❌ Clear all cancelled")
+		return nil
+	}
+
+	for _, key := range config.ConfigKeys {
+		if err := config.Set(key.Actual, key.Default); err != nil {
+			return fmt.Errorf("❌ Failed to reset %s: %w", key.Simplified, err)
+		}
+	}
+
+	if err := config.Set("aliases", make(map[string]string)); err != nil {
+		return fmt.Errorf("❌ Failed to reset aliases: %w", err)
+	}
+
+	if err := config.Save(); err != nil {
+		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+	}
+
+	fmt.Println("✅ All configuration cleared and reset to defaults")
+	return nil
+}
+
+func runConfigAliasSet(cmd *cobra.Command, args []string) error {
+	alias := args[0]
+	workspacePath := args[1]
+
+	// Validate workspace path format
+	if !strings.Contains(workspacePath, "/") {
+		return fmt.Errorf("❌ Workspace path must be in format 'org/workspace', got: %s", workspacePath)
+	}
+
+	parts := strings.Split(workspacePath, "/")
+	if len(parts) != workspacePathPartsExpected {
+		return fmt.Errorf("❌ Workspace path must be in format 'org/workspace', got: %s", workspacePath)
+	}
+
+	if err := config.EnsureConfigFileExists(); err != nil {
+		return err
+	}
+
+	if err := config.SetAlias(alias, workspacePath); err != nil {
+		return fmt.Errorf("❌ Failed to set alias: %w", err)
+	}
+
+	fmt.Printf("✅ Set alias '%s' = %s\n", alias, workspacePath)
+	return nil
+}
+
+func runConfigAliasGet(cmd *cobra.Command, args []string) error {
+	alias := args[0]
+	path := config.GetAlias(alias)
+
+	if path == "" {
+		fmt.Printf("❌ Alias '%s' not found\n", alias)
+		return nil
+	}
+
+	fmt.Printf("%s: %s\n", alias, path)
+	return nil
+}
+
+func runConfigAliasList(cmd *cobra.Command, args []string) error {
+	aliases := config.ListAliases()
+
+	if len(aliases) == 0 {
+		fmt.Println("No workspace aliases configured")
+		fmt.Println("💡 Set an alias with: initiat config alias set <alias> <org/workspace>")
+		return nil
+	}
+
+	fmt.Println("Workspace aliases:")
+	for alias, path := range aliases {
+		fmt.Printf("  %s: %s\n", alias, path)
+	}
+
+	return nil
+}
+
+func runConfigAliasRemove(cmd *cobra.Command, args []string) error {
+	alias := args[0]
+
+	if err := config.EnsureConfigFileExists(); err != nil {
+		return err
+	}
+
+	if err := config.RemoveAlias(alias); err != nil {
+		return fmt.Errorf("❌ Failed to remove alias: %w", err)
+	}
+
+	fmt.Printf("✅ Removed alias '%s'\n", alias)
 	return nil
 }

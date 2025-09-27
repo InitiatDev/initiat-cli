@@ -28,7 +28,7 @@ func New() *Client {
 	cfg := config.Get()
 
 	return &Client{
-		baseURL: cfg.APIBaseURL,
+		baseURL: cfg.API.BaseURL,
 		httpClient: &http.Client{
 			Timeout: defaultTimeoutSeconds * time.Second,
 		},

@@ -46,7 +46,7 @@ func TestLoginCmd_Success(t *testing.T) {
 
 	err := config.InitConfig()
 	require.NoError(t, err)
-	err = config.Set("api_base_url", server.URL)
+	err = config.Set("api.base_url", server.URL)
 	require.NoError(t, err)
 	cmd := &cobra.Command{}
 	cmd.AddCommand(authCmd)
@@ -108,7 +108,7 @@ func TestLoginCmd_NetworkError(t *testing.T) {
 
 	err := config.InitConfig()
 	require.NoError(t, err)
-	err = config.Set("api_base_url", "http://invalid-url-that-does-not-exist.com")
+	err = config.Set("api.base_url", "http://invalid-url-that-does-not-exist.com")
 	require.NoError(t, err)
 }
 
@@ -132,7 +132,7 @@ func TestLoginCmd_ServerError(t *testing.T) {
 
 	err := config.InitConfig()
 	require.NoError(t, err)
-	err = config.Set("api_base_url", server.URL)
+	err = config.Set("api.base_url", server.URL)
 	require.NoError(t, err)
 }
 
