@@ -20,109 +20,160 @@
 
 **The Cost**: Lost productivity, frustrated developers, delayed releases, and security vulnerabilities.
 
-## The Solution: Unified Developer Experience
+## What's Available Now
 
-**Initiat is building a unified developer experience platform:**
+**Zero-Knowledge Secret Management** 🔐 *Production ready - Invite only*
 
-### **Zero-Knowledge Secret Management** (Available Now)
-- Client-side encryption with Ed25519/X25519 cryptography
-- Team-based access control with device approval workflows
-- Audit trails for security and compliance
-- Zero-knowledge architecture - server cannot decrypt secrets
+Transform how your team handles secrets with enterprise-grade security. Our zero-knowledge architecture ensures that even we can't decrypt your secrets - everything is encrypted client-side before transmission.
 
-### **Automated Environment Setup** (Planned)
-- One-command project setup (`initiat setup my-project`)
+```bash
+# Set a secret for your team
+initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+
+# Get a secret (decrypted client-side)
+initiat secret get API_KEY --workspace-path acme-corp/production
+
+# List all secrets in a workspace
+initiat secret list --workspace-path acme-corp/production
+```
+
+- **Client-side encryption** with Ed25519/X25519 cryptography
+- **Team-based access control** with device approval workflows
+- **Audit trails** for security and compliance
+- **Cross-platform CLI** for macOS, Linux, and Windows
+
+**Team Management** 👥 *Production ready - Invite only*
+
+Streamline device and workspace management with granular control over who can access what. Every device must be approved, and every workspace can be configured with specific permissions.
+
+```bash
+# Register a new device
+initiat device register "my-laptop"
+
+# Check pending device approvals
+initiat device approvals
+
+# Approve all pending devices
+initiat device approve --all
+
+# List available workspaces
+initiat workspace list
+
+# Initialize a new workspace
+initiat workspace init acme-corp/production
+```
+
+- **Device registration** and approval workflows
+- **Workspace-based organization** for teams and projects
+- **Role-based access control** with granular permissions
+- **Secure key storage** using OS keychain integration
+
+## What's Coming Next
+
+**Automated Environment Setup** 🚀 *Planned for 2026*
+
+One command to rule them all. No more "works on my machine" - we'll automate the entire development environment setup process.
+
+```bash
+initiat setup my-project  # Sets up entire development environment
+```
+
 - Automated dependency installation
 - Environment validation to prevent drift
 - Docker and containerization support
-
-### **Guided Onboarding Workflows** (Planned)
-- Interactive setup guides for new team members
-- Progress tracking and completion verification
 - Custom templates per project and role
-- Knowledge capture from experienced developers
 
-### **Integration Ecosystem** (Planned)
+**Guided Onboarding Workflows** 📚 *Planned for 2026*
+
+Interactive guides that actually work. Capture knowledge from your senior developers and turn it into step-by-step onboarding workflows.
+
+- Step-by-step setup guides for new team members
+- Progress tracking and completion verification
+- Knowledge capture from experienced developers
+- Custom templates per project and role
+
+**Integration Ecosystem** 🔗 *Planned for 2026*
+
+Connect everything together. We're building integrations with the tools you already use to create a seamless developer experience.
+
 - GitHub/GitLab repository integration
 - CI/CD pipeline configuration
 - Kubernetes and cloud platform setup
 - Popular development tools integration
 
-### **Team Visibility & Analytics** (Planned)
+**Team Visibility & Analytics** 📊 *Planned for 2026*
+
+Data-driven developer experience. Understand where your team is spending time and identify bottlenecks in your development process.
+
 - Onboarding dashboards showing progress and bottlenecks
 - Time-to-productivity metrics
 - Usage analytics and optimization insights
 - Compliance reporting for security and audit
 
-## Current Capabilities
+## Technical Foundation
 
-### **Secret Management** (Production Ready - Invite only)
-- Zero-knowledge secret sharing with client-side encryption
-- Team-based access control with device approval workflows
-- Audit trails for security and compliance
-- Cross-platform CLI with macOS, Linux, and Windows support
+**Cryptographic Security**
 
-### **Team Management** (Production Ready - Invite only)
-- Device registration and approval workflows
-- Workspace-based organization
-- Role-based access control
-- Secure key storage using OS keychain integration
+We use industry-standard cryptographic primitives to ensure your secrets are protected at the highest level. Every operation is designed with security-first principles.
 
-## Technical Implementation
+- **Ed25519 signatures** for device authentication
+- **X25519 key exchange** for workspace key wrapping
+- **XSalsa20Poly1305** for secret value encryption
+- **ChaCha20Poly1305** for workspace key encryption
+- **HKDF-SHA256** for key derivation
 
-### **Cryptographic Security**
-- Ed25519 signatures for device authentication
-- X25519 key exchange for workspace key wrapping
-- XSalsa20Poly1305 for secret value encryption
-- ChaCha20Poly1305 for workspace key encryption
-- HKDF-SHA256 for key derivation
+**Zero-Knowledge Architecture**
 
-### **Zero-Knowledge Architecture**
+Our zero-knowledge architecture means we can't see your secrets, even if we wanted to. Everything is encrypted client-side before it ever reaches our servers.
+
 - Client-side encryption before transmission
 - Server cannot decrypt secrets or workspace keys
 - Private keys stored in OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 - Forward secrecy - compromising one device doesn't affect others
 
-### **Command Examples**
+## Quick Start
+
+**Secret Management**
+
+Manage your team's secrets with enterprise-grade security. Every secret is encrypted client-side before transmission.
+
 ```bash
-# Secret management
+# Set a secret
 initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+
+# Get a secret
 initiat secret get API_KEY --workspace-path acme-corp/production
+
+# List all secrets
 initiat secret list --workspace-path acme-corp/production
-
-# Device management
-initiat device register "my-laptop"
-initiat device approvals
-initiat device approve --all
-
-# Workspace management
-initiat workspace list
-initiat workspace init acme-corp/production
 ```
 
-## Roadmap: Developer Experience Platform
+**Device Management**
 
-**Initiat is building toward a complete developer experience platform:**
+Control access with device approval workflows. Every device must be registered and approved before it can access secrets.
 
-### **Phase 1: Secret Management** (Current)
-- Zero-knowledge secret sharing
-- Team-based access control
-- Enterprise security
+```bash
+# Register your device
+initiat device register "my-laptop"
 
-### **Phase 2: Environment Automation** (Planned)
-- One-command project setup
-- Automated dependency management
-- Environment validation
+# Check pending approvals
+initiat device approvals
 
-### **Phase 3: Onboarding Intelligence** (Planned)
-- Interactive setup guides
-- Progress tracking
-- Knowledge capture
+# Approve all pending devices
+initiat device approve --all
+```
 
-### **Phase 4: Developer Analytics** (Planned)
-- Productivity insights
-- Bottleneck identification
-- Optimization recommendations
+**Workspace Management**
+
+Organize your secrets by team and project. Each workspace can have its own access controls and permissions.
+
+```bash
+# List available workspaces
+initiat workspace list
+
+# Initialize a new workspace
+initiat workspace init acme-corp/production
+```
 
 ## Getting Started
 
@@ -146,24 +197,24 @@ initiat workspace init acme-corp/production
 - **[Release Process](docs/RELEASES.md)**: How to create and manage releases
 
 ### **Quick Links**
-- **Account Setup**: Create account at [initiat.com](https://initiat.com)
+- **Account Setup**: Create account at [initiat.dev](https://initiat.dev)
 - **Support**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines:
+We welcome contributions! Here's how to get started:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with tests
-4. Run the test suite (`make ci`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+### **Quick Start**
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Make** your changes with tests
+4. **Run** the test suite (`make ci`)
+5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+6. **Push** to the branch (`git push origin feature/amazing-feature`)
+7. **Open** a Pull Request
 
-### Development Setup
-
+### **Development Setup**
 ```bash
 # Clone your fork
 git clone https://github.com/yourusername/initiat-cli.git
@@ -179,6 +230,13 @@ make ci
 go build -o initiat .
 ./initiat --help
 ```
+
+### **What We're Looking For**
+- **Bug fixes** and improvements
+- **New features** that align with our roadmap
+- **Documentation** improvements
+- **Security** enhancements
+- **Performance** optimizations
 
 ## License
 
