@@ -14,6 +14,8 @@ const (
 	workspacePathPartsExpected = 2
 )
 
+var defaultAPIBaseURL = "https://www.initiat.dev"
+
 type ConfigKey struct {
 	Simplified string
 	Actual     string
@@ -50,7 +52,7 @@ var globalConfig *Config
 func DefaultConfig() *Config {
 	return &Config{
 		API: APIConfig{
-			BaseURL: "https://www.initiat.dev",
+			BaseURL: defaultAPIBaseURL,
 			Timeout: "30s",
 		},
 		Workspace: WorkspaceConfig{
@@ -76,7 +78,7 @@ func InitConfig() error {
 	viper.AddConfigPath(".")
 
 	defaults := DefaultConfig()
-	viper.SetDefault("api.base_url", defaults.API.BaseURL)
+	viper.SetDefault("api.base_url", defaultAPIBaseURL)
 	viper.SetDefault("api.timeout", defaults.API.Timeout)
 	viper.SetDefault("service_name", defaults.ServiceName)
 	viper.SetDefault("workspace.default_org", defaults.Workspace.DefaultOrg)

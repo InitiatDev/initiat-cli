@@ -14,6 +14,14 @@ build: ## Build the CLI binary
 	@echo "🏗️  Building Initiat CLI..."
 	go build -o initiat .
 
+build-dev: ## Build development version with localhost API URL
+	@echo "🔧 Building Initiat CLI (dev mode)..."
+	@echo "   API URL: http://localhost:4000"
+	go build \
+		-ldflags "-X github.com/DylanBlakemore/initiat-cli/internal/config.defaultAPIBaseURL=http://localhost:4000" \
+		-o initiat_dev .
+	@echo "✅ Built: ./initiat_dev"
+
 build-all: ## Build for all platforms
 	@echo "🏗️  Building for all platforms..."
 	./scripts/build-release.sh
@@ -77,7 +85,7 @@ vuln-check: ## Check for vulnerabilities
 # Utility targets
 clean: ## Clean build artifacts
 	@echo "🧹 Cleaning build artifacts..."
-	rm -f initiat
+	rm -f initiat initiat_dev
 	rm -rf dist/
 	rm -f coverage.out coverage.html
 
@@ -95,6 +103,14 @@ dev: deps format lint test build ## Quick development workflow
 release-test: ## Test release build process
 	@echo "🚀 Testing release build..."
 	./scripts/build-release.sh test
+
+release: ## Build release binaries (usage: make release VERSION=v1.0.0)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION is required. Usage: make release VERSION=v1.0.0"; \
+		exit 1; \
+	fi
+	@echo "🚀 Building release $(VERSION)..."
+	./scripts/build-release.sh $(VERSION)
 
 # Tool installation targets
 install-tools: ## Install development tools

@@ -293,14 +293,19 @@ initiat --config /path/to/custom-config.yaml auth login user@example.com
 For local development against a local Initiat server:
 
 ```bash
-# Method 1: Environment variable
+# Method 1: Build a dedicated dev binary (Recommended)
+make build-dev
+./initiat_dev auth login dev@example.com
+# The dev binary defaults to http://localhost:4000
+
+# Method 2: Environment variable
 export INITIAT_API_BASE_URL="http://localhost:4000"
 initiat auth login dev@example.com
 
-# Method 2: Command-line flag
+# Method 3: Command-line flag
 initiat --api-url http://localhost:4000 auth login dev@example.com
 
-# Method 3: Configuration file
+# Method 4: Configuration file
 echo "api_base_url: http://localhost:4000" > ~/.initiat/config.yaml
 initiat auth login dev@example.com
 ```
@@ -332,14 +337,17 @@ initiat secrets fetch --workspace my-project --output .env
 ### Development Workflow
 
 ```bash
-# Set up for local development
-export INITIAT_API_BASE_URL="http://localhost:4000"
+# Build the dev binary with localhost API URL baked in
+make build-dev
 
-# Login with development server
-initiat auth login dev@localhost.com
+# Use the dev binary for local development
+./initiat_dev auth login dev@example.com
+./initiat_dev device register "Development Machine"
+./initiat_dev workspace list
 
-# All subsequent commands use localhost
-initiat device register "Development Machine"
+# The dev binary always uses http://localhost:4000 by default
+# You can still override with --api-url if needed
+./initiat_dev --api-url http://localhost:3000 auth login dev@example.com
 ```
 
 ### Configuration Management

@@ -36,7 +36,7 @@ for platform in "${platforms[@]}"; do
     echo "  → ${GOOS}/${GOARCH}"
     
     GOOS=$GOOS GOARCH=$GOARCH go build \
-        -ldflags "-X main.version=${VERSION}" \
+        -ldflags "-X github.com/DylanBlakemore/initiat-cli/cmd.version=${VERSION}" \
         -o "${OUTPUT_DIR}/${output_name}" \
         .
 done

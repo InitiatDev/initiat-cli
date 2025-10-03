@@ -1,48 +1,146 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v1.0.0)"
+        required: true
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  build:
+    name: Build Binaries
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.22"
 
-      - name: Build binaries
-        run: |
-          # Build for multiple platforms
-          GOOS=darwin GOARCH=amd64 go build -o initiat-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o initiat-darwin-arm64 .
-          GOOS=linux GOARCH=amd64 go build -o initiat-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o initiat-linux-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o initiat-windows-amd64.exe .
-
-          # Create archives
-          tar -czf initiat-darwin-amd64.tar.gz initiat-darwin-amd64
-          tar -czf initiat-darwin-arm64.tar.gz initiat-darwin-arm64
-          tar -czf initiat-linux-amd64.tar.gz initiat-linux-amd64
-          tar -czf initiat-linux-arm64.tar.gz initiat-linux-arm64
-          zip initiat-windows-amd64.zip initiat-windows-amd64.exe
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            initiat-darwin-amd64.tar.gz
-            initiat-darwin-arm64.tar.gz
-            initiat-linux-amd64.tar.gz
-            initiat-linux-arm64.tar.gz
-            initiat-windows-amd64.zip
-          generate_release_notes: true
+      - name: Build binary
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          OUTPUT_NAME="initiat"
+          if [ "$GOOS" = "windows" ]; then
+            OUTPUT_NAME="initiat.exe"
+          fi
+
+          go build \
+            -ldflags "-X github.com/DylanBlakemore/initiat-cli/cmd.version=${VERSION} -s -w" \
+            -o "${OUTPUT_NAME}" \
+            .
+
+          ARCHIVE_NAME="initiat-${GOOS}-${GOARCH}"
+          if [ "$GOOS" = "windows" ]; then
+            zip "${ARCHIVE_NAME}.zip" "${OUTPUT_NAME}"
+          else
+            tar -czf "${ARCHIVE_NAME}.tar.gz" "${OUTPUT_NAME}"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            *.tar.gz
+            *.zip
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          sha256sum initiat-* > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            *.tar.gz
+            *.zip
+            checksums.txt
+          body: |
+            Release ${{ github.event.inputs.version }}
+
+            ## Installation
+
+            ### macOS
+            ```bash
+            # Intel
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/initiat-darwin-amd64.tar.gz | tar xz
+            sudo mv initiat /usr/local/bin/
+
+            # Apple Silicon
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/initiat-darwin-arm64.tar.gz | tar xz
+            sudo mv initiat /usr/local/bin/
+            ```
+
+            ### Linux
+            ```bash
+            # AMD64
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/initiat-linux-amd64.tar.gz | tar xz
+            sudo mv initiat /usr/local/bin/
+
+            # ARM64
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/initiat-linux-arm64.tar.gz | tar xz
+            sudo mv initiat /usr/local/bin/
+            ```
+
+            ### Windows
+            Download the appropriate `.zip` file and extract it to your desired location.
+
+            ### Verify Download (Optional)
+            ```bash
+            # Download checksums
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/checksums.txt
+
+            # Verify your downloaded file
+            sha256sum -c checksums.txt --ignore-missing
+            ```
