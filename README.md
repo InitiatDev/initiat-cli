@@ -1,626 +1,163 @@
 # Initiat CLI
 
-A developer experience platform that accelerates team onboarding and reduces time-to-first-commit from days to minutes. The CLI provides secure secret sharing, environment setup, and guided onboarding workflows. Built with Go for cross-platform compatibility and security.
+**The Developer Experience Platform that eliminates onboarding friction and accelerates time-to-productivity.**
 
-[![Go Version](https://img.shields.io/badge/Go-1.25+-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-blue.svg)](https://golang.org)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Security](https://img.shields.io/badge/Security-Zero--Knowledge-red.svg)](docs/SECURITY.md)
 
-## 🚀 Quick Start
+> **For Engineering Leaders**: Stop losing weeks to environment setup, secret management, and onboarding friction. Initiat transforms your developer experience from days of setup to minutes of productivity.
 
-### Prerequisites
-1. **Create an Initiat account** at [initiat.com](https://initiat.com)
-2. **Set your password** during account creation or in your profile settings
+## The Problem: Developer Experience Debt
 
-### Installation & Login
+**Every engineering team faces the same productivity killers:**
 
-#### Option 1: Download Pre-built Binary (Recommended - No Go Required!)
+- **Onboarding Hell**: New developers spend days (sometimes weeks) setting up environments
+- **Secret Sprawl**: API keys scattered across Slack, emails, and sticky notes
+- **Environment Drift**: "Works on my machine" becomes "works on my machine, sometimes"
+- **Knowledge Silos**: Critical setup knowledge trapped in senior developers' heads
+- **Security Gaps**: Secrets shared via insecure channels, no audit trails
 
-```bash
-# Download for your platform from GitHub Releases
-# macOS (Intel)
-curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-darwin-amd64.tar.gz | tar xz
-sudo mv initiat-darwin-amd64 /usr/local/bin/initiat
+**The Cost**: Lost productivity, frustrated developers, delayed releases, and security vulnerabilities.
 
-# macOS (Apple Silicon)
-curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-darwin-arm64.tar.gz | tar xz
-sudo mv initiat-darwin-arm64 /usr/local/bin/initiat
+## The Solution: Unified Developer Experience
 
-# Linux (x64)
-curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-linux-amd64.tar.gz | tar xz
-sudo mv initiat-linux-amd64 /usr/local/bin/initiat
+**Initiat is building a unified developer experience platform:**
 
-# Windows (download .zip from releases page)
-```
+### **Zero-Knowledge Secret Management** (Available Now)
+- Client-side encryption with Ed25519/X25519 cryptography
+- Team-based access control with device approval workflows
+- Audit trails for security and compliance
+- Zero-knowledge architecture - server cannot decrypt secrets
 
-#### Option 2: Install with Go
-
-```bash
-go install github.com/InitiatDev/initiat-cli@latest
-```
-
-#### Option 3: Build from Source
-
-```bash
-git clone https://github.com/InitiatDev/initiat-cli.git
-cd initiat-cli
-go build -o initiat .
-```
-
-#### Login
-
-```bash
-# Login with your Initiat account credentials
-initiat auth login user@example.com
-```
-
-## 📋 Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Linux Setup](#linux-setup)
-- [Authentication](#authentication)
-- [Configuration](#configuration)
-- [Usage Examples](#usage-examples)
-- [Developer Onboarding Features](#developer-onboarding-features)
-- [Development](#development)
-- [Security](#security)
-- [Contributing](#contributing)
-
-## 📋 Prerequisites
-
-Before using the Initiat CLI, you need:
-
-1. **Initiat Account**: Create an account at [initiat.com](https://initiat.com)
-2. **Password Setup**: Set your password during registration or in your account settings
-3. **System Requirements**:
-   - Go 1.25 or later (for building from source)
-   - OS keychain access (macOS Keychain, Windows Credential Manager, or Linux Secret Service)
-   
-   **Linux Users**: If you encounter keyring errors, see [Linux Setup](#linux-setup) below.
-
-## 🛠 Installation
-
-### Option 1: Pre-built Binaries (Recommended)
-
-**No Go installation required!** Download the binary for your platform:
-
-1. Go to [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
-2. Download the archive for your platform:
-   - `initiat-darwin-amd64.tar.gz` (macOS Intel)
-   - `initiat-darwin-arm64.tar.gz` (macOS Apple Silicon)
-   - `initiat-linux-amd64.tar.gz` (Linux x64)
-   - `initiat-linux-arm64.tar.gz` (Linux ARM64)
-   - `initiat-windows-amd64.zip` (Windows x64)
-3. Extract and move to your PATH
-
-### Option 2: Go Install
-
-```bash
-go install github.com/InitiatDev/initiat-cli@latest
-```
-
-### Option 3: Build from Source
-
-```bash
-git clone https://github.com/InitiatDev/initiat-cli.git
-cd initiat-cli
-go build -o initiat .
-sudo mv initiat /usr/local/bin/  # Optional: add to PATH
-```
-
-## 🐧 Linux Setup
-
-The Initiat CLI requires a secret service for secure credential storage. Most desktop Linux distributions include this by default, but some setups may need manual configuration.
-
-### Check if Secret Service is Available
-
-```bash
-# Test if secret service is working
-initiat auth login test@example.com
-```
-
-If you see an error like `The name org.freedesktop.secrets was not provided by any .service files`, follow the setup below.
-
-### Install Secret Service (Ubuntu/Debian)
-
-```bash
-sudo apt-get update
-sudo apt-get install gnome-keyring dbus-x11
-```
-
-### Install Secret Service (Fedora/RHEL)
-
-```bash
-sudo dnf install gnome-keyring
-```
-
-### Install Secret Service (Arch Linux)
-
-```bash
-sudo pacman -S gnome-keyring
-```
-
-### Start the Service
-
-For desktop environments (GNOME, KDE, XFCE), the keyring usually starts automatically. For minimal setups:
-
-```bash
-# Start D-Bus session (if not running)
-export $(dbus-launch)
-
-# Start GNOME Keyring daemon
-gnome-keyring-daemon --start --daemonize --components=secrets
-
-# Add to your shell profile (~/.bashrc, ~/.zshrc) for persistence
-echo 'export $(dbus-launch)' >> ~/.bashrc
-echo 'gnome-keyring-daemon --start --daemonize --components=secrets >/dev/null 2>&1' >> ~/.bashrc
-```
-
-### Alternative: KWallet (KDE)
-
-If you're using KDE and prefer KWallet:
-
-```bash
-# Install KWallet and bridge
-sudo apt-get install kwalletmanager kwallet-pam  # Ubuntu/Debian
-sudo dnf install kwalletmanager5                  # Fedora
-
-# KWallet should provide the secret service automatically
-```
-
-### Headless/Server Environments
-
-For servers or headless setups, you can use a minimal secret service:
-
-```bash
-# Install minimal keyring
-sudo apt-get install gnome-keyring-daemon
-
-# Create a simple startup script
-cat > ~/.config/autostart/keyring.sh << 'EOF'
-#!/bin/bash
-export $(dbus-launch)
-echo "defaultpassword" | gnome-keyring-daemon --unlock --daemonize
-gnome-keyring-daemon --start --daemonize --components=secrets
-EOF
-
-chmod +x ~/.config/autostart/keyring.sh
-```
-
-### Troubleshooting
-
-If you continue to have issues:
-
-1. **Check if the service is running:**
-   ```bash
-   ps aux | grep keyring
-   ```
-
-2. **Verify D-Bus is available:**
-   ```bash
-   echo $DBUS_SESSION_BUS_ADDRESS
-   ```
-
-3. **Test secret service directly:**
-   ```bash
-   python3 -c "import secretstorage; print('Secret service working!')"
-   ```
-
-## 🔐 Authentication
-
-### Login
-
-Authenticate with your existing Initiat account credentials:
-
-```bash
-initiat auth login user@example.com
-```
-
-**Note**: You must have an account at [initiat.com](https://initiat.com) with a password set before using this command.
-
-The CLI will:
-1. Prompt for your password (hidden input)
-2. Authenticate with the Initiat API
-3. Store your registration token securely in the OS keychain
-4. Display next steps for device registration
-
-### Example Output
-
-```
-$ initiat auth login user@example.com
-Password: ••••••••••
-🔐 Authenticating...
-✅ Login successful! Registration token expires in 15 minutes.
-👋 Welcome, John Doe!
-💡 Next: Register this device with 'initiat device register <name>'
-```
-
-## ⚙️ Configuration
-
-The Initiat CLI supports multiple configuration methods with the following precedence (highest to lowest):
-
-1. **Command-line flags**
-2. **Environment variables**
-3. **Configuration file**
-4. **Default values**
-
-### Configuration File
-
-The CLI automatically creates and uses a configuration file at:
-- **macOS/Linux**: `~/.initiat/config.yaml`
-- **Windows**: `%USERPROFILE%\.initiat\config.yaml`
-
-#### Example Configuration File
-
-```yaml
-# ~/.initiat/config.yaml
-api_base_url: "https://www.initiat.dev"
-```
-
-### Environment Variables
-
-All configuration options can be set via environment variables with the `INITIAT_` prefix:
-
-```bash
-# Set API base URL
-export INITIAT_API_BASE_URL="http://localhost:4000"
-
-# Use the CLI with environment config
-initiat auth login user@example.com
-```
-
-### Command-Line Flags
-
-Override any configuration option using global flags:
-
-```bash
-# Use localhost for development
-initiat --api-url http://localhost:4000 auth login user@example.com
-
-# Specify custom config file
-initiat --config /path/to/custom-config.yaml auth login user@example.com
-```
-
-### Configuration Options
-
-| Option | Flag | Environment Variable | Default | Description |
-|--------|------|---------------------|---------|-------------|
-| API Base URL | `--api-url` | `INITIAT_API_BASE_URL` | `https://www.initiat.dev` | Base URL for Initiat API |
-| Config File | `--config` | N/A | `~/.initiat/config.yaml` | Path to configuration file |
-
-### Development Configuration
-
-For local development against a local Initiat server:
-
-```bash
-# Method 1: Build a dedicated dev binary (Recommended)
-make build-dev
-./initiat_dev auth login dev@example.com
-# The dev binary defaults to http://localhost:4000
-
-# Method 2: Environment variable
-export INITIAT_API_BASE_URL="http://localhost:4000"
-initiat auth login dev@example.com
-
-# Method 3: Command-line flag
-initiat --api-url http://localhost:4000 auth login dev@example.com
-
-# Method 4: Configuration file
-echo "api_base_url: http://localhost:4000" > ~/.initiat/config.yaml
-initiat auth login dev@example.com
-```
-
-## 📚 Usage Examples
-
-### Developer Onboarding Flow
-
-```bash
-# 1. Login to Initiat (requires existing account)
-initiat auth login user@example.com
-
-# 2. Register this device
-initiat device register "My MacBook CLI"
-
-# 3. List available workspaces
-initiat workspace list
-
-# 4. Initialize workspace key for secure secret access
-initiat workspace init acme-corp/production
-
-# 5. Set up development environment (coming soon)
-initiat setup my-project
-
-# 6. Manage secrets
-initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
-initiat secret get API_KEY --workspace-path acme-corp/production
-initiat secret list --workspace-path acme-corp/production
-```
-
-### Development Workflow
-
-```bash
-# Build the dev binary with localhost API URL baked in
-make build-dev
-
-# Use the dev binary for local development
-./initiat_dev auth login dev@example.com
-./initiat_dev device register "Development Machine"
-./initiat_dev workspace list
-./initiat_dev workspace init acme-corp/production
-./initiat_dev secret set API_KEY --value "dev-key-123" --workspace-path acme-corp/production
-
-# The dev binary always uses http://localhost:4000 by default
-# You can still override with --api-url if needed
-./initiat_dev --api-url http://localhost:3000 auth login dev@example.com
-```
-
-### Configuration Management
-
-```bash
-# View help for global options
-initiat --help
-
-# View current configuration (implied from defaults and environment)
-initiat auth login --help  # Shows current API URL in global flags
-
-# Test different API endpoints
-initiat --api-url https://staging.initiat.com auth login user@example.com
-```
-
-## 🚀 Developer Onboarding Features
-
-Initiat is designed to accelerate developer productivity and reduce onboarding friction. Secret management is just one component of a comprehensive developer experience platform:
-
-### 🔐 **Secure Secret Sharing** (Current)
-- Zero-knowledge architecture for maximum security
-- OS keychain integration for secure local storage
-- Team-based secret access controls
-- Environment variable export (`.env` files)
-
-### 🛠 **Environment Setup** (Coming Soon)
+### **Automated Environment Setup** (Planned)
 - One-command project setup (`initiat setup my-project`)
 - Automated dependency installation
-- Development environment configuration
+- Environment validation to prevent drift
 - Docker and containerization support
 
-### 📋 **Onboarding Workflows** (Coming Soon)
-- Guided setup for new team members
-- Interactive runbooks and documentation
+### **Guided Onboarding Workflows** (Planned)
+- Interactive setup guides for new team members
 - Progress tracking and completion verification
-- Custom onboarding templates per project
+- Custom templates per project and role
+- Knowledge capture from experienced developers
 
-### 🔗 **Integration Ecosystem** (Coming Soon)
+### **Integration Ecosystem** (Planned)
 - GitHub/GitLab repository integration
 - CI/CD pipeline configuration
 - Kubernetes and cloud platform setup
-- Popular development tool integrations
+- Popular development tools integration
 
-### 📊 **Team Visibility** (Coming Soon)
-- Onboarding progress dashboards
-- Team access and permissions overview
-- Usage analytics and time-to-productivity metrics
-- Audit logs for compliance
+### **Team Visibility & Analytics** (Planned)
+- Onboarding dashboards showing progress and bottlenecks
+- Time-to-productivity metrics
+- Usage analytics and optimization insights
+- Compliance reporting for security and audit
 
-### 🎯 **Key Benefits**
-- **Reduce time-to-first-commit** from days to minutes
-- **Eliminate onboarding friction** with automated setup
-- **Improve security** with zero-knowledge secret management
-- **Increase team velocity** with standardized workflows
-- **Enhance compliance** with audit trails and access controls
+## Current Capabilities
 
-## 🔧 Development
+### **Secret Management** (Production Ready - Invite only)
+- Zero-knowledge secret sharing with client-side encryption
+- Team-based access control with device approval workflows
+- Audit trails for security and compliance
+- Cross-platform CLI with macOS, Linux, and Windows support
 
-### Building from Source
+### **Team Management** (Production Ready - Invite only)
+- Device registration and approval workflows
+- Workspace-based organization
+- Role-based access control
+- Secure key storage using OS keychain integration
 
+## Technical Implementation
+
+### **Cryptographic Security**
+- Ed25519 signatures for device authentication
+- X25519 key exchange for workspace key wrapping
+- XSalsa20Poly1305 for secret value encryption
+- ChaCha20Poly1305 for workspace key encryption
+- HKDF-SHA256 for key derivation
+
+### **Zero-Knowledge Architecture**
+- Client-side encryption before transmission
+- Server cannot decrypt secrets or workspace keys
+- Private keys stored in OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+- Forward secrecy - compromising one device doesn't affect others
+
+### **Command Examples**
 ```bash
-# Clone the repository
-git clone https://github.com/InitiatDev/initiat-cli.git
-cd initiat-cli
+# Secret management
+initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+initiat secret get API_KEY --workspace-path acme-corp/production
+initiat secret list --workspace-path acme-corp/production
 
-# Install dependencies
-go mod tidy
+# Device management
+initiat device register "my-laptop"
+initiat device approvals
+initiat device approve --all
 
-# Build the CLI
-go build -o initiat .
-
-# Run tests
-go test ./...
+# Workspace management
+initiat workspace list
+initiat workspace init acme-corp/production
 ```
 
-### Project Structure
+## Roadmap: Developer Experience Platform
 
-```
-initiat-cli/
-├── cmd/                    # CLI commands
-│   ├── auth.go            # Authentication commands
-│   ├── root.go            # Root command and global flags
-│   └── version.go         # Version command
-├── internal/
-│   ├── client/            # HTTP client for Initiat API
-│   ├── config/            # Configuration management
-│   ├── routes/            # API route definitions
-│   └── storage/           # Secure storage (OS keychain)
-├── main.go                # Application entry point
-├── go.mod                 # Go module definition
-└── README.md              # This file
-```
+**Initiat is building toward a complete developer experience platform:**
 
-### Running Tests
+### **Phase 1: Secret Management** (Current)
+- Zero-knowledge secret sharing
+- Team-based access control
+- Enterprise security
 
-```bash
-# Run all tests
-make test
+### **Phase 2: Environment Automation** (Planned)
+- One-command project setup
+- Automated dependency management
+- Environment validation
 
-# Run tests with coverage report
-make test-coverage
+### **Phase 3: Onboarding Intelligence** (Planned)
+- Interactive setup guides
+- Progress tracking
+- Knowledge capture
 
-# Run tests for specific package
-go test ./internal/config
+### **Phase 4: Developer Analytics** (Planned)
+- Productivity insights
+- Bottleneck identification
+- Optimization recommendations
 
-# Run all CI checks locally
-make ci
-```
+## Getting Started
 
-### Code Quality
+### **Installation**
+1. **Create account** at [initiat.dev](https://initiat.dev) (coming soon)
+2. **Download CLI** from [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
+3. **Set up workspaces** for your teams and projects
+4. **Configure device approval** workflows
 
-The project includes comprehensive code quality checks:
+### **For Teams**
+1. **Evaluate** current secret management process
+2. **Plan migration** from insecure channels (Slack, email, etc.)
+3. **Train teams** on new workflows
+4. **Monitor usage** and security improvements
 
-```bash
-# Format code
-make format
+## Documentation
 
-# Check formatting
-make format-check
+### **Complete Guides**
+- **[Command Reference](docs/COMMANDS.md)**: Complete CLI command documentation
+- **[Security Architecture](docs/SECURITY.md)**: Detailed security and cryptographic implementation
+- **[Release Process](docs/RELEASES.md)**: How to create and manage releases
 
-# Run linter
-make lint
+### **Quick Links**
+- **Account Setup**: Create account at [initiat.com](https://initiat.com)
+- **Support**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
 
-# Run security scan
-make security
-
-# Check for vulnerabilities
-make vuln-check
-
-# Install development tools
-make install-tools
-```
-
-### Git Hooks
-
-Set up pre-commit hooks for automatic code quality checks:
-
-```bash
-# Install git hooks
-./scripts/setup-hooks.sh
-
-# The pre-commit hook will automatically:
-# - Format your code
-# - Run linter
-# - Run tests
-# - Check for security issues
-# - Verify build works
-```
-
-### CI/CD Workflows
-
-The project includes automated GitHub Actions workflows:
-
-#### **Continuous Integration (`.github/workflows/ci.yml`)**
-Runs on every push and pull request:
-- ✅ **Multi-version testing** (Go 1.25)
-- ✅ **Code formatting** checks
-- ✅ **Linting** with golangci-lint
-- ✅ **Security scanning** with gosec
-- ✅ **Vulnerability checking** with govulncheck
-- ✅ **Cross-platform builds** (macOS, Linux, Windows)
-- ✅ **Coverage reporting** to Codecov
-
-#### **Release Automation (`.github/workflows/release.yml`)**
-Runs on git tags (e.g., `v1.0.0`):
-- 🚀 **Cross-platform binaries** for all supported platforms
-- 📦 **Automated GitHub releases** with downloadable archives
-- 📝 **Auto-generated release notes**
-
-```bash
-# Create a release
-git tag v1.0.0
-git push origin v1.0.0
-# GitHub Actions automatically builds and releases!
-```
-
-### Adding New Commands
-
-1. Create a new command file in `cmd/`
-2. Add route constants to `internal/routes/`
-3. Implement API client methods in `internal/client/`
-4. Add comprehensive tests
-5. Update this README
-
-## 🔒 Security
-
-### Token Storage
-
-The CLI stores authentication tokens securely using the operating system's credential management system:
-
-- **macOS**: Keychain Services
-- **Windows**: Windows Credential Manager  
-- **Linux**: Secret Service (GNOME Keyring, KDE Wallet, etc.)
-
-### Zero-Knowledge Architecture
-
-The Initiat CLI implements a zero-knowledge architecture:
-
-- **Passwords**: Never stored, only used for authentication
-- **Tokens**: Stored encrypted in OS keychain
-- **Workspace Keys**: Generated client-side, encrypted before transmission
-- **Secrets**: Encrypted client-side before storage
-
-### Network Security
-
-- All API requests use HTTPS in production
-- Request signing with Ed25519 cryptographic signatures
-- Timestamp validation to prevent replay attacks
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### "Failed to store authentication token"
-
-This usually indicates a problem with OS keychain access:
-
-```bash
-# macOS: Ensure Keychain Access is working
-security find-generic-password -s "initiat-cli" 2>/dev/null || echo "No keychain entry found"
-
-# Linux: Ensure secret service is running
-systemctl --user status gnome-keyring-daemon
-```
-
-#### "Network connection failed"
-
-Check your API URL configuration:
-
-```bash
-# Verify current configuration
-initiat --api-url https://www.initiat.dev auth login --help
-
-# Test with explicit URL
-initiat --api-url https://www.initiat.dev auth login user@example.com
-```
-
-#### "Configuration file not found"
-
-The CLI creates configuration files automatically, but you can create one manually:
-
-```bash
-# Create config directory
-mkdir -p ~/.initiat
-
-# Create basic config file
-cat > ~/.initiat/config.yaml << EOF
-api_base_url: "https://www.initiat.dev"
-EOF
-```
-
-### Debug Mode
-
-For troubleshooting, you can enable verbose output:
-
-```bash
-# Enable Go HTTP client debugging
-export GODEBUG=http2debug=1
-initiat auth login user@example.com
-```
-
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our contributing guidelines:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes with tests
-4. Run the test suite (`go test ./...`)
+4. Run the test suite (`make ci`)
 5. Commit your changes (`git commit -m 'Add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
@@ -636,31 +173,26 @@ cd initiat-cli
 go mod tidy
 
 # Run tests to ensure everything works
-go test ./...
+make ci
 
 # Build and test the CLI
 go build -o initiat .
 ./initiat --help
 ```
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+**Important**: This license allows you to use, modify, and distribute the software, but requires that any derivative works or network services using this software must also be open source under the same license. This protects the open source nature of the project while allowing commercial use of the web application.
 
-- [Initiat Website](https://initiat.com)
-- [API Documentation](https://docs.initiat.com)
-- [Issue Tracker](https://github.com/InitiatDev/initiat-cli/issues)
-- [Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
+## Support
 
-## 📞 Support
-
-- **Documentation**: [docs.initiat.com](https://docs.initiat.com)
-- **Community**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
+- **Documentation**: [GitHub Repository](https://github.com/InitiatDev/initiat-cli)
 - **Issues**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
-- **Email**: support@initiat.com
+- **Discussions**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
+- **Website**: [initiat.dev](https://initiat.dev)
 
 ---
 
-**Initiat CLI** - Accelerating developer onboarding, one commit at a time. 🚀
+**Initiat CLI** - Transforming developer experience, one team at a time. 🚀

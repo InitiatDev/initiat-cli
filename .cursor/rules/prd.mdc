@@ -1,0 +1,103 @@
+---
+alwaysApply: true
+---
+Here’s a single cohesive proposal that ties together everything we’ve discussed about **Initiat** and the broader *Developer Experience Hub (DevEx SaaS)* vision:
+
+---
+
+# **Initiat: Developer Experience Hub**
+
+## **Vision**
+
+Initiat streamlines developer onboarding, environment setup, and day-to-day productivity. It provides secure infrastructure for managing secrets, automating environment provisioning, and supporting local development with consistent tooling. The goal is to reduce onboarding time from days to minutes, enforce best practices, and unify the developer experience across teams.
+
+---
+
+## **Core Modules**
+
+### 1. **Secrets Management**
+
+* **Encrypted Workspace Keys**: Secure distribution of API keys, tokens, and secrets.
+* **CLI Access**: Developers retrieve secrets via `initiat-cli` with transparent decryption.
+* **Access Control**: Seat-based model, with audit logging for compliance.
+* **Abuse Mitigation**: Seats cannot be “rotated” to bypass pricing (once assigned, they remain tied).
+
+### 2. **Dev Environment Automation**
+
+* **Upload Docs → Generate Scripts**: Teams upload setup instructions, and Initiat generates reproducible scripts (with AI assistance).
+* **Periodic Validation**: Scripts are automatically run in clean VMs to ensure they still work.
+* **Self-Healing**: AI updates scripts/documentation when drift or errors are detected.
+* **Workspace Readmes**: Auto-generated onboarding docs tailored per app or service.
+
+### 3. **Mock Server Infrastructure**
+
+* **Hosted Mock Data**: Teams define mock APIs (integrated with OpenAPI specs).
+* **Go CLI Local Servers**: Spin up local mock servers easily for offline or integration testing.
+* **Sync with Phoenix Web UI**: Centralized management of mock data, instantly syncable to local dev.
+* **Advanced Features**: Variable responses, latency injection, contract validation against OpenAPI.
+
+---
+
+## **Differentiators**
+
+* **Holistic DX Focus**: Unlike single-purpose tools (Locker.io, Postman, etc.), Initiat unifies secrets, setup, and mocks under one roof.
+* **Developer-Native UX**: Open-source CLI in Go for transparency; polished Phoenix web app for collaboration.
+* **Trust & Simplicity**: Opinionated defaults (seat locking, clean pricing, limited complexity).
+* **Continuous Reliability**: Automated testing of scripts ensures onboarding never goes stale.
+
+---
+
+## **Pricing Model**
+
+* **Free Tier**
+
+  * Up to 5 secrets
+  * 1 environment script
+  * Limited mock endpoints
+* **Pro (per seat, monthly)**
+
+  * Unlimited secrets
+  * Multiple environment scripts
+  * Mock server hosting & sync
+  * Audit logs, RBAC
+* **Enterprise**
+
+  * SSO, advanced compliance, dedicated infra options
+
+---
+
+## **Developer Experience**
+
+* **CLI (Go, open source)**:
+
+  * `initiat secrets get` → retrieve workspace keys
+  * `initiat env setup` → run validated setup scripts
+  * `initiat mock start` → boot local mock server with synced data
+
+* **Web App (Phoenix, commercial)**:
+
+  * Manage secrets, seats, and permissions
+  * Upload/edit setup instructions
+  * View script health reports
+  * Define mock API responses with UI/JSON editor
+
+---
+
+## **Future Extensions**
+
+* **AI Onboarding Assistant**: Interactive guide to walk new devs through setup.
+* **Docs Sync**: Auto-generate README/Confluence pages.
+* **Integration Marketplace**: Prebuilt templates for common stacks (Rails, Phoenix, Node, Kubernetes).
+* **Telemetry Insights**: Track onboarding friction, success rates, and environment health.
+
+---
+
+### **Positioning Statement**
+
+Initiat is the **all-in-one developer experience hub**. It combines secrets management, environment automation, and mock servers into a seamless platform that accelerates onboarding and keeps developer workflows reliable.
+
+---
+
+Would you like me to make this more like a **formal PRD** (with problem, solution, goals, non-goals, etc.) or more like a **pitch deck** (market framing, differentiation, visuals, etc.)?
+
+
