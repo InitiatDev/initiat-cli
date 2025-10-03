@@ -56,25 +56,28 @@ Secret Values (arbitrary plaintext)
 
 #### Command
 ```bash
-initiat secret set <KEY> <VALUE> [OPTIONS]
+initiat secret set <KEY> [OPTIONS]
 ```
 
 #### Options
-- `--workspace <id>` - Target workspace ID (required)
+- `--value <value>` - Secret value (required)
+- `--workspace-path <path>` - Target workspace path (e.g., "acme-corp/production")
+- `--org <org>` - Organization slug (used with --workspace)
+- `--workspace <workspace>` - Workspace slug (used with --org)
 - `--description <text>` - Optional description for the secret
 - `--force` - Overwrite existing secret without confirmation
 
 #### Examples
 ```bash
 # Basic secret creation
-initiat secret set API_KEY "sk-1234567890abcdef" --workspace 42
+initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
 
 # With description
-initiat secret set DB_PASSWORD "super-secret-pass" --workspace 42 \
+initiat secret set DB_PASSWORD --value "super-secret-pass" --workspace-path acme-corp/production \
   --description "Production database password"
 
-# Force overwrite
-initiat secret set API_KEY "new-value" --workspace 42 --force
+# Using org/workspace flags
+initiat secret set API_KEY --value "new-value" --org acme-corp --workspace production --force
 ```
 
 #### Cryptographic Workflow
@@ -122,20 +125,21 @@ initiat secret get <KEY> [OPTIONS]
 ```
 
 #### Options
-- `--workspace <id>` - Target workspace ID (required)
-- `--output <format>` - Output format: `value`, `json`, `env` (default: `value`)
+- `--workspace-path <path>` - Target workspace path (e.g., "acme-corp/production")
+- `--org <org>` - Organization slug (used with --workspace)
+- `--workspace <workspace>` - Workspace slug (used with --org)
 - `--copy` - Copy value to clipboard instead of printing
 
 #### Examples
 ```bash
 # Get secret value
-initiat secret get API_KEY --workspace 42
+initiat secret get API_KEY --workspace-path acme-corp/production
 
-# JSON output with metadata
-initiat secret get API_KEY --workspace 42 --output json
+# Using org/workspace flags
+initiat secret get API_KEY --org acme-corp --workspace production
 
-# Environment variable format
-initiat secret get API_KEY --workspace 42 --output env
+# Copy to clipboard
+initiat secret get API_KEY --workspace-path acme-corp/production --copy
 ```
 
 #### Cryptographic Workflow
@@ -191,19 +195,17 @@ initiat secret list [OPTIONS]
 ```
 
 #### Options
-- `--workspace <id>` - Target workspace ID (required)
-- `--format <format>` - Output format: `table`, `json`, `simple` (default: `table`)
+- `--workspace-path <path>` - Target workspace path (e.g., "acme-corp/production")
+- `--org <org>` - Organization slug (used with --workspace)
+- `--workspace <workspace>` - Workspace slug (used with --org)
 
 #### Examples
 ```bash
 # Table format (default)
-initiat secret list --workspace 42
+initiat secret list --workspace-path acme-corp/production
 
-# JSON format
-initiat secret list --workspace 42 --format json
-
-# Simple format (keys only)
-initiat secret list --workspace 42 --format simple
+# Using org/workspace flags
+initiat secret list --org acme-corp --workspace production
 ```
 
 #### Output Formats
@@ -244,16 +246,21 @@ initiat secret delete <KEY> [OPTIONS]
 ```
 
 #### Options
-- `--workspace <id>` - Target workspace ID (required)
+- `--workspace-path <path>` - Target workspace path (e.g., "acme-corp/production")
+- `--org <org>` - Organization slug (used with --workspace)
+- `--workspace <workspace>` - Workspace slug (used with --org)
 - `--force` - Skip confirmation prompt
 
 #### Examples
 ```bash
 # Delete with confirmation
-initiat secret delete API_KEY --workspace 42
+initiat secret delete API_KEY --workspace-path acme-corp/production
+
+# Using org/workspace flags
+initiat secret delete API_KEY --org acme-corp --workspace production
 
 # Force delete without confirmation
-initiat secret delete API_KEY --workspace 42 --force
+initiat secret delete API_KEY --workspace-path acme-corp/production --force
 ```
 
 #### Workflow
@@ -349,12 +356,12 @@ All requests require device signature authentication:
 
 3. **Validate Workspace Key**
    ```bash
-   initiat workspace init <workspace-slug>
+   initiat workspace init <workspace-path>
    ```
 
 4. **Test Network Connectivity**
    ```bash
-   initiat secret list --workspace <id>
+   initiat secret list --workspace-path <workspace-path>
    ```
 
 ---

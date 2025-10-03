@@ -28,13 +28,14 @@ var deviceCmd = &cobra.Command{
 }
 
 var registerDeviceCmd = &cobra.Command{
-	Use:   "register",
+	Use:   "register <device-name>",
 	Short: "Register this device with Initiat",
 	Long: `Register this device with Initiat to enable secure secret access.
 
 Examples:
-  initiat device register --name "my-laptop"
-  initiat device register -n "work-macbook"`,
+  initiat device register "my-laptop"
+  initiat device register "work-macbook"`,
+	Args: cobra.ExactArgs(1),
 	RunE: runRegisterDevice,
 }
 
@@ -62,14 +63,14 @@ var approvalsCmd = &cobra.Command{
 }
 
 var approveCmd = &cobra.Command{
-	Use:   "approve",
+	Use:   "approve [approval-id]",
 	Short: "Approve a device for workspace access",
 	Long:  "Approve a specific device or all pending devices for workspace access.",
 	RunE:  runApproveDevice,
 }
 
 var rejectCmd = &cobra.Command{
-	Use:   "reject",
+	Use:   "reject [approval-id]",
 	Short: "Reject a device for workspace access",
 	Long:  "Reject a specific device or all pending devices for workspace access.",
 	RunE:  runRejectDevice,
@@ -90,7 +91,6 @@ const (
 )
 
 var (
-	deviceName string
 	approveAll bool
 	rejectAll  bool
 	approvalID string
@@ -105,9 +105,6 @@ func init() {
 	deviceCmd.AddCommand(approveCmd)
 	deviceCmd.AddCommand(rejectCmd)
 	deviceCmd.AddCommand(approvalCmd)
-
-	registerDeviceCmd.Flags().StringVarP(&deviceName, "name", "n", "", "Name for this device (required)")
-	_ = registerDeviceCmd.MarkFlagRequired("name")
 
 	approveCmd.Flags().BoolVar(&approveAll, "all", false, "Approve all pending devices")
 	approveCmd.Flags().StringVar(&approvalID, "id", "", "Device approval ID to approve")
@@ -281,7 +278,7 @@ func storeDeviceCredentials(
 }
 
 func runRegisterDevice(cmd *cobra.Command, args []string) error {
-	name := strings.TrimSpace(deviceName)
+	name := strings.TrimSpace(args[0])
 	if name == "" {
 		return fmt.Errorf("device name cannot be empty")
 	}
@@ -423,11 +420,19 @@ func runApproveDevice(cmd *cobra.Command, args []string) error {
 		return runApproveAllDevices(apiClient)
 	}
 
-	if approvalID == "" {
-		return fmt.Errorf("❌ Please specify either --all or --id <approval-id>")
+	// Check for positional argument first, then fall back to flag
+	var approvalIDToUse string
+	if len(args) > 0 {
+		approvalIDToUse = args[0]
+	} else if approvalID != "" {
+		approvalIDToUse = approvalID
 	}
 
-	return runApproveSingleDevice(apiClient, approvalID)
+	if approvalIDToUse == "" {
+		return fmt.Errorf("❌ Please specify either --all or provide an approval-id")
+	}
+
+	return runApproveSingleDevice(apiClient, approvalIDToUse)
 }
 
 func runRejectDevice(cmd *cobra.Command, args []string) error {
@@ -437,11 +442,19 @@ func runRejectDevice(cmd *cobra.Command, args []string) error {
 		return runRejectAllDevices(apiClient)
 	}
 
-	if approvalID == "" {
-		return fmt.Errorf("❌ Please specify either --all or --id <approval-id>")
+	// Check for positional argument first, then fall back to flag
+	var approvalIDToUse string
+	if len(args) > 0 {
+		approvalIDToUse = args[0]
+	} else if approvalID != "" {
+		approvalIDToUse = approvalID
 	}
 
-	return runRejectSingleDevice(apiClient, approvalID)
+	if approvalIDToUse == "" {
+		return fmt.Errorf("❌ Please specify either --all or provide an approval-id")
+	}
+
+	return runRejectSingleDevice(apiClient, approvalIDToUse)
 }
 
 func runShowApproval(cmd *cobra.Command, args []string) error {

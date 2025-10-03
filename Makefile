@@ -112,6 +112,16 @@ release: ## Build release binaries (usage: make release VERSION=v1.0.0)
 	@echo "🚀 Building release $(VERSION)..."
 	./scripts/build-release.sh $(VERSION)
 
+changelog: ## Update changelog for new version (usage: make changelog VERSION=v1.0.0)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION is required. Usage: make changelog VERSION=v1.0.0"; \
+		exit 1; \
+	fi
+	@echo "📝 Updating changelog for $(VERSION)..."
+	@sed -i.bak "s/## \[Unreleased\]/## [Unreleased]\n\n## [$(VERSION)] - $(shell date +%Y-%m-%d)/" CHANGELOG.md
+	@rm CHANGELOG.md.bak
+	@echo "✅ Changelog updated. Please review and commit changes."
+
 # Tool installation targets
 install-tools: ## Install development tools
 	@echo "🔧 Installing development tools..."

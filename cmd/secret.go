@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	secretKey     string
 	secretValue   string
 	description   string
 	forceOverride bool
@@ -30,31 +29,33 @@ var secretCmd = &cobra.Command{
 }
 
 var secretSetCmd = &cobra.Command{
-	Use:   "set",
+	Use:   "set <secret-key>",
 	Short: "Set a secret value",
 	Long: `Set a secret value in the specified workspace. The value is encrypted client-side 
 before being sent to the server.
 
 Examples:
-  initiat secret set --workspace-path acme-corp/production --key API_KEY --value "sk-1234567890abcdef"
-  initiat secret set -W acme-corp/production -k API_KEY -v "sk-1234567890abcdef"
-  initiat secret set --org acme-corp --workspace production --key DB_PASSWORD \
+  initiat secret set API_KEY --workspace-path acme-corp/production --value "sk-1234567890abcdef"
+  initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"
+  initiat secret set DB_PASSWORD --org acme-corp --workspace production \
     --value "super-secret-pass" --description "Production database password"
-  initiat secret set -w production -k API_KEY -v "new-value" --force`,
+  initiat secret set API_KEY -w production -v "new-value" --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: runSecretSet,
 }
 
 var secretGetCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get <secret-key>",
 	Short: "Get a secret value (JSON output)",
 	Long: `Get and decrypt a secret value from the specified workspace.
 Output is always in JSON format.
 
 Examples:
-  initiat secret get --workspace-path acme-corp/production --key API_KEY
-  initiat secret get -W acme-corp/production -k API_KEY
-  initiat secret get --workspace production --key DB_PASSWORD
-  initiat secret get -w production -k API_KEY --copy`,
+  initiat secret get API_KEY --workspace-path acme-corp/production
+  initiat secret get API_KEY -W acme-corp/production
+  initiat secret get DB_PASSWORD --workspace production
+  initiat secret get API_KEY -w production --copy`,
+	Args: cobra.ExactArgs(1),
 	RunE: runSecretGet,
 }
 
@@ -72,14 +73,15 @@ Examples:
 }
 
 var secretDeleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete <secret-key>",
 	Short: "Delete a secret",
 	Long: `Delete a secret from the specified workspace.
 
 Examples:
-  initiat secret delete --workspace-path acme-corp/production --key API_KEY
-  initiat secret delete -W acme-corp/production -k API_KEY
-  initiat secret delete --workspace production --key OLD_API_KEY`,
+  initiat secret delete API_KEY --workspace-path acme-corp/production
+  initiat secret delete API_KEY -W acme-corp/production
+  initiat secret delete OLD_API_KEY --workspace production`,
+	Args: cobra.ExactArgs(1),
 	RunE: runSecretDelete,
 }
 
@@ -90,20 +92,14 @@ func init() {
 	secretCmd.AddCommand(secretListCmd)
 	secretCmd.AddCommand(secretDeleteCmd)
 
-	secretSetCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
 	secretSetCmd.Flags().StringVarP(&secretValue, "value", "v", "", "Secret value (required)")
 	secretSetCmd.Flags().StringVarP(&description, "description", "d", "", "Optional description for the secret")
 	secretSetCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Overwrite existing secret without confirmation")
-	_ = secretSetCmd.MarkFlagRequired("key")
 	_ = secretSetCmd.MarkFlagRequired("value")
 
-	secretGetCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
 	secretGetCmd.Flags().BoolVarP(&copyToClip, "copy", "c", false, "Copy value to clipboard instead of printing")
-	_ = secretGetCmd.MarkFlagRequired("key")
 
-	secretDeleteCmd.Flags().StringVarP(&secretKey, "key", "k", "", "Secret key name (required)")
 	secretDeleteCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Skip confirmation prompt")
-	_ = secretDeleteCmd.MarkFlagRequired("key")
 }
 
 func runSecretSet(cmd *cobra.Command, args []string) error {
@@ -112,7 +108,7 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	key := strings.TrimSpace(secretKey)
+	key := strings.TrimSpace(args[0])
 	value := strings.TrimSpace(secretValue)
 
 	if key == "" {
@@ -225,7 +221,7 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	key := strings.TrimSpace(secretKey)
+	key := strings.TrimSpace(args[0])
 	if key == "" {
 		return fmt.Errorf("secret key cannot be empty")
 	}
@@ -319,7 +315,7 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	key := strings.TrimSpace(secretKey)
+	key := strings.TrimSpace(args[0])
 	if key == "" {
 		return fmt.Errorf("secret key cannot be empty")
 	}

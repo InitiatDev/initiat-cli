@@ -12,7 +12,23 @@ This document outlines how to create and publish releases for the Initiat CLI.
 
 Releases are created manually through GitHub Actions to give you full control over when versions are published.
 
-### Step 1: Decide on Version Number
+### Step 1: Update Changelog
+
+First, update the changelog for your new version:
+
+```bash
+# This automatically adds a new version section with today's date
+make changelog VERSION=v1.0.0
+
+# Review the changes in CHANGELOG.md
+git diff CHANGELOG.md
+
+# Commit the changelog update
+git add CHANGELOG.md
+git commit -m "chore: update changelog for v1.0.0"
+```
+
+### Step 2: Decide on Version Number
 
 Follow semantic versioning (e.g., `v1.0.0`, `v1.2.3-beta.1`):
 - **Major version** (v2.0.0): Breaking changes
@@ -20,7 +36,7 @@ Follow semantic versioning (e.g., `v1.0.0`, `v1.2.3-beta.1`):
 - **Patch version** (v1.0.1): Bug fixes, backwards compatible
 - **Pre-release** (v1.0.0-alpha.1, v1.0.0-beta.1): Testing versions
 
-### Step 2: Trigger the Release Workflow
+### Step 3: Trigger the Release Workflow
 
 1. Go to your repository on GitHub
 2. Navigate to **Actions** → **Release** workflow
@@ -31,7 +47,7 @@ Follow semantic versioning (e.g., `v1.0.0`, `v1.2.3-beta.1`):
    - **prerelease**: Check this for pre-release versions (alpha, beta, rc)
 5. Click **Run workflow**
 
-### Step 3: Monitor the Build
+### Step 4: Monitor the Build
 
 The workflow will:
 1. Create a GitHub release with the specified version tag
@@ -44,7 +60,7 @@ The workflow will:
 
 The entire process takes about 5-10 minutes.
 
-### Step 4: Verify the Release
+### Step 5: Verify the Release
 
 Once complete:
 1. Go to **Releases** in your GitHub repository
@@ -57,7 +73,7 @@ Once complete:
    - `initiat-windows-amd64.zip`
    - `checksums.txt`
 
-### Step 5: Update Release Notes (Optional)
+### Step 6: Update Release Notes (Optional)
 
 Edit the release description to add:
 - Notable changes and new features
@@ -180,6 +196,7 @@ Before releasing:
 - [ ] Code is linted (`make lint`)
 - [ ] Security checks pass (`make security`)
 - [ ] Version number decided
+- [ ] **Changelog updated** (`make changelog VERSION=v1.0.0`)
 - [ ] Release notes drafted
 - [ ] Local release build tested
 - [ ] GitHub Actions workflow triggered

@@ -107,7 +107,9 @@ jobs:
             *.zip
             checksums.txt
           body: |
-            Release ${{ github.event.inputs.version }}
+            ## What's New in ${{ github.event.inputs.version }}
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes.
 
             ## Installation
 
@@ -144,3 +146,20 @@ jobs:
             # Verify your downloaded file
             sha256sum -c checksums.txt --ignore-missing
             ```
+
+            ## Quick Start
+            ```bash
+            # Login to your Initiat account
+            initiat auth login user@example.com
+
+            # Register this device
+            initiat device register "My Computer"
+
+            # List available workspaces
+            initiat workspace list
+            ```
+
+            ## Documentation
+            - [Full Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
+            - [Changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+            - [Development Guide](https://github.com/${{ github.repository }}/blob/main/docs/DEV_BUILD.md)

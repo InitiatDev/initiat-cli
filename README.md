@@ -318,20 +318,22 @@ initiat auth login dev@example.com
 # 1. Login to Initiat (requires existing account)
 initiat auth login user@example.com
 
-# 2. Register this device (coming soon)
+# 2. Register this device
 initiat device register "My MacBook CLI"
 
-# 3. List available workspaces (coming soon)
+# 3. List available workspaces
 initiat workspace list
 
-# 4. Initialize workspace key for secure secret access (coming soon)
-initiat workspace init-key my-project
+# 4. Initialize workspace key for secure secret access
+initiat workspace init acme-corp/production
 
 # 5. Set up development environment (coming soon)
 initiat setup my-project
 
-# 6. Fetch secrets and environment variables (coming soon)
-initiat secrets fetch --workspace my-project --output .env
+# 6. Manage secrets
+initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+initiat secret get API_KEY --workspace-path acme-corp/production
+initiat secret list --workspace-path acme-corp/production
 ```
 
 ### Development Workflow
@@ -344,6 +346,8 @@ make build-dev
 ./initiat_dev auth login dev@example.com
 ./initiat_dev device register "Development Machine"
 ./initiat_dev workspace list
+./initiat_dev workspace init acme-corp/production
+./initiat_dev secret set API_KEY --value "dev-key-123" --workspace-path acme-corp/production
 
 # The dev binary always uses http://localhost:4000 by default
 # You can still override with --api-url if needed

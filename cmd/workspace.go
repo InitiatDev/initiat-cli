@@ -29,13 +29,13 @@ var workspaceListCmd = &cobra.Command{
 }
 
 var workspaceInitCmd = &cobra.Command{
-	Use:   "init",
+	Use:   "init [workspace-path]",
 	Short: "Initialize workspace key",
 	Long: `Initialize a new workspace key for secure secret storage.
 
 Examples:
-  initiat workspace init --workspace-path acme-corp/production
-  initiat workspace init -W acme-corp/production
+  initiat workspace init acme-corp/production
+  initiat workspace init acme-corp/production  # Using positional argument
   initiat workspace init --org acme-corp --workspace production
   initiat workspace init -o acme-corp -w production
   initiat workspace init --workspace production  # Uses default org
@@ -108,7 +108,16 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 }
 
 func runWorkspaceInit(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	var workspaceCtx *config.WorkspaceContext
+	var err error
+
+	// Check for positional argument first, then fall back to flags
+	if len(args) > 0 {
+		workspaceCtx, err = config.ResolveWorkspaceContext(args[0], "", "")
+	} else {
+		workspaceCtx, err = GetWorkspaceContext()
+	}
+
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
@@ -185,7 +194,7 @@ func printSuccessMessage() {
 	fmt.Println("🎯 You can now store and retrieve secrets in this workspace.")
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("  • Add secrets: initiat secrets add API_KEY=your-secret")
-	fmt.Println("  • List secrets: initiat secrets list")
+	fmt.Println("  • Add secrets: initiat secret set API_KEY --value your-secret")
+	fmt.Println("  • List secrets: initiat secret list")
 	fmt.Println("  • Invite devices: initiat workspace invite-device")
 }
