@@ -4,7 +4,7 @@ import (
 	"crypto/ed25519"
 	"testing"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 	"golang.org/x/crypto/curve25519"
 )
 

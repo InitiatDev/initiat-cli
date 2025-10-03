@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/config"
 )
 
 const (

@@ -7,12 +7,12 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/curve25519"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
-	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/storage"
-	"github.com/DylanBlakemore/initiat-cli/internal/table"
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/client"
+	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
+	"github.com/InitiatDev/initiat-cli/internal/table"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 var workspaceCmd = &cobra.Command{

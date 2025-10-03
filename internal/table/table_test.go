@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/testutil"
+	"github.com/InitiatDev/initiat-cli/internal/testutil"
 )
 
 func TestTable_Basic(t *testing.T) {

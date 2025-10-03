@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
-	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/httputil"
-	"github.com/DylanBlakemore/initiat-cli/internal/routes"
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/httputil"
+	"github.com/InitiatDev/initiat-cli/internal/routes"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 const (

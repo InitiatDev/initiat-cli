@@ -13,12 +13,12 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/term"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
-	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/storage"
-	"github.com/DylanBlakemore/initiat-cli/internal/table"
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/client"
+	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
+	"github.com/InitiatDev/initiat-cli/internal/table"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 var deviceCmd = &cobra.Command{

@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
-	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/InitiatDev/initiat-cli/internal/client"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
 )
 
 var authCmd = &cobra.Command{

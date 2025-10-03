@@ -59,7 +59,7 @@ jobs:
           fi
 
           go build \
-            -ldflags "-X github.com/DylanBlakemore/initiat-cli/cmd.version=${VERSION} -s -w" \
+            -ldflags "-X github.com/InitiatDev/initiat-cli/cmd.version=${VERSION} -s -w" \
             -o "${OUTPUT_NAME}" \
             .
 

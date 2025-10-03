@@ -18,15 +18,15 @@ A developer experience platform that accelerates team onboarding and reduces tim
 ```bash
 # Download for your platform from GitHub Releases
 # macOS (Intel)
-curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-darwin-amd64.tar.gz | tar xz
+curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-darwin-amd64.tar.gz | tar xz
 sudo mv initiat-darwin-amd64 /usr/local/bin/initiat
 
 # macOS (Apple Silicon)
-curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-darwin-arm64.tar.gz | tar xz
+curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-darwin-arm64.tar.gz | tar xz
 sudo mv initiat-darwin-arm64 /usr/local/bin/initiat
 
 # Linux (x64)
-curl -L https://github.com/DylanBlakemore/initiat-cli/releases/latest/download/initiat-linux-amd64.tar.gz | tar xz
+curl -L https://github.com/InitiatDev/initiat-cli/releases/latest/download/initiat-linux-amd64.tar.gz | tar xz
 sudo mv initiat-linux-amd64 /usr/local/bin/initiat
 
 # Windows (download .zip from releases page)
@@ -35,13 +35,13 @@ sudo mv initiat-linux-amd64 /usr/local/bin/initiat
 #### Option 2: Install with Go
 
 ```bash
-go install github.com/DylanBlakemore/initiat-cli@latest
+go install github.com/InitiatDev/initiat-cli@latest
 ```
 
 #### Option 3: Build from Source
 
 ```bash
-git clone https://github.com/DylanBlakemore/initiat-cli.git
+git clone https://github.com/InitiatDev/initiat-cli.git
 cd initiat-cli
 go build -o initiat .
 ```
@@ -84,7 +84,7 @@ Before using the Initiat CLI, you need:
 
 **No Go installation required!** Download the binary for your platform:
 
-1. Go to [GitHub Releases](https://github.com/DylanBlakemore/initiat-cli/releases)
+1. Go to [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
 2. Download the archive for your platform:
    - `initiat-darwin-amd64.tar.gz` (macOS Intel)
    - `initiat-darwin-arm64.tar.gz` (macOS Apple Silicon)
@@ -96,13 +96,13 @@ Before using the Initiat CLI, you need:
 ### Option 2: Go Install
 
 ```bash
-go install github.com/DylanBlakemore/initiat-cli@latest
+go install github.com/InitiatDev/initiat-cli@latest
 ```
 
 ### Option 3: Build from Source
 
 ```bash
-git clone https://github.com/DylanBlakemore/initiat-cli.git
+git clone https://github.com/InitiatDev/initiat-cli.git
 cd initiat-cli
 go build -o initiat .
 sudo mv initiat /usr/local/bin/  # Optional: add to PATH
@@ -414,7 +414,7 @@ Initiat is designed to accelerate developer productivity and reduce onboarding f
 
 ```bash
 # Clone the repository
-git clone https://github.com/DylanBlakemore/initiat-cli.git
+git clone https://github.com/InitiatDev/initiat-cli.git
 cd initiat-cli
 
 # Install dependencies
@@ -651,14 +651,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Initiat Website](https://initiat.com)
 - [API Documentation](https://docs.initiat.com)
-- [Issue Tracker](https://github.com/DylanBlakemore/initiat-cli/issues)
-- [Discussions](https://github.com/DylanBlakemore/initiat-cli/discussions)
+- [Issue Tracker](https://github.com/InitiatDev/initiat-cli/issues)
+- [Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
 
 ## 📞 Support
 
 - **Documentation**: [docs.initiat.com](https://docs.initiat.com)
-- **Community**: [GitHub Discussions](https://github.com/DylanBlakemore/initiat-cli/discussions)
-- **Issues**: [GitHub Issues](https://github.com/DylanBlakemore/initiat-cli/issues)
+- **Community**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
+- **Issues**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
 - **Email**: support@initiat.com
 
 ---

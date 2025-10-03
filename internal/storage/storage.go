@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/zalando/go-keyring"
 )
 

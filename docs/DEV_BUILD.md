@@ -65,7 +65,7 @@ The dev build uses Go's `-ldflags` to inject a different default API URL at comp
 
 ```bash
 go build \
-  -ldflags "-X github.com/DylanBlakemore/initiat-cli/internal/config.defaultAPIBaseURL=http://localhost:4000" \
+  -ldflags "-X github.com/InitiatDev/initiat-cli/internal/config.defaultAPIBaseURL=http://localhost:4000" \
   -o initiat_dev .
 ```
 

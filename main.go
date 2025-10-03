@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/DylanBlakemore/initiat-cli/cmd"
+	"github.com/InitiatDev/initiat-cli/cmd"
 )
 
 func main() {

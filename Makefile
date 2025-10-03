@@ -18,7 +18,7 @@ build-dev: ## Build development version with localhost API URL
 	@echo "🔧 Building Initiat CLI (dev mode)..."
 	@echo "   API URL: http://localhost:4000"
 	go build \
-		-ldflags "-X github.com/DylanBlakemore/initiat-cli/internal/config.defaultAPIBaseURL=http://localhost:4000" \
+		-ldflags "-X github.com/InitiatDev/initiat-cli/internal/config.defaultAPIBaseURL=http://localhost:4000" \
 		-o initiat_dev .
 	@echo "✅ Built: ./initiat_dev"
 

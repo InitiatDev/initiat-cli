@@ -1,4 +1,4 @@
-module github.com/DylanBlakemore/initiat-cli
+module github.com/InitiatDev/initiat-cli
 
 go 1.25.1
 

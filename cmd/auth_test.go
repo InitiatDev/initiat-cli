@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/config"
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 func TestLoginCmd_Success(t *testing.T) {

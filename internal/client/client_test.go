@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/routes"
-	"github.com/DylanBlakemore/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/routes"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 func TestNew(t *testing.T) {

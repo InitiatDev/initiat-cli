@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/nacl/secretbox"
 
-	"github.com/DylanBlakemore/initiat-cli/internal/client"
-	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
-	"github.com/DylanBlakemore/initiat-cli/internal/storage"
-	"github.com/DylanBlakemore/initiat-cli/internal/table"
+	"github.com/InitiatDev/initiat-cli/internal/client"
+	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
+	"github.com/InitiatDev/initiat-cli/internal/table"
 )
 
 var (

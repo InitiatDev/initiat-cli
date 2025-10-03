@@ -105,11 +105,11 @@ Users can install directly using curl:
 
 ```bash
 # macOS (Apple Silicon)
-curl -L https://github.com/DylanBlakemore/initiat-cli/releases/download/v1.0.0/initiat-darwin-arm64.tar.gz | tar xz
+curl -L https://github.com/InitiatDev/initiat-cli/releases/download/v1.0.0/initiat-darwin-arm64.tar.gz | tar xz
 sudo mv initiat /usr/local/bin/
 
 # Linux (AMD64)
-curl -L https://github.com/DylanBlakemore/initiat-cli/releases/download/v1.0.0/initiat-linux-amd64.tar.gz | tar xz
+curl -L https://github.com/InitiatDev/initiat-cli/releases/download/v1.0.0/initiat-linux-amd64.tar.gz | tar xz
 sudo mv initiat /usr/local/bin/
 ```
 
@@ -123,11 +123,11 @@ export GITHUB_TOKEN=ghp_your_token_here
 
 # macOS (Apple Silicon)
 curl -L -H "Authorization: token $GITHUB_TOKEN" \
-  https://github.com/DylanBlakemore/initiat-cli/releases/download/v1.0.0/initiat-darwin-arm64.tar.gz | tar xz
+  https://github.com/InitiatDev/initiat-cli/releases/download/v1.0.0/initiat-darwin-arm64.tar.gz | tar xz
 sudo mv initiat /usr/local/bin/
 
 # Or download manually
-gh release download v1.0.0 --repo DylanBlakemore/initiat-cli --pattern "initiat-darwin-arm64.tar.gz"
+gh release download v1.0.0 --repo InitiatDev/initiat-cli --pattern "initiat-darwin-arm64.tar.gz"
 tar xzf initiat-darwin-arm64.tar.gz
 sudo mv initiat /usr/local/bin/
 ```
@@ -147,7 +147,7 @@ Users should verify the integrity of downloaded binaries:
 ```bash
 # Download the checksums file
 curl -L -H "Authorization: token $GITHUB_TOKEN" \
-  https://github.com/DylanBlakemore/initiat-cli/releases/download/v1.0.0/checksums.txt > checksums.txt
+  https://github.com/InitiatDev/initiat-cli/releases/download/v1.0.0/checksums.txt > checksums.txt
 
 # Verify the binary (macOS/Linux)
 sha256sum -c checksums.txt --ignore-missing
