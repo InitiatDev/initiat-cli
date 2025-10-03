@@ -403,21 +403,29 @@ HTTP 422 → "Validation failed" (check response body for field errors)
 
 ### Key Derivation
 
-**Workspace Key Derivation Flow:**
+**Workspace Key Derivation Flow (Zero-Persistence):**
 ```
-1. wrapped_key_b64 = get_wrapped_key_from_server(workspace_id)
+1. wrapped_key_b64 = GET /workspaces/:org/:workspace/workspace_key
 2. wrapped_key = url_safe_base64_decode(wrapped_key_b64)
 3. workspace_key = unwrap_workspace_key(wrapped_key, device_private_key)
 4. validate workspace_key.length == 32 bytes
-5. store workspace_key securely for secret operations
+5. use workspace_key for secret operation (encrypt/decrypt)
+6. discard workspace_key from memory
 ```
 
 **Process:**
-1. Retrieve wrapped workspace key from server
+1. Fetch wrapped workspace key from server (on-demand, per operation)
 2. Decode from URL-safe Base64 transport encoding
-3. Unwrap using X25519 key exchange (see workspace spec)
+3. Unwrap using X25519 ECDH + ChaCha20-Poly1305 (see workspace spec)
 4. Validate key is exactly 32 bytes
-5. Store securely in memory for secret encryption/decryption
+5. Use workspace key for the current secret operation only
+6. **Discard immediately** - no persistent storage
+
+**Security Benefits:**
+- Workspace keys never stored on disk (zero-persistence)
+- Access revocation takes effect immediately
+- All workspace key access logged on server
+- Defense in depth against local storage compromise
 
 ## Security Considerations
 
@@ -438,10 +446,11 @@ HTTP 422 → "Validation failed" (check response body for field errors)
 ### Best Practices
 
 #### Client-Side Security
-- Store workspace keys in secure storage (keychain/keyring)
-- Clear sensitive data from memory after use
+- **Zero-persistence**: Workspace keys fetched on-demand and never stored locally
+- Clear sensitive data from memory immediately after use
 - Validate all cryptographic operations
 - Use secure random number generation
+- Device private keys stored in OS keychain/keyring only
 
 #### Operational Security
 - Rotate workspace keys periodically

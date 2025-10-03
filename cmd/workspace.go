@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
-	"golang.org/x/crypto/hkdf"
 
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
@@ -47,21 +44,10 @@ Examples:
 	RunE: runWorkspaceInit,
 }
 
-var (
-	forceWorkspaceInit bool
-)
-
 func init() {
 	rootCmd.AddCommand(workspaceCmd)
 	workspaceCmd.AddCommand(workspaceListCmd)
 	workspaceCmd.AddCommand(workspaceInitCmd)
-	workspaceInitCmd.Flags().BoolVarP(
-		&forceWorkspaceInit,
-		"force",
-		"f",
-		false,
-		"Force re-initialization even if local key exists",
-	)
 }
 
 func runWorkspaceList(cmd *cobra.Command, args []string) error {
@@ -140,49 +126,19 @@ func runWorkspaceInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to get workspace info: %w", err)
 	}
 
-	shouldContinue, err := checkWorkspaceInitStatus(workspace, store, workspaceCtx.String())
-	if err != nil {
-		return err
-	}
-	if !shouldContinue {
+	if !checkWorkspaceInitStatus(workspace) {
 		return nil
-	}
-
-	if err := handleForceFlag(store, workspaceCtx.String()); err != nil {
-		return err
 	}
 
 	return initializeWorkspaceKey(c, store, workspace, workspaceCtx)
 }
 
-func checkWorkspaceInitStatus(workspace *types.Workspace, store *storage.Storage, compositeSlug string) (bool, error) {
+func checkWorkspaceInitStatus(workspace *types.Workspace) bool {
 	if workspace.KeyInitialized {
-		if store.HasWorkspaceKey(compositeSlug) {
-			fmt.Println("ℹ️ Workspace key already exists locally and is initialized on server")
-			return false, nil
-		}
-		return false, fmt.Errorf(
-			"ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery")
+		fmt.Println("ℹ️ Workspace key already initialized on server")
+		return false
 	}
-
-	if store.HasWorkspaceKey(compositeSlug) && !forceWorkspaceInit {
-		fmt.Println("⚠️  Local workspace key exists but server workspace is not initialized.")
-		fmt.Println("   This usually happens when a workspace was deleted and recreated with the same name.")
-		fmt.Println("   Use --force to generate a new key and reinitialize.")
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func handleForceFlag(store *storage.Storage, compositeSlug string) error {
-	if forceWorkspaceInit && store.HasWorkspaceKey(compositeSlug) {
-		fmt.Println("🔄 Force flag detected - removing old local workspace key...")
-		if err := store.DeleteWorkspaceKey(compositeSlug); err != nil {
-			fmt.Printf("⚠️  Warning: Failed to delete old workspace key: %v\n", err)
-		}
-	}
-	return nil
+	return true
 }
 
 func initializeWorkspaceKey(
@@ -194,19 +150,30 @@ func initializeWorkspaceKey(
 		return fmt.Errorf("❌ Failed to generate workspace key: %w", err)
 	}
 
-	fmt.Println("🔒 Encrypting with your device's X25519 key...")
-	wrappedKey, err := wrapWorkspaceKey(workspaceKey, store)
+	encryptionPrivateKey, err := store.GetEncryptionPrivateKey()
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get device encryption key: %w", err)
+	}
+
+	encryptionPublicKey, err := curve25519.X25519(encryptionPrivateKey, curve25519.Basepoint)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to derive device public key: %w", err)
+	}
+
+	fmt.Println("🔒 Encrypting workspace key with your device's X25519 key...")
+	wrappedKeyStr, err := encoding.WrapWorkspaceKey(workspaceKey, encryptionPublicKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to encrypt workspace key: %w", err)
+	}
+
+	wrappedKey, err := encoding.Decode(wrappedKeyStr)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to decode wrapped key: %w", err)
 	}
 
 	fmt.Println("📡 Uploading encrypted key to server...")
 	if err := c.InitializeWorkspaceKey(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, wrappedKey); err != nil {
 		return fmt.Errorf("❌ Failed to initialize workspace key: %w", err)
-	}
-
-	if err := store.StoreWorkspaceKey(workspaceCtx.String(), workspaceKey); err != nil {
-		return fmt.Errorf("❌ Failed to store workspace key locally: %w", err)
 	}
 
 	printSuccessMessage()
@@ -221,51 +188,4 @@ func printSuccessMessage() {
 	fmt.Println("  • Add secrets: initiat secrets add API_KEY=your-secret")
 	fmt.Println("  • List secrets: initiat secrets list")
 	fmt.Println("  • Invite devices: initiat workspace invite-device")
-}
-func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, error) {
-	encryptionPrivateKey, err := store.GetEncryptionPrivateKey()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get encryption private key: %w", err)
-	}
-
-	ephemeralPrivate := make([]byte, encoding.X25519PrivateKeySize)
-	if _, err := rand.Read(ephemeralPrivate); err != nil {
-		return nil, fmt.Errorf("failed to generate ephemeral private key: %w", err)
-	}
-
-	ephemeralPublic, err := curve25519.X25519(ephemeralPrivate, curve25519.Basepoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate ephemeral public key: %w", err)
-	}
-
-	sharedSecret, err := curve25519.X25519(encryptionPrivateKey, ephemeralPublic)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute shared secret: %w", err)
-	}
-
-	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
-	encryptionKey := make([]byte, encoding.WorkspaceKeySize)
-	if _, err := hkdf.Read(encryptionKey); err != nil {
-		return nil, fmt.Errorf("failed to derive encryption key: %w", err)
-	}
-
-	cipher, err := chacha20poly1305.New(encryptionKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	const chacha20NonceSize = 12             // ChaCha20-Poly1305 nonce size
-	nonce := make([]byte, chacha20NonceSize) // ChaCha20-Poly1305 nonce for workspace key wrapping
-	if _, err := rand.Read(nonce); err != nil {
-		return nil, fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	ciphertext := cipher.Seal(nil, nonce, workspaceKey, nil) // #nosec G407 - nonce is randomly generated above
-
-	wrapped := make([]byte, 0, 32+12+len(ciphertext))
-	wrapped = append(wrapped, ephemeralPublic...)
-	wrapped = append(wrapped, nonce...)
-	wrapped = append(wrapped, ciphertext...)
-
-	return wrapped, nil
 }

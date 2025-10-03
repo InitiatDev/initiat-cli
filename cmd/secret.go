@@ -162,14 +162,41 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func parseCompositeSlug(compositeSlug string) (string, string, error) {
+	parts := strings.Split(compositeSlug, "/")
+	const expectedParts = 2
+	if len(parts) != expectedParts {
+		return "", "", fmt.Errorf(
+			"invalid composite slug format: expected 'org-slug/workspace-slug', got '%s'",
+			compositeSlug,
+		)
+	}
+	return parts[0], parts[1], nil
+}
+
 func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, error) {
-	if !store.HasWorkspaceKey(compositeSlug) {
-		return nil, fmt.Errorf(
-			"workspace key not found locally for workspace '%s'. Please run 'initiat workspace init %s' first",
-			compositeSlug, compositeSlug)
+	orgSlug, workspaceSlug, err := parseCompositeSlug(compositeSlug)
+	if err != nil {
+		return nil, err
 	}
 
-	return store.GetWorkspaceKey(compositeSlug)
+	c := client.New()
+	wrappedKey, err := c.GetWrappedWorkspaceKey(orgSlug, workspaceSlug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch wrapped workspace key: %w", err)
+	}
+
+	devicePrivateKey, err := store.GetEncryptionPrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device private key: %w", err)
+	}
+
+	workspaceKey, err := encoding.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
+	}
+
+	return workspaceKey, nil
 }
 
 func encryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, error) {

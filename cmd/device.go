@@ -693,17 +693,40 @@ func buildWorkspaceSlug(approval types.DeviceApproval) string {
 	return workspaceSlug
 }
 
-func getWorkspaceKeyForApproval(workspaceSlug string) ([]byte, error) {
-	storage := storage.New()
+func parseWorkspaceSlug(compositeSlug string) (string, string, error) {
+	parts := strings.Split(compositeSlug, "/")
+	const expectedParts = 2
+	if len(parts) != expectedParts {
+		return "", "", fmt.Errorf(
+			"invalid workspace slug format: expected 'org-slug/workspace-slug', got '%s'",
+			compositeSlug,
+		)
+	}
+	return parts[0], parts[1], nil
+}
 
-	if !storage.HasWorkspaceKey(workspaceSlug) {
-		return nil, fmt.Errorf("workspace key not found for %s. "+
-			"You may need to initialize the workspace first with 'initiat workspace initialize'", workspaceSlug)
+func getWorkspaceKeyForApproval(compositeSlug string) ([]byte, error) {
+	store := storage.New()
+
+	orgSlug, workspaceSlug, err := parseWorkspaceSlug(compositeSlug)
+	if err != nil {
+		return nil, err
 	}
 
-	workspaceKey, err := storage.GetWorkspaceKey(workspaceSlug)
+	apiClient := client.New()
+	wrappedKey, err := apiClient.GetWrappedWorkspaceKey(orgSlug, workspaceSlug)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve workspace key for %s: %w", workspaceSlug, err)
+		return nil, fmt.Errorf("failed to fetch wrapped workspace key: %w", err)
+	}
+
+	devicePrivateKey, err := store.GetEncryptionPrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device private key: %w", err)
+	}
+
+	workspaceKey, err := encoding.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
 	}
 
 	if len(workspaceKey) != encoding.WorkspaceKeySize {

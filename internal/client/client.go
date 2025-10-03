@@ -180,6 +180,21 @@ func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKe
 	return httputil.HandleStandardResponse(statusCode, body, nil)
 }
 
+func (c *Client) GetWrappedWorkspaceKey(orgSlug, workspaceSlug string) (string, error) {
+	url := routes.BuildURL(c.baseURL, routes.Workspace.GetWorkspaceKey(orgSlug, workspaceSlug))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var keyResp types.GetWorkspaceKeyResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &keyResp); err != nil {
+		return "", fmt.Errorf("get workspace key failed: %w", err)
+	}
+
+	return keyResp.WrappedWorkspaceKey, nil
+}
+
 func (c *Client) SetSecret(
 	orgSlug, workspaceSlug, key string, encryptedValue, nonce []byte, description string, force bool,
 ) (*types.Secret, error) {

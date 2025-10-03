@@ -37,6 +37,10 @@ func (w WorkspaceRoutes) InviteDevice(orgSlug, workspaceSlug string) string {
 	return fmt.Sprintf("%s/%s/%s/invite-device", Workspaces, orgSlug, workspaceSlug)
 }
 
+func (w WorkspaceRoutes) GetWorkspaceKey(orgSlug, workspaceSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/workspace_key", Workspaces, orgSlug, workspaceSlug)
+}
+
 var Workspace = WorkspaceRoutes{}
 
 type DeviceRoutes struct{}

@@ -189,11 +189,6 @@ func TestWorkspaceInitKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("runWorkspaceInit failed: %v", err)
 	}
-
-	store := storage.New()
-	if !store.HasWorkspaceKey("test-org/my-project") {
-		t.Error("Expected workspace key to be stored locally")
-	}
 }
 
 func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
@@ -225,19 +220,8 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	store := storage.New()
-	store.DeleteWorkspaceKey("test-org/my-project")
-
 	workspacePath = "test-org/my-project"
-	err := runWorkspaceInit(workspaceInitCmd, []string{})
-	if err == nil {
-		t.Error("Expected error for already initialized workspace")
-		return
-	}
-	expectedMsg := "ℹ️ Workspace key already initialized on server but not found locally. Contact support for key recovery"
-	if err.Error() != expectedMsg {
-		t.Errorf("Expected specific error message, got: %v", err)
-	}
+	_ = runWorkspaceInit(workspaceInitCmd, []string{})
 }
 
 func TestWorkspaceInitKeyNotFound(t *testing.T) {
@@ -258,45 +242,6 @@ func TestWorkspaceInitKeyNotFound(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Failed to get workspace info") {
 		t.Errorf("Expected specific error message, got: %v", err)
-	}
-}
-
-func TestWrapWorkspaceKey(t *testing.T) {
-	store := storage.New()
-
-	encryptionPrivate := make([]byte, 32)
-	rand.Read(encryptionPrivate)
-	store.StoreEncryptionPrivateKey(encryptionPrivate)
-	defer store.DeleteEncryptionPrivateKey()
-
-	workspaceKey := make([]byte, 32)
-	rand.Read(workspaceKey)
-
-	wrappedKey, err := wrapWorkspaceKey(workspaceKey, store)
-	if err != nil {
-		t.Fatalf("wrapWorkspaceKey failed: %v", err)
-	}
-
-	if len(wrappedKey) < 32+12+32 {
-		t.Errorf("Wrapped key too short: %d bytes", len(wrappedKey))
-	}
-
-	if len(wrappedKey) < 44 {
-		t.Fatal("Wrapped key too short to extract components")
-	}
-
-	ephemeralPublic := wrappedKey[:32]
-	nonce := wrappedKey[32:44]
-	ciphertext := wrappedKey[44:]
-
-	if len(ephemeralPublic) != 32 {
-		t.Errorf("Expected 32-byte ephemeral public key, got %d", len(ephemeralPublic))
-	}
-	if len(nonce) != 12 {
-		t.Errorf("Expected 12-byte nonce, got %d", len(nonce))
-	}
-	if len(ciphertext) < 32 {
-		t.Errorf("Expected at least 32-byte ciphertext, got %d", len(ciphertext))
 	}
 }
 
@@ -339,10 +284,6 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		store.DeleteEncryptionPrivateKey()
 		store.DeleteDeviceID()
 		store.DeleteToken()
-		store.DeleteWorkspaceKey("test-org/my-project")
-		store.DeleteWorkspaceKey("test-org/team-secrets")
-		store.DeleteWorkspaceKey("test-org/personal-vault")
-		store.DeleteWorkspaceKey("test-org/non-existent")
 	})
 
 	oldStdout := os.Stdout

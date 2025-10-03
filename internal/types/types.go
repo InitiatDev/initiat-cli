@@ -64,6 +64,11 @@ type InitializeWorkspaceKeyResponse struct {
 	Workspace Workspace `json:"workspace"`
 }
 
+type GetWorkspaceKeyResponse struct {
+	WrappedWorkspaceKey string `json:"wrapped_workspace_key"`
+	KeyVersion          int    `json:"key_version"`
+}
+
 type Secret struct {
 	ID              int    `json:"id"`
 	Key             string `json:"key"`

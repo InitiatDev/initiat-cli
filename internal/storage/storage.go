@@ -143,30 +143,6 @@ func (s *Storage) HasEncryptionPrivateKey() bool {
 	return err == nil
 }
 
-func (s *Storage) StoreWorkspaceKey(compositeSlug string, key []byte) error {
-	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
-	return keyring.Set(s.serviceName, keyName, string(key))
-}
-
-func (s *Storage) GetWorkspaceKey(compositeSlug string) ([]byte, error) {
-	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
-	keyStr, err := keyring.Get(s.serviceName, keyName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workspace key for %s: %w", compositeSlug, err)
-	}
-	return []byte(keyStr), nil
-}
-
-func (s *Storage) DeleteWorkspaceKey(compositeSlug string) error {
-	keyName := fmt.Sprintf("workspace-key-%s", compositeSlug)
-	return keyring.Delete(s.serviceName, keyName)
-}
-
-func (s *Storage) HasWorkspaceKey(compositeSlug string) bool {
-	_, err := s.GetWorkspaceKey(compositeSlug)
-	return err == nil
-}
-
 func (s *Storage) ClearDeviceCredentials() error {
 	var errors []error
 

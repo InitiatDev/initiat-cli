@@ -116,3 +116,49 @@ func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, erro
 
 	return Encode(wrapped), nil
 }
+
+func UnwrapWorkspaceKey(wrappedKey string, devicePrivateKey []byte) ([]byte, error) {
+	if len(devicePrivateKey) != X25519PrivateKeySize {
+		return nil, fmt.Errorf("invalid device private key size: %d", len(devicePrivateKey))
+	}
+
+	wrapped, err := Decode(wrappedKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode wrapped key: %w", err)
+	}
+
+	if len(wrapped) < 32+12 {
+		return nil, fmt.Errorf("invalid wrapped key length: %d", len(wrapped))
+	}
+
+	ephemeralPublic := wrapped[0:32]
+	nonce := wrapped[32:44]
+	ciphertext := wrapped[44:]
+
+	sharedSecret, err := curve25519.X25519(devicePrivateKey, ephemeralPublic)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute shared secret: %w", err)
+	}
+
+	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
+	encryptionKey := make([]byte, WorkspaceKeySize)
+	if _, err := hkdf.Read(encryptionKey); err != nil {
+		return nil, fmt.Errorf("failed to derive encryption key: %w", err)
+	}
+
+	cipher, err := chacha20poly1305.New(encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	workspaceKey, err := cipher.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt workspace key: %w", err)
+	}
+
+	if len(workspaceKey) != WorkspaceKeySize {
+		return nil, fmt.Errorf("invalid workspace key size after unwrap: %d", len(workspaceKey))
+	}
+
+	return workspaceKey, nil
+}

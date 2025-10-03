@@ -212,7 +212,6 @@ Only workspace owners can initialize keys. The server verifies:
 }
 ```
 
-
 **422 Unprocessable Entity** - Validation errors
 ```json
 {
@@ -224,6 +223,73 @@ Only workspace owners can initialize keys. The server verifies:
 }
 ```
 
+### GET /workspaces/:org_slug/:workspace_slug/workspace_key
+
+Retrieves the wrapped workspace key for the authenticated device. This enables zero-persistence architecture where devices fetch and unwrap keys on-demand rather than storing them locally.
+
+#### Request
+
+```http
+GET /api/v1/workspaces/acme-corp/production/workspace_key
+Authorization: Device abc123def456ghi789jkl
+X-Signature: MEUCIQDx...
+X-Timestamp: 1694612345
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "wrapped_workspace_key": "hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo...",
+    "key_version": 1
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description | Encoding |
+|-------|------|-------------|----------|
+| `wrapped_workspace_key` | string | Workspace key encrypted for this device | URL-Safe Base64 |
+| `key_version` | integer | Version of the workspace key |
+
+#### Access Control
+
+- Device must be authenticated
+- Device must be approved for this workspace
+- Returns wrapped key specific to the requesting device
+
+#### Error Responses
+
+**401 Unauthorized** - Invalid authentication
+```json
+{
+  "success": false,
+  "message": "Invalid signature",
+  "errors": ["Invalid signature"]
+}
+```
+
+**403 Forbidden** - Device not approved for workspace
+```json
+{
+  "success": false,
+  "message": "Device not approved for this workspace",
+  "errors": ["Device not approved for this workspace"]
+}
+```
+
+**404 Not Found** - Workspace not found or not initialized
+```json
+{
+  "success": false,
+  "message": "Workspace key not initialized",
+  "errors": ["Workspace key not initialized"]
+}
+```
+
 ## Cryptographic Details
 
 ### Workspace Key (WSK)
@@ -231,28 +297,31 @@ Only workspace owners can initialize keys. The server verifies:
 - **Size**: 32 bytes (256 bits)
 - **Generation**: Cryptographically secure random
 - **Purpose**: Encrypts/decrypts all secrets in the workspace
-- **Storage**: Never stored in plaintext on server
+- **Server Storage**: Never stored in plaintext on server; only wrapped versions stored
+- **Client Storage**: Zero-persistence architecture - fetched and unwrapped on-demand
 - **Distribution**: Wrapped with each device's X25519 public key
 
 ### Key Wrapping
 
-The workspace key is encrypted using X25519 key exchange:
+The workspace key is encrypted using X25519 ECDH key exchange with ChaCha20-Poly1305:
 
 **Pseudocode:**
 ```
 ephemeral_private_key, ephemeral_public_key = generate_x25519_keypair()
 shared_secret = x25519_key_exchange(device_public_key, ephemeral_private_key)
-nonce = generate_random_24_bytes()
-encrypted_workspace_key = xsalsa20_poly1305_encrypt(workspace_key, nonce, shared_secret)
+encryption_key = hkdf(shared_secret, salt="initiat.wrap", info="workspace")
+nonce = generate_random_12_bytes()
+encrypted_workspace_key = chacha20_poly1305_encrypt(workspace_key, nonce, encryption_key)
 wrapped_key = ephemeral_public_key + nonce + encrypted_workspace_key
 ```
 
 **Process:**
 1. Generate ephemeral X25519 keypair for this wrapping operation
 2. Perform X25519 key exchange with device's public key
-3. Generate random 24-byte nonce for encryption
-4. Encrypt workspace key using XSalsa20-Poly1305 with shared secret
-5. Concatenate ephemeral public key, nonce, and encrypted key
+3. Derive encryption key using HKDF-SHA256
+4. Generate random 12-byte nonce for ChaCha20-Poly1305
+5. Encrypt workspace key using ChaCha20-Poly1305 with derived key
+6. Concatenate ephemeral public key (32 bytes) + nonce (12 bytes) + ciphertext
 
 ### Key Unwrapping
 
@@ -261,18 +330,43 @@ Devices unwrap the workspace key using their X25519 private key:
 **Pseudocode:**
 ```
 ephemeral_public_key = wrapped_key[0:32]
-nonce = wrapped_key[32:56]
-encrypted_workspace_key = wrapped_key[56:]
+nonce = wrapped_key[32:44]
+encrypted_workspace_key = wrapped_key[44:]
 shared_secret = x25519_key_exchange(ephemeral_public_key, device_private_key)
-workspace_key = xsalsa20_poly1305_decrypt(encrypted_workspace_key, nonce, shared_secret)
+encryption_key = hkdf(shared_secret, salt="initiat.wrap", info="workspace")
+workspace_key = chacha20_poly1305_decrypt(encrypted_workspace_key, nonce, encryption_key)
 ```
 
 **Process:**
 1. Extract ephemeral public key (first 32 bytes)
-2. Extract nonce (next 24 bytes)
+2. Extract nonce (next 12 bytes)
 3. Extract encrypted workspace key (remaining bytes)
 4. Perform X25519 key exchange with ephemeral public key
-5. Decrypt workspace key using XSalsa20-Poly1305 with shared secret
+5. Derive encryption key using HKDF-SHA256 (same parameters as wrapping)
+6. Decrypt workspace key using ChaCha20-Poly1305 with derived key
+
+### Zero-Persistence Client Architecture
+
+The CLI implements a zero-persistence model for workspace keys:
+
+**Traditional Approach (NOT used):**
+```
+Init: Generate WSK → Wrap → Send to server → Store plaintext locally
+Use:  Read plaintext WSK from local storage → Decrypt secret
+```
+
+**Zero-Persistence Approach (IMPLEMENTED):**
+```
+Init: Generate WSK → Wrap → Send to server → Discard WSK
+Use:  Fetch wrapped WSK from server → Unwrap with device key → Decrypt secret → Discard WSK
+```
+
+**Benefits:**
+- No persistent plaintext workspace keys on client devices
+- Real-time access revocation (server returns 403 when device approval revoked)
+- Audit trail of all workspace key access
+- Defense in depth against local storage compromise
+- No local state synchronization issues
 
 ## Security Considerations
 
