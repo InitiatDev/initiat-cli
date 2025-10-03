@@ -4,8 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -16,6 +14,7 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/table"
 	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
@@ -84,9 +83,8 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "Name\tComposite Slug\tKey Initialized\tRole")
-	fmt.Fprintln(w, "────\t──────────────\t───────────────\t────")
+	t := table.New()
+	t.SetHeaders("Name", "Composite Slug", "Key Initialized", "Role")
 
 	for _, workspace := range workspaces {
 		keyStatus := "❌ No"
@@ -99,13 +97,13 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 			compositeSlug = fmt.Sprintf("%s/%s", workspace.Organization.Slug, workspace.Slug)
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			workspace.Name,
-			compositeSlug,
-			keyStatus,
-			workspace.Role)
+		t.AddRow(workspace.Name, compositeSlug, keyStatus, workspace.Role)
 	}
-	_ = w.Flush()
+
+	err = t.Render()
+	if err != nil {
+		return err
+	}
 
 	hasUninitialized := false
 	for _, workspace := range workspaces {
@@ -224,7 +222,6 @@ func printSuccessMessage() {
 	fmt.Println("  • List secrets: initiat secrets list")
 	fmt.Println("  • Invite devices: initiat workspace invite-device")
 }
-
 func wrapWorkspaceKey(workspaceKey []byte, store *storage.Storage) ([]byte, error) {
 	encryptionPrivateKey, err := store.GetEncryptionPrivateKey()
 	if err != nil {

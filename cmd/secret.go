@@ -4,9 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -14,6 +12,7 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/table"
 )
 
 var (
@@ -277,19 +276,14 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "Key\tValue\tVersion")
-	fmt.Fprintln(w, "───\t─────\t───────")
+	t := table.New()
+	t.SetHeaders("Key", "Value", "Version")
 
 	for _, secret := range secrets {
-		fmt.Fprintf(w, "%s\t%s\t%d\n",
-			secret.Key,
-			"[encrypted]",
-			secret.Version)
+		t.AddRow(secret.Key, "[encrypted]", fmt.Sprintf("%d", secret.Version))
 	}
-	_ = w.Flush()
 
-	return nil
+	return t.Render()
 }
 
 func runSecretDelete(cmd *cobra.Command, args []string) error {

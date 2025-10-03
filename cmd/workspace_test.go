@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
@@ -85,9 +86,26 @@ func TestWorkspaceList(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	err := runWorkspaceList(workspaceListCmd, []string{})
 	if err != nil {
+		w.Close()
+		os.Stdout = old
 		t.Fatalf("runWorkspaceList failed: %v", err)
+	}
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	output := buf.String()
+
+	if !strings.Contains(output, "My Project") {
+		t.Error("Expected 'My Project' in output")
 	}
 }
 

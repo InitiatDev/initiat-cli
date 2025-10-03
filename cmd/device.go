@@ -17,6 +17,7 @@ import (
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
 	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
+	"github.com/DylanBlakemore/initiat-cli/internal/table"
 	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
 
@@ -383,9 +384,8 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("📋 Pending Device Approvals (%d)\n\n", len(approvals))
 
-	fmt.Println("┌─────┬─────────────────┬─────────────────┬─────────────────┬─────────────────┐")
-	fmt.Println("│ ID  │ User            │ Device          │ Workspace       │ Requested       │")
-	fmt.Println("├─────┼─────────────────┼─────────────────┼─────────────────┼─────────────────┤")
+	t := table.New()
+	t.SetHeaders("ID", "User", "Device", "Workspace", "Requested")
 
 	for _, approval := range approvals {
 		if approval.Status == statusPending {
@@ -394,8 +394,8 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 			workspaceSlug := approval.WorkspaceMembership.Workspace.Slug
 			workspaceName := fmt.Sprintf("%s/%s", orgSlug, workspaceSlug)
 
-			fmt.Printf("│ %-3d │ %-15s │ %-15s │ %-15s │ %-15s │\n",
-				approval.ID,
+			t.AddRow(
+				fmt.Sprintf("%d", approval.ID),
 				truncateString(userName, maxDisplayLength),
 				truncateString(approval.Device.Name, maxDisplayLength),
 				truncateString(workspaceName, maxDisplayLength),
@@ -404,7 +404,11 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println("└─────┴─────────────────┴─────────────────┴─────────────────┴─────────────────┘")
+	err = t.Render()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println()
 	fmt.Println("💡 Use 'initiat device approve --all' to approve all pending devices")
 	fmt.Println("💡 Use 'initiat device approve --id <id>' to approve a specific device")

@@ -61,12 +61,10 @@ func TestLoginCmd_Success(t *testing.T) {
 }
 
 func TestLoginCmd_InvalidArgs(t *testing.T) {
-	// With flag-based approach, Args should be nil (no positional args required)
 	assert.Nil(t, loginCmd.Args)
 }
 
 func TestLoginCmd_EmptyEmail(t *testing.T) {
-	// Test that empty email triggers prompting (which fails in test environment)
 	loginEmail = ""
 	err := runLogin(loginCmd, []string{})
 	assert.Error(t, err)
