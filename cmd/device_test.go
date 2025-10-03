@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"testing"
 
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 	"golang.org/x/crypto/curve25519"
 )
@@ -36,12 +37,12 @@ func TestGenerateX25519Keypair(t *testing.T) {
 		t.Fatalf("Failed to generate X25519 keypair: %v", err)
 	}
 
-	if len(publicKey) != x25519KeySize {
-		t.Errorf("Expected public key size %d, got %d", x25519KeySize, len(publicKey))
+	if len(publicKey) != crypto.X25519PrivateKeySize {
+		t.Errorf("Expected public key size %d, got %d", crypto.X25519PrivateKeySize, len(publicKey))
 	}
 
-	if len(privateKey) != x25519KeySize {
-		t.Errorf("Expected private key size %d, got %d", x25519KeySize, len(privateKey))
+	if len(privateKey) != crypto.X25519PrivateKeySize {
+		t.Errorf("Expected private key size %d, got %d", crypto.X25519PrivateKeySize, len(privateKey))
 	}
 
 	expectedPublicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)

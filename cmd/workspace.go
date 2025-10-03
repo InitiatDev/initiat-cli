@@ -9,7 +9,7 @@ import (
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/types"
@@ -154,7 +154,7 @@ func initializeWorkspaceKey(
 	c *client.Client, store *storage.Storage, _ *types.Workspace, workspaceCtx *config.WorkspaceContext,
 ) error {
 	fmt.Println("⚡ Generating secure 256-bit workspace key...")
-	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
+	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
 		return fmt.Errorf("❌ Failed to generate workspace key: %w", err)
 	}
@@ -170,12 +170,12 @@ func initializeWorkspaceKey(
 	}
 
 	fmt.Println("🔒 Encrypting workspace key with your device's X25519 key...")
-	wrappedKeyStr, err := encoding.WrapWorkspaceKey(workspaceKey, encryptionPublicKey)
+	wrappedKeyStr, err := crypto.WrapWorkspaceKey(workspaceKey, encryptionPublicKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to encrypt workspace key: %w", err)
 	}
 
-	wrappedKey, err := encoding.Decode(wrappedKeyStr)
+	wrappedKey, err := crypto.Decode(wrappedKeyStr)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to decode wrapped key: %w", err)
 	}

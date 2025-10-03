@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/httputil"
 	"github.com/InitiatDev/initiat-cli/internal/routes"
 	"github.com/InitiatDev/initiat-cli/internal/types"
@@ -70,12 +70,12 @@ func (c *Client) Login(email, password string) (*types.LoginResponse, error) {
 }
 
 func (c *Client) encodeKeys(signingPublicKey ed25519.PublicKey, encryptionPublicKey []byte) (string, string, error) {
-	ed25519Encoded, err := encoding.EncodeEd25519PublicKey(signingPublicKey)
+	ed25519Encoded, err := crypto.EncodeEd25519PublicKey(signingPublicKey)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to encode Ed25519 public key: %w", err)
 	}
 
-	x25519Encoded, err := encoding.EncodeX25519PublicKey(encryptionPublicKey)
+	x25519Encoded, err := crypto.EncodeX25519PublicKey(encryptionPublicKey)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to encode X25519 public key: %w", err)
 	}
@@ -163,7 +163,7 @@ func (c *Client) GetWorkspaceBySlug(orgSlug, workspaceSlug string) (*types.Works
 
 func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKey []byte) error {
 	initReq := types.InitializeWorkspaceKeyRequest{
-		WrappedWorkspaceKey: encoding.Encode(wrappedKey),
+		WrappedWorkspaceKey: crypto.Encode(wrappedKey),
 	}
 
 	jsonData, err := json.Marshal(initReq)
@@ -200,8 +200,8 @@ func (c *Client) SetSecret(
 ) (*types.Secret, error) {
 	setReq := types.SetSecretRequest{
 		Key:            key,
-		EncryptedValue: encoding.Encode(encryptedValue),
-		Nonce:          encoding.Encode(nonce),
+		EncryptedValue: crypto.Encode(encryptedValue),
+		Nonce:          crypto.Encode(nonce),
 		Description:    description,
 	}
 

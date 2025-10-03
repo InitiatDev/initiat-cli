@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 )
@@ -156,7 +156,7 @@ func TestWorkspaceInitKey(t *testing.T) {
 				t.Error("Expected wrapped workspace key")
 			}
 
-			if _, err := encoding.Decode(req.WrappedWorkspaceKey); err != nil {
+			if _, err := crypto.Decode(req.WrappedWorkspaceKey); err != nil {
 				t.Errorf("Invalid encoded wrapped key: %v", err)
 			}
 			workspaceData := types.Workspace{

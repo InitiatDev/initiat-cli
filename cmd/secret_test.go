@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 )
 
 func TestEncryptSecretValue(t *testing.T) {
-	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
+	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
 		t.Fatalf("Failed to generate test workspace key: %v", err)
 	}
@@ -24,8 +24,8 @@ func TestEncryptSecretValue(t *testing.T) {
 		t.Error("Encrypted value should not be empty")
 	}
 
-	if len(nonce) != encoding.SecretboxNonceSize {
-		t.Errorf("Expected nonce size %d, got %d", encoding.SecretboxNonceSize, len(nonce))
+	if len(nonce) != crypto.SecretboxNonceSize {
+		t.Errorf("Expected nonce size %d, got %d", crypto.SecretboxNonceSize, len(nonce))
 	}
 
 	if string(encryptedValue) == testValue {
@@ -34,7 +34,7 @@ func TestEncryptSecretValue(t *testing.T) {
 }
 
 func TestEncryptSecretValueDifferentNonces(t *testing.T) {
-	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
+	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
 		t.Fatalf("Failed to generate test workspace key: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestEncryptSecretValueDifferentNonces(t *testing.T) {
 }
 
 func TestEncryptSecretValueEmptyValue(t *testing.T) {
-	workspaceKey := make([]byte, encoding.WorkspaceKeySize)
+	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
 	if _, err := rand.Read(workspaceKey); err != nil {
 		t.Fatalf("Failed to generate test workspace key: %v", err)
 	}
@@ -71,8 +71,8 @@ func TestEncryptSecretValueEmptyValue(t *testing.T) {
 		t.Error("Encrypted value should not be empty even for empty input")
 	}
 
-	if len(nonce) != encoding.SecretboxNonceSize {
-		t.Errorf("Expected nonce size %d, got %d", encoding.SecretboxNonceSize, len(nonce))
+	if len(nonce) != crypto.SecretboxNonceSize {
+		t.Errorf("Expected nonce size %d, got %d", crypto.SecretboxNonceSize, len(nonce))
 	}
 }
 

@@ -1,24 +1,21 @@
 package cmd
 
 import (
-	"bufio"
 	"crypto/ed25519"
-	"crypto/rand"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/curve25519"
-	"golang.org/x/term"
 
+	"github.com/InitiatDev/initiat-cli/internal/auth"
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/types"
+	"github.com/InitiatDev/initiat-cli/internal/validation"
 )
 
 var deviceCmd = &cobra.Command{
@@ -117,79 +114,15 @@ func init() {
 }
 
 func ensureAuthenticated() error {
-	storage := storage.New()
-
-	if storage.HasToken() {
-		fmt.Println("ℹ️  Found existing authentication token")
-		return nil
-	}
-
-	fmt.Println("🔐 Authentication required for device registration")
-	fmt.Println()
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Email: ")
-	email, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read email: %w", err)
-	}
-	email = strings.TrimSpace(email)
-	if email == "" {
-		return fmt.Errorf("email cannot be empty")
-	}
-
-	fmt.Print("Password: ")
-	passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
-	if err != nil {
-		return fmt.Errorf("failed to read password: %w", err)
-	}
-	fmt.Println()
-
-	password := string(passwordBytes)
-	if password == "" {
-		return fmt.Errorf("password cannot be empty")
-	}
-
-	fmt.Println("🔐 Authenticating...")
-
-	apiClient := client.New()
-	loginResp, err := apiClient.Login(email, password)
-	if err != nil {
-		return fmt.Errorf("❌ Authentication failed: %w", err)
-	}
-
-	if err := storage.StoreToken(loginResp.Token); err != nil {
-		return fmt.Errorf("❌ Failed to store authentication token: %w", err)
-	}
-
-	fmt.Printf("✅ Authenticated as %s %s\n", loginResp.User.Name, loginResp.User.Surname)
-	fmt.Println()
-
-	return nil
+	return auth.EnsureAuthenticated()
 }
 
 func generateEd25519Keypair() (ed25519.PublicKey, ed25519.PrivateKey, error) {
-	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate Ed25519 keypair: %w", err)
-	}
-	return publicKey, privateKey, nil
+	return crypto.GenerateEd25519Keypair()
 }
 
-const x25519KeySize = 32
-
 func generateX25519Keypair() ([]byte, []byte, error) {
-	privateKey := make([]byte, x25519KeySize)
-	if _, err := rand.Read(privateKey); err != nil {
-		return nil, nil, fmt.Errorf("failed to generate X25519 private key: %w", err)
-	}
-
-	publicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate X25519 public key: %w", err)
-	}
-
-	return publicKey, privateKey, nil
+	return crypto.GenerateX25519Keypair()
 }
 
 func checkExistingDevice(storage *storage.Storage) error {
@@ -279,8 +212,8 @@ func storeDeviceCredentials(
 
 func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	name := strings.TrimSpace(args[0])
-	if name == "" {
-		return fmt.Errorf("device name cannot be empty")
+	if err := validation.ValidateDeviceName(name); err != nil {
+		return err
 	}
 
 	if err := ensureAuthenticated(); err != nil {
@@ -420,7 +353,6 @@ func runApproveDevice(cmd *cobra.Command, args []string) error {
 		return runApproveAllDevices(apiClient)
 	}
 
-	// Check for positional argument first, then fall back to flag
 	var approvalIDToUse string
 	if len(args) > 0 {
 		approvalIDToUse = args[0]
@@ -442,7 +374,6 @@ func runRejectDevice(cmd *cobra.Command, args []string) error {
 		return runRejectAllDevices(apiClient)
 	}
 
-	// Check for positional argument first, then fall back to flag
 	var approvalIDToUse string
 	if len(args) > 0 {
 		approvalIDToUse = args[0]
@@ -570,13 +501,13 @@ func approveDevicesBatch(
 		workspaceSlug := buildWorkspaceSlug(approval)
 		workspaceKey := workspaceKeys[workspaceSlug]
 
-		devicePublicKey, err := encoding.Decode(approval.Device.PublicKeyX25519)
+		devicePublicKey, err := crypto.Decode(approval.Device.PublicKeyX25519)
 		if err != nil {
 			fmt.Printf("❌ Failed to decode device public key for %s: %v\n", approval.Device.Name, err)
 			continue
 		}
 
-		wrappedKey, err := encoding.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+		wrappedKey, err := crypto.WrapWorkspaceKey(workspaceKey, devicePublicKey)
 		if err != nil {
 			fmt.Printf("❌ Failed to wrap workspace key for %s: %v\n", approval.Device.Name, err)
 			continue
@@ -613,12 +544,12 @@ func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
 		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
 	}
 
-	devicePublicKey, err := encoding.Decode(approval.Device.PublicKeyX25519)
+	devicePublicKey, err := crypto.Decode(approval.Device.PublicKeyX25519)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to decode device public key: %w", err)
 	}
 
-	wrappedKey, err := encoding.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+	wrappedKey, err := crypto.WrapWorkspaceKey(workspaceKey, devicePublicKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to wrap workspace key: %w", err)
 	}
@@ -737,14 +668,14 @@ func getWorkspaceKeyForApproval(compositeSlug string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get device private key: %w", err)
 	}
 
-	workspaceKey, err := encoding.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	workspaceKey, err := crypto.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
 	}
 
-	if len(workspaceKey) != encoding.WorkspaceKeySize {
+	if len(workspaceKey) != crypto.WorkspaceKeySize {
 		return nil, fmt.Errorf("invalid workspace key size: %d bytes (expected %d)",
-			len(workspaceKey), encoding.WorkspaceKeySize)
+			len(workspaceKey), crypto.WorkspaceKeySize)
 	}
 
 	return workspaceKey, nil

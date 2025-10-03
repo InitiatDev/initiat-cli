@@ -1,18 +1,17 @@
 package cmd
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/nacl/secretbox"
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
+	"github.com/InitiatDev/initiat-cli/internal/validation"
 )
 
 var (
@@ -111,11 +110,11 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 	key := strings.TrimSpace(args[0])
 	value := strings.TrimSpace(secretValue)
 
-	if key == "" {
-		return fmt.Errorf("secret key cannot be empty")
+	if err := validation.ValidateSecretKey(key); err != nil {
+		return err
 	}
-	if value == "" {
-		return fmt.Errorf("secret value cannot be empty")
+	if err := validation.ValidateSecretValue(value); err != nil {
+		return err
 	}
 
 	fmt.Printf("🔐 Setting secret '%s' in workspace %s...\n", key, workspaceCtx.String())
@@ -187,7 +186,7 @@ func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to get device private key: %w", err)
 	}
 
-	workspaceKey, err := encoding.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	workspaceKey, err := crypto.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
 	}
@@ -196,23 +195,7 @@ func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, erro
 }
 
 func encryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, error) {
-	if len(workspaceKey) != encoding.WorkspaceKeySize {
-		return nil, nil, fmt.Errorf(
-			"invalid workspace key size: %d bytes, expected %d bytes",
-			len(workspaceKey), encoding.WorkspaceKeySize)
-	}
-
-	var nonce [24]byte
-	if _, err := rand.Read(nonce[:]); err != nil {
-		return nil, nil, fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	var key [32]byte
-	copy(key[:], workspaceKey)
-
-	ciphertext := secretbox.Seal(nil, []byte(value), &nonce, &key)
-
-	return ciphertext, nonce[:], nil
+	return crypto.EncryptSecretValue(value, workspaceKey)
 }
 
 func runSecretGet(cmd *cobra.Command, args []string) error {
@@ -222,8 +205,8 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 	}
 
 	key := strings.TrimSpace(args[0])
-	if key == "" {
-		return fmt.Errorf("secret key cannot be empty")
+	if err := validation.ValidateSecretKey(key); err != nil {
+		return err
 	}
 
 	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
@@ -316,8 +299,8 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	key := strings.TrimSpace(args[0])
-	if key == "" {
-		return fmt.Errorf("secret key cannot be empty")
+	if err := validation.ValidateSecretKey(key); err != nil {
+		return err
 	}
 
 	if !forceOverride {
@@ -347,39 +330,16 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Secret '%s' deleted successfully!\n", key)
 	return nil
 }
-
 func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (string, error) {
-	ciphertext, err := encoding.Decode(encryptedValue)
+	ciphertext, err := crypto.Decode(encryptedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode encrypted value: %w", err)
 	}
 
-	nonceBytes, err := encoding.Decode(nonce)
+	nonceBytes, err := crypto.Decode(nonce)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode nonce: %w", err)
 	}
 
-	if len(nonceBytes) != encoding.SecretboxNonceSize {
-		return "", fmt.Errorf(
-			"invalid nonce size: got %d bytes, expected %d bytes",
-			len(nonceBytes), encoding.SecretboxNonceSize)
-	}
-
-	if len(workspaceKey) != encoding.WorkspaceKeySize {
-		return "", fmt.Errorf(
-			"invalid workspace key size: got %d bytes, expected %d bytes",
-			len(workspaceKey), encoding.WorkspaceKeySize)
-	}
-
-	var nonceArray [24]byte
-	var keyArray [32]byte
-	copy(nonceArray[:], nonceBytes)
-	copy(keyArray[:], workspaceKey)
-
-	plaintext, ok := secretbox.Open(nil, ciphertext, &nonceArray, &keyArray)
-	if !ok {
-		return "", fmt.Errorf("failed to decrypt value: authentication failed")
-	}
-
-	return string(plaintext), nil
+	return crypto.DecryptSecretValue(ciphertext, nonceBytes, workspaceKey)
 }

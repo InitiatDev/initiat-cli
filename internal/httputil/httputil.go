@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/InitiatDev/initiat-cli/internal/encoding"
+	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 )
@@ -101,7 +101,7 @@ func SignRequest(req *http.Request, _ []byte) error {
 
 	signature := ed25519.Sign(signingKey, []byte(message))
 
-	signatureEncoded, err := encoding.EncodeEd25519Signature(signature)
+	signatureEncoded, err := crypto.EncodeEd25519Signature(signature)
 	if err != nil {
 		return fmt.Errorf("failed to encode signature: %w", err)
 	}
