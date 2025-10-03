@@ -121,3 +121,63 @@ type ValidationErrorResponse struct {
 	Message string              `json:"message"`
 	Errors  map[string][]string `json:"errors,omitempty"`
 }
+
+type DeviceApproval struct {
+	ID         int    `json:"id"`
+	Status     string `json:"status"`
+	InsertedAt string `json:"inserted_at"`
+	UpdatedAt  string `json:"updated_at"`
+	Device     struct {
+		ID               int    `json:"id"`
+		Name             string `json:"name"`
+		PublicKeyEd25519 string `json:"public_key_ed25519"`
+		PublicKeyX25519  string `json:"public_key_x25519"`
+	} `json:"device"`
+	WorkspaceMembership struct {
+		ID     int    `json:"id"`
+		Role   string `json:"role"`
+		Status string `json:"status"`
+		User   struct {
+			ID      int    `json:"id"`
+			Email   string `json:"email"`
+			Name    string `json:"name"`
+			Surname string `json:"surname"`
+		} `json:"user"`
+		Workspace struct {
+			ID           int    `json:"id"`
+			Name         string `json:"name"`
+			Slug         string `json:"slug"`
+			Organization struct {
+				ID   int    `json:"id"`
+				Name string `json:"name"`
+				Slug string `json:"slug"`
+			} `json:"organization"`
+		} `json:"workspace"`
+	} `json:"workspace_membership"`
+	ApprovedByUser *struct {
+		ID      int    `json:"id"`
+		Email   string `json:"email"`
+		Name    string `json:"name"`
+		Surname string `json:"surname"`
+	} `json:"approved_by_user"`
+}
+
+type ListDeviceApprovalsResponse struct {
+	DeviceApprovals []DeviceApproval `json:"device_approvals"`
+}
+
+type GetDeviceApprovalResponse struct {
+	DeviceApproval DeviceApproval `json:"device_approval"`
+}
+
+type ApproveDeviceRequest struct {
+	WrappedWorkspaceKey string `json:"wrapped_workspace_key"`
+}
+
+type ApproveDeviceResponse struct {
+	DeviceApproval DeviceApproval `json:"device_approval"`
+}
+
+type RejectDeviceResponse struct {
+	DeviceApproval DeviceApproval `json:"device_approval"`
+}

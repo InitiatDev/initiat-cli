@@ -174,24 +174,20 @@ func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, erro
 }
 
 func encryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, error) {
-	// Validate workspace key size
 	if len(workspaceKey) != encoding.WorkspaceKeySize {
 		return nil, nil, fmt.Errorf(
 			"invalid workspace key size: %d bytes, expected %d bytes",
 			len(workspaceKey), encoding.WorkspaceKeySize)
 	}
 
-	// Generate random nonce (24 bytes for XSalsa20Poly1305)
 	var nonce [24]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
 		return nil, nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	// Convert workspace key to fixed-size array
 	var key [32]byte
 	copy(key[:], workspaceKey)
 
-	// Encrypt the value using NaCl secretbox (XSalsa20Poly1305)
 	ciphertext := secretbox.Seal(nil, []byte(value), &nonce, &key)
 
 	return ciphertext, nonce[:], nil
@@ -335,9 +331,7 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// decryptSecretValue decrypts a secret value using NaCl secretbox (XSalsa20Poly1305)
 func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (string, error) {
-	// Decode the encrypted value and nonce
 	ciphertext, err := encoding.Decode(encryptedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode encrypted value: %w", err)
@@ -348,7 +342,6 @@ func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (stri
 		return "", fmt.Errorf("failed to decode nonce: %w", err)
 	}
 
-	// Validate sizes
 	if len(nonceBytes) != encoding.SecretboxNonceSize {
 		return "", fmt.Errorf(
 			"invalid nonce size: got %d bytes, expected %d bytes",
@@ -361,13 +354,11 @@ func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (stri
 			len(workspaceKey), encoding.WorkspaceKeySize)
 	}
 
-	// Convert to fixed-size arrays for NaCl secretbox
 	var nonceArray [24]byte
 	var keyArray [32]byte
 	copy(nonceArray[:], nonceBytes)
 	copy(keyArray[:], workspaceKey)
 
-	// Decrypt the value using NaCl secretbox (XSalsa20Poly1305)
 	plaintext, ok := secretbox.Open(nil, ciphertext, &nonceArray, &keyArray)
 	if !ok {
 		return "", fmt.Errorf("failed to decrypt value: authentication failed")

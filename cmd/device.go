@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/curve25519"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/DylanBlakemore/initiat-cli/internal/client"
 	"github.com/DylanBlakemore/initiat-cli/internal/config"
+	"github.com/DylanBlakemore/initiat-cli/internal/encoding"
 	"github.com/DylanBlakemore/initiat-cli/internal/storage"
 	"github.com/DylanBlakemore/initiat-cli/internal/types"
 )
@@ -51,8 +53,46 @@ var clearTokenCmd = &cobra.Command{
 	RunE: runClearToken,
 }
 
+var approvalsCmd = &cobra.Command{
+	Use:   "approvals",
+	Short: "List pending device approvals",
+	Long:  "List all pending device approvals for workspaces where you are an admin.",
+	RunE:  runListApprovals,
+}
+
+var approveCmd = &cobra.Command{
+	Use:   "approve",
+	Short: "Approve a device for workspace access",
+	Long:  "Approve a specific device or all pending devices for workspace access.",
+	RunE:  runApproveDevice,
+}
+
+var rejectCmd = &cobra.Command{
+	Use:   "reject",
+	Short: "Reject a device for workspace access",
+	Long:  "Reject a specific device or all pending devices for workspace access.",
+	RunE:  runRejectDevice,
+}
+
+var approvalCmd = &cobra.Command{
+	Use:   "approval",
+	Short: "Show device approval details",
+	Long:  "Show detailed information about a specific device approval.",
+	RunE:  runShowApproval,
+}
+
+const (
+	statusPending       = "pending"
+	maxDisplayLength    = 15
+	maxKeyDisplayLength = 20
+	minTruncateLength   = 3
+)
+
 var (
 	deviceName string
+	approveAll bool
+	rejectAll  bool
+	approvalID string
 )
 
 func init() {
@@ -60,9 +100,22 @@ func init() {
 	deviceCmd.AddCommand(registerDeviceCmd)
 	deviceCmd.AddCommand(unregisterDeviceCmd)
 	deviceCmd.AddCommand(clearTokenCmd)
+	deviceCmd.AddCommand(approvalsCmd)
+	deviceCmd.AddCommand(approveCmd)
+	deviceCmd.AddCommand(rejectCmd)
+	deviceCmd.AddCommand(approvalCmd)
 
 	registerDeviceCmd.Flags().StringVarP(&deviceName, "name", "n", "", "Name for this device (required)")
 	_ = registerDeviceCmd.MarkFlagRequired("name")
+
+	approveCmd.Flags().BoolVar(&approveAll, "all", false, "Approve all pending devices")
+	approveCmd.Flags().StringVar(&approvalID, "id", "", "Device approval ID to approve")
+
+	rejectCmd.Flags().BoolVar(&rejectAll, "all", false, "Reject all pending devices")
+	rejectCmd.Flags().StringVar(&approvalID, "id", "", "Device approval ID to reject")
+
+	approvalCmd.Flags().StringVar(&approvalID, "id", "", "Device approval ID to show (required)")
+	_ = approvalCmd.MarkFlagRequired("id")
 }
 
 func ensureAuthenticated() error {
@@ -182,7 +235,6 @@ func performDeviceRegistration(
 	fmt.Println("📡 Registering device with server...")
 	apiClient := client.New()
 
-	// Debug: show current config
 	cfg := config.Get()
 	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.API.BaseURL)
 
@@ -240,7 +292,7 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	storage := storage.New()
 
 	if err := checkExistingDevice(storage); err != nil {
-		return nil // Not a real error, just early return
+		return nil
 	}
 
 	fmt.Printf("🔑 Registering device: %s\n", name)
@@ -276,7 +328,6 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 func runUnregisterDevice(cmd *cobra.Command, args []string) error {
 	storage := storage.New()
 
-	// Check if there are any device credentials to clear
 	if !storage.HasDeviceID() && !storage.HasSigningPrivateKey() && !storage.HasEncryptionPrivateKey() {
 		fmt.Println("ℹ️  No device credentials found in local storage")
 		return nil
@@ -315,4 +366,364 @@ func runClearToken(cmd *cobra.Command, args []string) error {
 	fmt.Println("💡 You will need to authenticate again for device registration")
 
 	return nil
+}
+
+func runListApprovals(cmd *cobra.Command, args []string) error {
+	apiClient := client.New()
+
+	approvals, err := apiClient.ListDeviceApprovals()
+	if err != nil {
+		return fmt.Errorf("❌ Failed to list device approvals: %w", err)
+	}
+
+	if len(approvals) == 0 {
+		fmt.Println("📋 No pending device approvals found")
+		return nil
+	}
+
+	fmt.Printf("📋 Pending Device Approvals (%d)\n\n", len(approvals))
+
+	fmt.Println("┌─────┬─────────────────┬─────────────────┬─────────────────┬─────────────────┐")
+	fmt.Println("│ ID  │ User            │ Device          │ Workspace       │ Requested       │")
+	fmt.Println("├─────┼─────────────────┼─────────────────┼─────────────────┼─────────────────┤")
+
+	for _, approval := range approvals {
+		if approval.Status == statusPending {
+			userName := fmt.Sprintf("%s %s", approval.WorkspaceMembership.User.Name, approval.WorkspaceMembership.User.Surname)
+			orgSlug := approval.WorkspaceMembership.Workspace.Organization.Slug
+			workspaceSlug := approval.WorkspaceMembership.Workspace.Slug
+			workspaceName := fmt.Sprintf("%s/%s", orgSlug, workspaceSlug)
+
+			fmt.Printf("│ %-3d │ %-15s │ %-15s │ %-15s │ %-15s │\n",
+				approval.ID,
+				truncateString(userName, maxDisplayLength),
+				truncateString(approval.Device.Name, maxDisplayLength),
+				truncateString(workspaceName, maxDisplayLength),
+				truncateString(formatTime(approval.InsertedAt), maxDisplayLength),
+			)
+		}
+	}
+
+	fmt.Println("└─────┴─────────────────┴─────────────────┴─────────────────┴─────────────────┘")
+	fmt.Println()
+	fmt.Println("💡 Use 'initiat device approve --all' to approve all pending devices")
+	fmt.Println("💡 Use 'initiat device approve --id <id>' to approve a specific device")
+
+	return nil
+}
+
+func runApproveDevice(cmd *cobra.Command, args []string) error {
+	apiClient := client.New()
+
+	if approveAll {
+		return runApproveAllDevices(apiClient)
+	}
+
+	if approvalID == "" {
+		return fmt.Errorf("❌ Please specify either --all or --id <approval-id>")
+	}
+
+	return runApproveSingleDevice(apiClient, approvalID)
+}
+
+func runRejectDevice(cmd *cobra.Command, args []string) error {
+	apiClient := client.New()
+
+	if rejectAll {
+		return runRejectAllDevices(apiClient)
+	}
+
+	if approvalID == "" {
+		return fmt.Errorf("❌ Please specify either --all or --id <approval-id>")
+	}
+
+	return runRejectSingleDevice(apiClient, approvalID)
+}
+
+func runShowApproval(cmd *cobra.Command, args []string) error {
+	apiClient := client.New()
+
+	approval, err := apiClient.GetDeviceApproval(approvalID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get device approval: %w", err)
+	}
+
+	fmt.Println("📋 Device Approval Details")
+	fmt.Println()
+	fmt.Printf("User: %s %s (%s)\n",
+		approval.WorkspaceMembership.User.Name,
+		approval.WorkspaceMembership.User.Surname,
+		approval.WorkspaceMembership.User.Email)
+	fmt.Printf("Device: %s (ID: %d)\n", approval.Device.Name, approval.Device.ID)
+	fmt.Printf("Workspace: %s / %s (%s/%s)\n",
+		approval.WorkspaceMembership.Workspace.Organization.Name,
+		approval.WorkspaceMembership.Workspace.Name,
+		approval.WorkspaceMembership.Workspace.Organization.Slug,
+		approval.WorkspaceMembership.Workspace.Slug)
+	fmt.Printf("Requested: %s\n", formatTime(approval.InsertedAt))
+	fmt.Printf("Status: %s\n", approval.Status)
+
+	if approval.ApprovedByUser != nil {
+		fmt.Printf("Approved by: %s %s (%s)\n",
+			approval.ApprovedByUser.Name,
+			approval.ApprovedByUser.Surname,
+			approval.ApprovedByUser.Email)
+	}
+
+	fmt.Println()
+	fmt.Println("🔑 Device Public Keys:")
+	fmt.Printf("  Ed25519: %s... (for signing)\n", truncateString(approval.Device.PublicKeyEd25519, maxKeyDisplayLength))
+	fmt.Printf("  X25519: %s... (for encryption)\n", truncateString(approval.Device.PublicKeyX25519, maxKeyDisplayLength))
+
+	return nil
+}
+
+func runApproveAllDevices(apiClient *client.Client) error {
+	approvals, err := apiClient.ListDeviceApprovals()
+	if err != nil {
+		return fmt.Errorf("❌ Failed to list device approvals: %w", err)
+	}
+
+	pendingApprovals := filterPendingApprovals(approvals)
+	if len(pendingApprovals) == 0 {
+		fmt.Println("📋 No pending device approvals found")
+		return nil
+	}
+
+	fmt.Printf("🔐 Approving all pending devices...\n\n")
+	fmt.Printf("Found %d pending approvals:\n", len(pendingApprovals))
+
+	workspaceKeys := collectWorkspaceKeys(pendingApprovals)
+	if len(workspaceKeys) == 0 {
+		return fmt.Errorf("❌ No workspace keys found")
+	}
+
+	fmt.Println()
+	successCount := approveDevicesBatch(apiClient, pendingApprovals, workspaceKeys)
+
+	fmt.Printf("✅ Approved %d devices successfully!\n", successCount)
+	fmt.Println("   All approved devices can now access their respective workspace secrets")
+
+	return nil
+}
+
+func filterPendingApprovals(approvals []types.DeviceApproval) []types.DeviceApproval {
+	pendingApprovals := make([]types.DeviceApproval, 0)
+	for _, approval := range approvals {
+		if approval.Status == statusPending {
+			pendingApprovals = append(pendingApprovals, approval)
+		}
+	}
+	return pendingApprovals
+}
+
+func collectWorkspaceKeys(pendingApprovals []types.DeviceApproval) map[string][]byte {
+	workspaceKeys := make(map[string][]byte)
+
+	for _, approval := range pendingApprovals {
+		workspaceSlug := buildWorkspaceSlug(approval)
+
+		fmt.Printf("  • %s (%s) - %s %s\n",
+			approval.Device.Name,
+			workspaceSlug,
+			approval.WorkspaceMembership.User.Name,
+			approval.WorkspaceMembership.User.Surname)
+
+		if _, exists := workspaceKeys[workspaceSlug]; !exists {
+			key, err := getWorkspaceKeyForApproval(workspaceSlug)
+			if err != nil {
+				fmt.Printf("❌ Failed to get workspace key for %s: %v\n", workspaceSlug, err)
+				continue
+			}
+			workspaceKeys[workspaceSlug] = key
+		}
+	}
+
+	return workspaceKeys
+}
+
+func approveDevicesBatch(
+	apiClient *client.Client,
+	pendingApprovals []types.DeviceApproval,
+	workspaceKeys map[string][]byte,
+) int {
+	successCount := 0
+
+	for _, approval := range pendingApprovals {
+		workspaceSlug := buildWorkspaceSlug(approval)
+		workspaceKey := workspaceKeys[workspaceSlug]
+
+		devicePublicKey, err := encoding.Decode(approval.Device.PublicKeyX25519)
+		if err != nil {
+			fmt.Printf("❌ Failed to decode device public key for %s: %v\n", approval.Device.Name, err)
+			continue
+		}
+
+		wrappedKey, err := encoding.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+		if err != nil {
+			fmt.Printf("❌ Failed to wrap workspace key for %s: %v\n", approval.Device.Name, err)
+			continue
+		}
+
+		_, err = apiClient.ApproveDevice(fmt.Sprintf("%d", approval.ID), wrappedKey)
+		if err != nil {
+			fmt.Printf("❌ Failed to approve %s: %v\n", approval.Device.Name, err)
+			continue
+		}
+
+		successCount++
+	}
+
+	return successCount
+}
+
+func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
+	approval, err := apiClient.GetDeviceApproval(approvalID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get device approval: %w", err)
+	}
+
+	if approval.Status != "pending" {
+		return fmt.Errorf("❌ Device approval is not pending (status: %s)", approval.Status)
+	}
+
+	workspaceSlug := buildWorkspaceSlug(*approval)
+
+	fmt.Printf("🔐 Approving device for %s...\n", approval.Device.Name)
+
+	workspaceKey, err := getWorkspaceKeyForApproval(workspaceSlug)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+	}
+
+	devicePublicKey, err := encoding.Decode(approval.Device.PublicKeyX25519)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to decode device public key: %w", err)
+	}
+
+	wrappedKey, err := encoding.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to wrap workspace key: %w", err)
+	}
+
+	_, err = apiClient.ApproveDevice(approvalID, wrappedKey)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to approve device: %w", err)
+	}
+
+	fmt.Println("✅ Device approved successfully!")
+	fmt.Println("   Device can now access workspace secrets")
+
+	return nil
+}
+
+func runRejectAllDevices(apiClient *client.Client) error {
+	approvals, err := apiClient.ListDeviceApprovals()
+	if err != nil {
+		return fmt.Errorf("❌ Failed to list device approvals: %w", err)
+	}
+
+	pendingApprovals := make([]types.DeviceApproval, 0)
+	for _, approval := range approvals {
+		if approval.Status == statusPending {
+			pendingApprovals = append(pendingApprovals, approval)
+		}
+	}
+
+	if len(pendingApprovals) == 0 {
+		fmt.Println("📋 No pending device approvals found")
+		return nil
+	}
+
+	fmt.Printf("❌ Rejecting all pending devices...\n\n")
+	fmt.Printf("Found %d pending approvals to reject\n", len(pendingApprovals))
+
+	successCount := 0
+
+	for _, approval := range pendingApprovals {
+		_, err := apiClient.RejectDevice(fmt.Sprintf("%d", approval.ID))
+		if err != nil {
+			fmt.Printf("❌ Failed to reject %s: %v\n", approval.Device.Name, err)
+			continue
+		}
+
+		successCount++
+	}
+
+	fmt.Printf("❌ Rejected %d devices\n", successCount)
+	fmt.Println("   Users will need to request approval again")
+
+	return nil
+}
+
+func runRejectSingleDevice(apiClient *client.Client, approvalID string) error {
+	approval, err := apiClient.GetDeviceApproval(approvalID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get device approval: %w", err)
+	}
+
+	if approval.Status != "pending" {
+		return fmt.Errorf("❌ Device approval is not pending (status: %s)", approval.Status)
+	}
+
+	_, err = apiClient.RejectDevice(approvalID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to reject device: %w", err)
+	}
+
+	fmt.Printf("❌ Device rejected for %s\n", approval.Device.Name)
+	fmt.Println("   User will need to request approval again")
+
+	return nil
+}
+
+func buildWorkspaceSlug(approval types.DeviceApproval) string {
+	workspaceSlug := fmt.Sprintf("%s/%s",
+		approval.WorkspaceMembership.Workspace.Organization.Slug,
+		approval.WorkspaceMembership.Workspace.Slug)
+
+	if approval.WorkspaceMembership.Workspace.Organization.Slug == "" {
+		workspaceSlug = approval.WorkspaceMembership.Workspace.Slug
+	}
+
+	return workspaceSlug
+}
+
+func getWorkspaceKeyForApproval(workspaceSlug string) ([]byte, error) {
+	storage := storage.New()
+
+	if !storage.HasWorkspaceKey(workspaceSlug) {
+		return nil, fmt.Errorf("workspace key not found for %s. "+
+			"You may need to initialize the workspace first with 'initiat workspace initialize'", workspaceSlug)
+	}
+
+	workspaceKey, err := storage.GetWorkspaceKey(workspaceSlug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve workspace key for %s: %w", workspaceSlug, err)
+	}
+
+	if len(workspaceKey) != encoding.WorkspaceKeySize {
+		return nil, fmt.Errorf("invalid workspace key size: %d bytes (expected %d)",
+			len(workspaceKey), encoding.WorkspaceKeySize)
+	}
+
+	return workspaceKey, nil
+}
+
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= minTruncateLength {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
+}
+
+func formatTime(timeStr string) string {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return timeStr
+	}
+	return t.Format("Jan 2 15:04")
 }

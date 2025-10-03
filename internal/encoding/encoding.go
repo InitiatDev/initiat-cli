@@ -2,8 +2,14 @@ package encoding
 
 import (
 	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/curve25519"
+	"golang.org/x/crypto/hkdf"
 )
 
 const (
@@ -45,21 +51,76 @@ func Encode(data []byte) string {
 // Decode provides general base64 decoding for binary data
 // Tries multiple base64 formats for compatibility
 func Decode(encoded string) ([]byte, error) {
-	// Try RawURLEncoding first (our preferred format)
 	if data, err := base64.RawURLEncoding.DecodeString(encoded); err == nil {
 		return data, nil
 	}
 
-	// Try standard base64 encoding (with padding)
 	if data, err := base64.StdEncoding.DecodeString(encoded); err == nil {
 		return data, nil
 	}
 
-	// Try URLEncoding (with padding)
 	if data, err := base64.URLEncoding.DecodeString(encoded); err == nil {
 		return data, nil
 	}
 
-	// Try RawStdEncoding (without padding)
 	return base64.RawStdEncoding.DecodeString(encoded)
+}
+
+func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, error) {
+	if len(workspaceKey) != WorkspaceKeySize {
+		return "", fmt.Errorf("invalid workspace key size: %d", len(workspaceKey))
+	}
+
+	if len(devicePublicKey) != X25519PrivateKeySize {
+		return "", fmt.Errorf("invalid device public key size: %d", len(devicePublicKey))
+	}
+
+	// Generate ephemeral private key (same as original workspace key wrapping)
+	ephemeralPrivate := make([]byte, X25519PrivateKeySize)
+	if _, err := rand.Read(ephemeralPrivate); err != nil {
+		return "", fmt.Errorf("failed to generate ephemeral private key: %w", err)
+	}
+
+	// Generate ephemeral public key
+	ephemeralPublic, err := curve25519.X25519(ephemeralPrivate, curve25519.Basepoint)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate ephemeral public key: %w", err)
+	}
+
+	// Compute shared secret using device's public key (instead of admin's private key)
+	sharedSecret, err := curve25519.X25519(ephemeralPrivate, devicePublicKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to compute shared secret: %w", err)
+	}
+
+	// Use HKDF to derive encryption key (same as original)
+	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
+	encryptionKey := make([]byte, WorkspaceKeySize)
+	if _, err := hkdf.Read(encryptionKey); err != nil {
+		return "", fmt.Errorf("failed to derive encryption key: %w", err)
+	}
+
+	// Use ChaCha20-Poly1305 (same as original)
+	cipher, err := chacha20poly1305.New(encryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	// Generate nonce for ChaCha20-Poly1305
+	const chacha20NonceSize = 12
+	nonce := make([]byte, chacha20NonceSize)
+	if _, err := rand.Read(nonce); err != nil {
+		return "", fmt.Errorf("failed to generate nonce: %w", err)
+	}
+
+	// Encrypt using ChaCha20-Poly1305 with random nonce
+	ciphertext := cipher.Seal(nil, nonce, workspaceKey, nil) // #nosec G407 - nonce is randomly generated
+
+	// Create wrapped key with ephemeral public key + nonce + ciphertext
+	wrapped := make([]byte, 0, 32+12+len(ciphertext))
+	wrapped = append(wrapped, ephemeralPublic...)
+	wrapped = append(wrapped, nonce...)
+	wrapped = append(wrapped, ciphertext...)
+
+	return Encode(wrapped), nil
 }

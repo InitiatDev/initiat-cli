@@ -36,6 +36,7 @@ Initiat implements a **zero-knowledge secret management system** with client-sid
 | **Authentication** | `/auth/*` | None | User login and device registration |
 | **Workspaces** | `/workspaces/*` | Device | Workspace access and key management |
 | **Secrets** | `/workspaces/*/secrets/*` | Device | Encrypted secret management |
+| **Device Approvals** | `/device-approvals/*` | Device | Device approval workflow for workspace access |
 
 ## Complete Endpoint Reference
 
@@ -100,6 +101,167 @@ Initiat implements a **zero-knowledge secret management system** with client-sid
 - **Output**: Empty (204 No Content)
 - **Authentication**: Device signature required
 - **Documentation**: [API_SECRETS_SPEC.md](./API_SECRETS_SPEC.md#delete-workspacesworkspace_idsecretskey)
+
+### Device Approval Endpoints
+
+The Device Approval API enables workspace administrators to manage device access requests. When a user is invited to a workspace with `requires_device_approval: true`, their devices must be approved by a workspace admin before they can access workspace secrets.
+
+#### GET /device-approvals
+- **Purpose**: List all pending device approvals for workspaces where the user is an admin
+- **Input**: None
+- **Output**: Array of device approval objects with workspace and user details
+- **Authentication**: Device signature required (admin user only)
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "device_approvals": [
+        {
+          "id": 123,
+          "status": "pending",
+          "inserted_at": "2024-01-15T10:30:00Z",
+          "updated_at": "2024-01-15T10:30:00Z",
+          "device": {
+            "id": 456,
+            "name": "John's MacBook",
+            "public_key_ed25519": "base64_encoded_key",
+            "public_key_x25519": "base64_encoded_key"
+          },
+          "workspace_membership": {
+            "id": 789,
+            "role": "member",
+            "status": "pending",
+            "user": {
+              "id": 101,
+              "email": "john@example.com",
+              "name": "John",
+              "surname": "Doe"
+            },
+            "workspace": {
+              "id": 202,
+              "name": "Production",
+              "slug": "prod",
+              "organization": {
+                "id": 303,
+                "name": "Acme Corp",
+                "slug": "acme"
+              }
+            }
+          },
+          "approved_by_user": null
+        }
+      ]
+    }
+  }
+  ```
+
+#### GET /device-approvals/:id
+- **Purpose**: Get details of a specific device approval
+- **Input**: Device approval ID in URL path
+- **Output**: Single device approval object
+- **Authentication**: Device signature required (admin user only)
+- **Response Format**: Same as individual item in the list above
+
+#### POST /device-approvals/:id/approve
+- **Purpose**: Approve a device for workspace access
+- **Input**: 
+  - `wrapped_workspace_key` (string): The workspace key encrypted with the device's X25519 public key
+- **Output**: Updated device approval object
+- **Authentication**: Device signature required (workspace admin only)
+- **Request Body**:
+  ```json
+  {
+    "wrapped_workspace_key": "base64_encoded_encrypted_workspace_key"
+  }
+  ```
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "message": "Device approved successfully",
+    "data": {
+      "device_approval": {
+        "id": 123,
+        "status": "approved",
+        "approved_by_user": {
+          "id": 404,
+          "email": "admin@example.com",
+          "name": "Admin",
+          "surname": "User"
+        },
+        "device": { /* device details */ },
+        "workspace_membership": { /* membership details */ }
+      }
+    }
+  }
+  ```
+
+#### POST /device-approvals/:id/reject
+- **Purpose**: Reject a device for workspace access
+- **Input**: None
+- **Output**: Updated device approval object
+- **Authentication**: Device signature required (workspace admin only)
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "message": "Device rejected successfully",
+    "data": {
+      "device_approval": {
+        "id": 123,
+        "status": "rejected",
+        "approved_by_user": {
+          "id": 404,
+          "email": "admin@example.com",
+          "name": "Admin",
+          "surname": "User"
+        },
+        "device": { /* device details */ },
+        "workspace_membership": { /* membership details */ }
+      }
+    }
+  }
+  ```
+
+### Device Approval Workflow
+
+The device approval workflow ensures secure access control for workspace secrets:
+
+1. **User Invitation**: A workspace admin invites a user to join a workspace with `requires_device_approval: true`
+2. **Device Registration**: The invited user registers their CLI device(s) using the standard device registration flow
+3. **Approval Request**: Each device registration creates a pending device approval record
+4. **Admin Review**: Workspace admins can view all pending approvals via `GET /device-approvals`
+5. **Approval Decision**: Admins can approve or reject each device:
+   - **Approve**: Wraps the existing workspace key with the device's X25519 public key and stores it on the server
+   - **Reject**: Denies access and marks the approval as rejected
+6. **Access Granted**: Approved devices can now access workspace secrets using their wrapped workspace key
+
+### Security Considerations
+
+- **Permission Model**: Only workspace admins (organization owners or direct workspace admins) can approve/reject devices
+- **Workspace Keys**: Each approved device receives the workspace key wrapped with their X25519 public key using ECDH + HKDF + ChaCha20-Poly1305
+- **Membership Activation**: User's workspace membership becomes active as soon as any device is approved
+- **Audit Trail**: All approval/rejection actions are logged with admin attribution
+- **Device Authentication**: All API calls require valid Ed25519 device signatures
+
+### Error Responses
+
+All endpoints return consistent error formats:
+
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": ["Detailed error message"]
+}
+```
+
+Common error scenarios:
+- **401 Unauthorized**: Invalid device signature
+- **403 Forbidden**: User lacks admin permissions for the workspace
+- **404 Not Found**: Device approval not found
+- **422 Unprocessable Entity**: Invalid request data or validation errors
 
 ## Authentication Flow
 
@@ -255,13 +417,6 @@ X-RateLimit-Reset: 1694616000
 ### Official SDKs
 
 - **Go**: `github.com/initiat/initiat-go` (Primary CLI implementation)
-- **JavaScript/TypeScript**: `@initiat/sdk` (Browser and Node.js)
-- **Python**: `initiat-python` (Planned)
-
-### Community SDKs
-
-- **Rust**: Community-maintained
-- **Java**: Community-maintained
 
 ## Versioning and Compatibility
 
@@ -272,11 +427,6 @@ X-RateLimit-Reset: 1694616000
 - **Backward Compatibility**: Maintained within major versions
 - **Deprecation Policy**: 6-month notice for breaking changes
 
-### Client Compatibility
-
-- **Minimum CLI Version**: v1.0.0
-- **Recommended Update**: Latest stable release
-- **Breaking Changes**: Communicated via changelog and migration guides
 
 ## Security Considerations
 
@@ -297,77 +447,3 @@ X-RateLimit-Reset: 1694616000
 - **Encryption at Rest**: All database fields encrypted
 - **Encryption in Transit**: TLS 1.3 for all communications
 - **Key Management**: HSM-backed key storage for server keys
-
-### Compliance
-
-- **SOC 2 Type II**: Annual certification
-- **GDPR**: Full compliance with data protection regulations
-- **CCPA**: California Consumer Privacy Act compliance
-- **HIPAA**: Available for healthcare customers
-
-## Monitoring and Observability
-
-### Metrics
-
-- **Request Latency**: P50, P95, P99 response times
-- **Error Rates**: 4xx and 5xx error percentages
-- **Authentication Success**: Device authentication success rates
-- **Throughput**: Requests per second by endpoint
-
-### Logging
-
-- **Access Logs**: All API requests with device attribution
-- **Error Logs**: Detailed error information for debugging
-- **Audit Logs**: Security-relevant events and changes
-- **Performance Logs**: Slow query and operation tracking
-
-### Alerting
-
-- **Error Rate Spikes**: >5% error rate for 5 minutes
-- **Latency Degradation**: P95 >500ms for 5 minutes
-- **Authentication Failures**: >10% failure rate for 5 minutes
-- **Security Events**: Suspicious access patterns
-
-## Development and Testing
-
-### Development Environment
-
-- **Base URL**: `https://api-dev.initiat.com/api/v1`
-- **Rate Limits**: Relaxed for development
-- **Test Data**: Sandbox workspaces and secrets available
-
-### Testing Tools
-
-- **Postman Collection**: Complete API collection with examples
-- **CLI Test Suite**: Automated integration tests
-- **Load Testing**: Performance benchmarks and stress tests
-
-### Documentation
-
-- **OpenAPI Spec**: Machine-readable API specification
-- **Interactive Docs**: Swagger UI for API exploration
-- **Code Examples**: Complete examples in multiple languages
-- **Migration Guides**: Version upgrade instructions
-
-## Support and Resources
-
-### Documentation
-
-- **API Reference**: Complete endpoint documentation
-- **CLI Guide**: Command-line interface documentation
-- **Integration Guide**: Step-by-step integration instructions
-- **Best Practices**: Security and performance recommendations
-
-### Support Channels
-
-- **GitHub Issues**: Bug reports and feature requests
-- **Community Forum**: Developer discussions and Q&A
-- **Email Support**: Direct support for enterprise customers
-- **Slack Community**: Real-time developer chat
-
-### Status and Updates
-
-- **Status Page**: Real-time API status and incident reports
-- **Changelog**: Detailed release notes and updates
-- **Security Advisories**: Security updates and patches
-- **Roadmap**: Planned features and improvements

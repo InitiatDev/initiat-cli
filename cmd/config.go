@@ -276,7 +276,6 @@ func runConfigAliasSet(cmd *cobra.Command, args []string) error {
 	alias := args[0]
 	workspacePath := args[1]
 
-	// Validate workspace path format
 	if !strings.Contains(workspacePath, "/") {
 		return fmt.Errorf("❌ Workspace path must be in format 'org/workspace', got: %s", workspacePath)
 	}

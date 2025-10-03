@@ -248,3 +248,72 @@ func (c *Client) DeleteSecret(orgSlug, workspaceSlug, secretKey string) error {
 
 	return httputil.HandleDeleteResponse(statusCode, body)
 }
+
+func (c *Client) ListDeviceApprovals() ([]types.DeviceApproval, error) {
+	url := routes.BuildURL(c.baseURL, routes.DeviceApprovals)
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var approvalsResp types.ListDeviceApprovalsResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &approvalsResp); err != nil {
+		return nil, fmt.Errorf("list device approvals failed: %w", err)
+	}
+
+	return approvalsResp.DeviceApprovals, nil
+}
+
+func (c *Client) GetDeviceApproval(approvalID string) (*types.DeviceApproval, error) {
+	url := routes.BuildURL(c.baseURL, routes.DeviceApproval.GetByID(approvalID))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var approvalResp types.GetDeviceApprovalResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &approvalResp); err != nil {
+		return nil, fmt.Errorf("get device approval failed: %w", err)
+	}
+
+	return &approvalResp.DeviceApproval, nil
+}
+
+func (c *Client) ApproveDevice(approvalID string, wrappedWorkspaceKey string) (*types.DeviceApproval, error) {
+	approveReq := types.ApproveDeviceRequest{
+		WrappedWorkspaceKey: wrappedWorkspaceKey,
+	}
+
+	jsonData, err := json.Marshal(approveReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal approve device request: %w", err)
+	}
+
+	url := routes.BuildURL(c.baseURL, routes.DeviceApproval.Approve(approvalID))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.POST, url, jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	var approveResp types.ApproveDeviceResponse
+	if err := httputil.HandleStandardResponse(statusCode, body, &approveResp); err != nil {
+		return nil, fmt.Errorf("approve device failed: %w", err)
+	}
+
+	return &approveResp.DeviceApproval, nil
+}
+
+func (c *Client) RejectDevice(approvalID string) (*types.DeviceApproval, error) {
+	url := routes.BuildURL(c.baseURL, routes.DeviceApproval.Reject(approvalID))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.POST, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var rejectResp types.RejectDeviceResponse
+	if err := httputil.HandleStandardResponse(statusCode, body, &rejectResp); err != nil {
+		return nil, fmt.Errorf("reject device failed: %w", err)
+	}
+
+	return &rejectResp.DeviceApproval, nil
+}

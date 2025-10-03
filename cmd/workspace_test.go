@@ -207,11 +207,9 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	// Ensure no workspace key exists locally
 	store := storage.New()
 	store.DeleteWorkspaceKey("test-org/my-project")
 
-	// Set global workspace context flags
 	workspacePath = "test-org/my-project"
 	err := runWorkspaceInit(workspaceInitCmd, []string{})
 	if err == nil {
@@ -226,7 +224,6 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 
 func TestWorkspaceInitKeyNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Return 404 for any workspace request to simulate non-existent workspace
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"error": "workspace not found"})

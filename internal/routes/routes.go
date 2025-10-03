@@ -9,9 +9,10 @@ const (
 )
 
 const (
-	AuthLogin  = APIBasePath + "/auth/login"
-	Devices    = APIBasePath + "/devices"
-	Workspaces = APIBasePath + "/workspaces"
+	AuthLogin       = APIBasePath + "/auth/login"
+	Devices         = APIBasePath + "/devices"
+	Workspaces      = APIBasePath + "/workspaces"
+	DeviceApprovals = APIBasePath + "/device-approvals"
 )
 
 type WorkspaceRoutes struct{}
@@ -54,6 +55,22 @@ type SecretRoutes struct{}
 
 var Secret = SecretRoutes{}
 
+type DeviceApprovalRoutes struct{}
+
+func (d DeviceApprovalRoutes) GetByID(approvalID string) string {
+	return fmt.Sprintf("%s/%s", DeviceApprovals, approvalID)
+}
+
+func (d DeviceApprovalRoutes) Approve(approvalID string) string {
+	return fmt.Sprintf("%s/%s/approve", DeviceApprovals, approvalID)
+}
+
+func (d DeviceApprovalRoutes) Reject(approvalID string) string {
+	return fmt.Sprintf("%s/%s/reject", DeviceApprovals, approvalID)
+}
+
+var DeviceApproval = DeviceApprovalRoutes{}
+
 type Route struct {
 	Method string
 	Path   string
@@ -86,6 +103,11 @@ var (
 	ListDevicesRoute = Route{
 		Method: GET,
 		Path:   Devices,
+	}
+
+	ListDeviceApprovalsRoute = Route{
+		Method: GET,
+		Path:   DeviceApprovals,
 	}
 )
 

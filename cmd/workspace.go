@@ -94,7 +94,6 @@ func runWorkspaceList(cmd *cobra.Command, args []string) error {
 			keyStatus = "✅ Yes"
 		}
 
-		// Use composite slug if available, otherwise construct it
 		compositeSlug := workspace.CompositeSlug
 		if compositeSlug == "" {
 			compositeSlug = fmt.Sprintf("%s/%s", workspace.Organization.Slug, workspace.Slug)

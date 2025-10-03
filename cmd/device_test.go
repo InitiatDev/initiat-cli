@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"testing"
 
+	"github.com/DylanBlakemore/initiat-cli/internal/types"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -91,5 +92,100 @@ func TestGenerateKeypairsUnique(t *testing.T) {
 
 	if string(xPriv1) == string(xPriv2) {
 		t.Error("Generated X25519 private keys are identical")
+	}
+}
+
+func createApproval(orgSlug, workspaceSlug string) types.DeviceApproval {
+	approval := types.DeviceApproval{}
+	approval.WorkspaceMembership.Workspace.Slug = workspaceSlug
+	approval.WorkspaceMembership.Workspace.Organization.Slug = orgSlug
+	return approval
+}
+
+func TestBuildWorkspaceSlug(t *testing.T) {
+	tests := []struct {
+		name     string
+		approval types.DeviceApproval
+		expected string
+	}{
+		{
+			name:     "normal organization and workspace",
+			approval: createApproval("acme-corp", "production"),
+			expected: "acme-corp/production",
+		},
+		{
+			name:     "empty organization slug",
+			approval: createApproval("", "default"),
+			expected: "default",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildWorkspaceSlug(tt.approval)
+			if result != tt.expected {
+				t.Errorf("buildWorkspaceSlug() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTruncateString(t *testing.T) {
+	tests := []struct {
+		input    string
+		maxLen   int
+		expected string
+	}{
+		{"short", 10, "short"},
+		{"exactly", 7, "exactly"},
+		{"very long string", 10, "very lo..."},
+		{"", 5, ""},
+		{"test", 0, ""},
+		{"test", 1, "t"},
+		{"test", 2, "te"},
+		{"test", 3, "tes"},
+		{"test", 4, "test"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := truncateString(tt.input, tt.maxLen)
+			if result != tt.expected {
+				t.Errorf("truncateString(%q, %d) = %q, want %q", tt.input, tt.maxLen, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatTime(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"2024-01-15T10:30:00Z",
+			"Jan 15 10:30",
+		},
+		{
+			"2024-12-25T23:59:59Z",
+			"Dec 25 23:59",
+		},
+		{
+			"invalid-time",
+			"invalid-time",
+		},
+		{
+			"",
+			"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := formatTime(tt.input)
+			if result != tt.expected {
+				t.Errorf("formatTime(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
 	}
 }
