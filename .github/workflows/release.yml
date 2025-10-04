@@ -163,3 +163,9 @@ jobs:
             - [Full Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
             - [Changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
             - [Development Guide](https://github.com/${{ github.repository }}/blob/main/docs/DEV_BUILD.md)
+
+            ## Homebrew (macOS)
+            ```bash
+            brew tap InitiatDev/initiat
+            brew install initiat
+            ```

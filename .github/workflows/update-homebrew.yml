@@ -1,0 +1,31 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: initiat/homebrew-initiat
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Generate and update formula
+        run: |
+          cd homebrew-tap
+          chmod +x scripts/generate-formula.sh
+          ./scripts/generate-formula.sh "${{ github.event.release.tag_name }}" > Formula/initiat.rb
+
+      - name: Commit and push changes
+        run: |
+          cd homebrew-tap
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Formula/initiat.rb
+          git commit -m "Update initiat to ${{ github.event.release.tag_name }}"
+          git push
