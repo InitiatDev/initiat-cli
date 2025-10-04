@@ -17,7 +17,7 @@ jobs:
       - name: Checkout homebrew tap
         uses: actions/checkout@v4
         with:
-          repository: InitiatDev/homebrew-initiat
+          repository: initiatdev/homebrew-initiat
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
@@ -25,7 +25,7 @@ jobs:
         run: |
           cd homebrew-tap
           # Download the generator script from the homebrew repo
-          curl -L -o scripts/generate-formula.sh https://raw.githubusercontent.com/InitiatDev/homebrew-initiat/main/scripts/generate-formula.sh
+          curl -L -o scripts/generate-formula.sh https://raw.githubusercontent.com/initiatdev/homebrew-initiat/main/scripts/generate-formula.sh
           chmod +x scripts/generate-formula.sh
           # Use release tag name or manual input
           VERSION="${{ github.event.release.tag_name || github.event.inputs.version }}"
