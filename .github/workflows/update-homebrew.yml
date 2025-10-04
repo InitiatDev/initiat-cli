@@ -15,11 +15,13 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
-      - name: Generate and update formula
+      - name: Download and run generator script
         run: |
           cd homebrew-tap
+          # Download the generator script from the homebrew repo
+          curl -L -o scripts/generate-formula.sh https://raw.githubusercontent.com/initiat/homebrew-initiat/main/scripts/generate-formula.sh
           chmod +x scripts/generate-formula.sh
-          ./scripts/generate-formula.sh "${{ github.event.release.tag_name }}" > Formula/initiat.rb
+          ./scripts/generate-formula.sh "${{ github.event.release.tag_name }}" --quiet > Formula/initiat.rb
 
       - name: Commit and push changes
         run: |
