@@ -42,7 +42,7 @@ jobs:
       - name: Install X11 dependencies
         run: |
           sudo apt update
-          sudo apt install -y xvfb libx11-dev x11-utils libegl1-mesa-dev libgles2-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Test Linux build
         run: |
@@ -93,9 +93,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gnome-keyring dbus-x11
 
-      - name: Start Xvfb from cache
-        uses: ./.github/actions/setup-xvfb
-
       - name: Run tests
         run: |
           export DBUS_SESSION_BUS_ADDRESS=$(dbus-daemon --session --print-address --fork)
@@ -136,9 +133,6 @@ jobs:
           key: ${{ needs.setup-linux-deps.outputs.cache-key }}
           restore-keys: |
             ${{ runner.os }}-x11-deps-
-
-      - name: Start Xvfb from cache
-        uses: ./.github/actions/setup-xvfb
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
@@ -236,9 +230,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-x11-deps-
 
-      - name: Start Xvfb from cache
-        uses: ./.github/actions/setup-xvfb
-
       - name: Build for multiple platforms
         run: |
           # Test that the code builds for all target platforms
@@ -258,6 +249,7 @@ jobs:
   dependency-check:
     name: Dependency Check
     runs-on: ubuntu-latest
+    needs: setup-linux-deps
 
     steps:
       - name: Checkout code
@@ -267,6 +259,18 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.x"
+
+      - name: Cache X11 dependencies
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/apt
+          key: ${{ needs.setup-linux-deps.outputs.cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-x11-deps-
+
+      - name: Install X11 dependencies from cache
+        run: |
+          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Check for vulnerabilities
         run: |
