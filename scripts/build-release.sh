@@ -15,7 +15,23 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "📦 Installing Linux dependencies for clipboard support..."
     if command -v apt-get &> /dev/null; then
         sudo apt-get update
-        sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        sudo apt-get install -y xvfb libx11-dev x11-utils libegl1-mesa-dev libgles2-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        echo "🖥️  Starting Xvfb for headless X11 support..."
+        # Start Xvfb and wait for it to be ready
+        Xvfb :0 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        MAX_ATTEMPTS=120 # About 60 seconds
+        COUNT=0
+        echo -n "Waiting for Xvfb to be ready..."
+        while ! xdpyinfo -display "${DISPLAY}" >/dev/null 2>&1; do
+            echo -n "."
+            sleep 0.50s
+            COUNT=$(( COUNT + 1 ))
+            if [ "${COUNT}" -ge "${MAX_ATTEMPTS}" ]; then
+                echo "  Gave up waiting for X server on ${DISPLAY}"
+                exit 1
+            fi
+        done
+        echo "Done - Xvfb is ready!"
     elif command -v yum &> /dev/null; then
         sudo yum install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
     elif command -v dnf &> /dev/null; then

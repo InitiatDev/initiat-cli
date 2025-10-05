@@ -222,16 +222,27 @@ initiat workspace init acme-corp/production
 2. **Download CLI** from [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
 3. **Linux users**: Install X11 development libraries for clipboard support:
    ```bash
-   # Ubuntu/Debian
+   # Ubuntu/Debian (desktop systems)
    sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
    
-   # CentOS/RHEL/Fedora
+   # Ubuntu/Debian (headless/CI systems)
+   sudo apt-get install xvfb libx11-dev x11-utils libegl1-mesa-dev libgles2-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+   
+   # CentOS/RHEL/Fedora (desktop systems)
    sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
    # or for newer versions:
    sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
    
-   # Arch Linux
+   # CentOS/RHEL/Fedora (headless/CI systems)
+   sudo yum install xorg-x11-server-Xvfb libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libEGL-devel mesa-libGLES-devel
+   # or for newer versions:
+   sudo dnf install xorg-x11-server-Xvfb libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libEGL-devel mesa-libGLES-devel
+   
+   # Arch Linux (desktop systems)
    sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
+   
+   # Arch Linux (headless/CI systems)
+   sudo pacman -S xorg-server-xvfb libx11 libxrandr libxinerama libxcursor libxi mesa
    ```
 4. **Set up workspaces** for your teams and projects
 5. **Configure device approval** workflows
@@ -275,6 +286,31 @@ cd initiat-cli
 
 # Install dependencies
 go mod tidy
+
+# Linux users: Install X11 dependencies for clipboard support
+# Desktop systems (most users):
+# Ubuntu/Debian
+sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
+# CentOS/RHEL/Fedora
+sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+# or for newer versions:
+sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+
+# Arch Linux
+sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
+
+# Headless/CI systems (only if you don't have a display):
+# Ubuntu/Debian
+sudo apt-get install xvfb libx11-dev x11-utils libegl1-mesa-dev libgles2-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
+# CentOS/RHEL/Fedora
+sudo yum install xorg-x11-server-Xvfb libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libEGL-devel mesa-libGLES-devel
+# or for newer versions:
+sudo dnf install xorg-x11-server-Xvfb libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libEGL-devel mesa-libGLES-devel
+
+# Arch Linux
+sudo pacman -S xorg-server-xvfb libx11 libxrandr libxinerama libxcursor libxi mesa
 
 # Run tests to ensure everything works
 make ci
