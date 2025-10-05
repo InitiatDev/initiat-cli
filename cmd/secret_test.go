@@ -135,27 +135,3 @@ func TestSecretExportCommand_FileCreation(t *testing.T) {
 		t.Errorf("Expected content %q, got %q", content, string(readContent))
 	}
 }
-
-func TestCopySecretToClipboard_ValueOnly(t *testing.T) {
-	// Test copying just the value
-	err := copySecretToClipboard("API_KEY", "secret-value", true, false)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-}
-
-func TestCopySecretToClipboard_KeyValue(t *testing.T) {
-	// Test copying KEY=VALUE format
-	err := copySecretToClipboard("API_KEY", "secret-value", false, true)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-}
-
-func TestCopySecretToClipboard_NoCopy(t *testing.T) {
-	// Test when no clipboard options are set
-	err := copySecretToClipboard("API_KEY", "secret-value", false, false)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-}

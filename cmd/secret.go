@@ -281,6 +281,10 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 }
 
 func copySecretToClipboard(key, value string, copyToClip, copyKeyValue bool) error {
+	if !copyToClip && !copyKeyValue {
+		return nil
+	}
+
 	if err := clipboard.Init(); err != nil {
 		return fmt.Errorf("❌ Failed to initialize clipboard: %w", err)
 	}

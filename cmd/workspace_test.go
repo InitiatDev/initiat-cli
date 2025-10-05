@@ -1,23 +1,25 @@
 package cmd
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
+	"github.com/InitiatDev/initiat-cli/internal/testutil"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 func TestWorkspaceList(t *testing.T) {
+	capture := testutil.CaptureStdout()
+	defer capture.Restore()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" || r.URL.Path != "/api/v1/workspaces" {
 			t.Errorf("Expected GET /api/v1/workspaces, got %s %s", r.Method, r.URL.Path)
@@ -86,30 +88,18 @@ func TestWorkspaceList(t *testing.T) {
 
 	setupTestEnvironment(t, server.URL)
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWorkspaceList(workspaceListCmd, []string{})
 	if err != nil {
-		w.Close()
-		os.Stdout = old
 		t.Fatalf("runWorkspaceList failed: %v", err)
 	}
 
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	output := buf.String()
-
-	if !strings.Contains(output, "My Project") {
-		t.Error("Expected 'My Project' in output")
-	}
+	capture.AssertContains(t, "My Project")
 }
 
 func TestWorkspaceInitKey(t *testing.T) {
+	capture := testutil.CaptureStdout()
+	defer capture.Restore()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/workspaces/test-org/my-project":
@@ -192,6 +182,9 @@ func TestWorkspaceInitKey(t *testing.T) {
 }
 
 func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
+	capture := testutil.CaptureStdout()
+	defer capture.Restore()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/api/v1/workspaces/test-org/my-project") {
 			workspace := types.Workspace{
@@ -225,6 +218,9 @@ func TestWorkspaceInitKeyAlreadyInitialized(t *testing.T) {
 }
 
 func TestWorkspaceInitKeyNotFound(t *testing.T) {
+	capture := testutil.CaptureStdout()
+	defer capture.Restore()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
@@ -284,12 +280,6 @@ func setupTestEnvironment(t *testing.T, serverURL string) {
 		store.DeleteEncryptionPrivateKey()
 		store.DeleteDeviceID()
 		store.DeleteToken()
-	})
-
-	oldStdout := os.Stdout
-	os.Stdout = nil
-	t.Cleanup(func() {
-		os.Stdout = oldStdout
 	})
 
 	_ = signingPublic
