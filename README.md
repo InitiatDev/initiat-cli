@@ -220,8 +220,21 @@ initiat workspace init acme-corp/production
 ### **Installation**
 1. **Create account** at [initiat.dev](https://initiat.dev) (coming soon)
 2. **Download CLI** from [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
-3. **Set up workspaces** for your teams and projects
-4. **Configure device approval** workflows
+3. **Linux users**: Install X11 development libraries for clipboard support:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+   
+   # CentOS/RHEL/Fedora
+   sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+   # or for newer versions:
+   sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+   
+   # Arch Linux
+   sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
+   ```
+4. **Set up workspaces** for your teams and projects
+5. **Configure device approval** workflows
 
 ### **For Teams**
 1. **Evaluate** current secret management process

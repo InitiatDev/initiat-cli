@@ -10,6 +10,24 @@ OUTPUT_DIR="dist"
 
 echo "🏗️  Building Initiat CLI v${VERSION}"
 
+# Install Linux dependencies if on Linux
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "📦 Installing Linux dependencies for clipboard support..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update
+        sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -S --noconfirm libx11 libxrandr libxinerama libxcursor libxi
+    else
+        echo "⚠️  Warning: Could not detect package manager. You may need to install X11 development libraries manually."
+        echo "   Required packages: libx11-dev, libxrandr-dev, libxinerama-dev, libxcursor-dev, libxi-dev"
+    fi
+fi
+
 # Clean and create output directory
 rm -rf ${OUTPUT_DIR}
 mkdir -p ${OUTPUT_DIR}
