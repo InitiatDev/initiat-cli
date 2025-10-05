@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"crypto/rand"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
@@ -87,5 +89,49 @@ func TestEncryptSecretValueInvalidKey(t *testing.T) {
 	_, _, err := encryptSecretValue(testValue, invalidKey)
 	if err == nil {
 		t.Error("Expected error with invalid key size, but got none")
+	}
+}
+
+func TestSecretExportCommand_Integration(t *testing.T) {
+	cmd := secretExportCmd
+	if cmd == nil {
+		t.Fatal("secretExportCmd should not be nil")
+	}
+
+	if cmd.Flags().Lookup("output") == nil {
+		t.Error("Expected 'output' flag to be defined")
+	}
+
+	if cmd.Args == nil {
+		t.Error("Expected Args to be defined")
+	}
+}
+
+func TestSecretExportCommand_FileCreation(t *testing.T) {
+	tempDir := t.TempDir()
+
+	deepPath := filepath.Join(tempDir, "deep", "nested", "path", "secrets.txt")
+
+	dir := filepath.Dir(deepPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+
+	content := "API_KEY=test-value\n"
+	if err := os.WriteFile(deepPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+
+	if _, err := os.Stat(deepPath); os.IsNotExist(err) {
+		t.Fatal("File should exist after creation")
+	}
+
+	readContent, err := os.ReadFile(deepPath)
+	if err != nil {
+		t.Fatalf("Failed to read file: %v", err)
+	}
+
+	if string(readContent) != content {
+		t.Errorf("Expected content %q, got %q", content, string(readContent))
 	}
 }

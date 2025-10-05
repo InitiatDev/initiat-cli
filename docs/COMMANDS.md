@@ -22,7 +22,7 @@ All commands support these global flags:
 | `--service-name` | | | `initiat-cli` | Keyring service name |
 | `--workspace-path` | `-W` | | | Full workspace path (org/workspace) or alias |
 | `--workspace` | `-w` | | | Workspace name (uses default org or --org) |
-| `--org` | `-o` | | | Organization slug (used with --workspace) |
+| `--org` | | | | Organization slug (used with --workspace) |
 
 ### Workspace Context Resolution
 
@@ -40,7 +40,7 @@ initiat secret list --workspace production
 
 # Method 4: Short flags
 initiat secret list -W acme-corp/production
-initiat secret list -o acme-corp -w production
+initiat secret list --org acme-corp -w production
 initiat secret list -w production
 ```
 
@@ -279,7 +279,7 @@ Initialize a new workspace key for secure secret storage.
 **Options:**
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org, -o`: Organization slug (used with --workspace)
+- `--org`: Organization slug (used with --workspace)
 
 **Examples:**
 ```bash
@@ -288,7 +288,7 @@ initiat workspace init acme-corp/production
 
 # Using flags
 initiat workspace init --org acme-corp --workspace production
-initiat workspace init -o acme-corp -w production
+initiat workspace init --org acme-corp -w production
 initiat workspace init --workspace production  # Uses default org
 initiat workspace init -w production
 ```
@@ -329,7 +329,7 @@ Set a secret value in the specified workspace.
 - `--force, -f`: Overwrite existing secret without confirmation
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org, -o`: Organization slug (used with --workspace)
+- `--org`: Organization slug (used with --workspace)
 
 **Examples:**
 ```bash
@@ -376,7 +376,7 @@ Get and decrypt a secret value from the specified workspace.
 - `--copy, -c`: Copy value to clipboard instead of printing
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org, -o`: Organization slug (used with --workspace)
+- `--org`: Organization slug (used with --workspace)
 
 **Examples:**
 ```bash
@@ -418,7 +418,7 @@ List all secrets in the specified workspace (metadata only, no values).
 **Options:**
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org, -o`: Organization slug (used with --workspace)
+- `--org`: Organization slug (used with --workspace)
 
 **Examples:**
 ```bash
@@ -459,7 +459,7 @@ Delete a secret from the specified workspace.
 - `--force, -f`: Skip confirmation prompt
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org, -o`: Organization slug (used with --workspace)
+- `--org`: Organization slug (used with --workspace)
 
 **Examples:**
 ```bash
@@ -483,6 +483,48 @@ initiat secret delete OLD_API_KEY --workspace production --force
 ⚠️  Are you sure you want to delete secret 'API_KEY' from workspace acme-corp/production? (y/N): y
 🗑️  Deleting secret 'API_KEY' from workspace acme-corp/production...
 ✅ Secret 'API_KEY' deleted successfully!
+```
+
+### `initiat secret export <secret-key> --output FILE [options]`
+
+Export a secret value to a file. Creates directories if needed and handles overwrite prompts.
+
+**Arguments:**
+- `secret-key`: The key/name for the secret (required)
+
+**Options:**
+- `--output, -o`: Output file path (required)
+- `--force, -f`: Overwrite existing key without confirmation
+- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
+- `--workspace, -w`: Workspace name (uses default org or --org)
+- `--org`: Organization slug (used with --workspace)
+
+**Examples:**
+```bash
+# Export secret to a file
+initiat secret export API_KEY --output .env --workspace-path acme-corp/production
+
+# Export to deep directory (creates folders)
+initiat secret export API_KEY --output config/secrets.env -W acme-corp/production
+
+# Export with force override
+initiat secret export API_KEY --output secrets.txt --force
+```
+
+**What it does:**
+1. Retrieves and decrypts secret from server
+2. Creates output directory if it doesn't exist
+3. Checks for existing key in file (prompts if found)
+4. Writes secret in KEY=VALUE format
+5. Detects git repository and suggests .gitignore
+
+**Output:**
+```
+🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+🔓 Decrypting secret value...
+⚠️  File 'secrets.env' is not in .gitignore. Add it? (y/N): y
+✅ Added 'secrets.env' to .gitignore
+✅ Secret 'API_KEY' exported to secrets.env
 ```
 
 ## Version Information

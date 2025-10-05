@@ -52,7 +52,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&workspacePath, "workspace-path", "W", "",
 		"full workspace path (org/workspace) or alias")
 	rootCmd.PersistentFlags().StringVarP(&workspace, "workspace", "w", "", "workspace name (uses default org or --org)")
-	rootCmd.PersistentFlags().StringVarP(&org, "org", "o", "", "organization slug (used with --workspace)")
+	rootCmd.PersistentFlags().StringVar(&org, "org", "", "organization slug (used with --workspace)")
 
 	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "workspace")
 	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "org")

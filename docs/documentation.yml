@@ -1,0 +1,1020 @@
+# Initiat CLI Documentation
+# Unified documentation structure with flexible content types
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2024-01-15T10:30:00Z"
+  author: "Initiat Team"
+  description: "Complete CLI documentation for Initiat"
+
+sections:
+  commands:
+    id: "commands"
+    title: "CLI Commands"
+    type: "commands"
+    description: "Complete reference for all CLI commands"
+    published: true
+    metadata:
+      order: 1
+      icon: "terminal"
+    
+  guides:
+    id: "guides" 
+    title: "Guides & Tutorials"
+    type: "guides"
+    description: "Step-by-step guides and workflows"
+    published: true
+    metadata:
+      order: 2
+      icon: "book-open"
+      
+  reference:
+    id: "reference"
+    title: "Reference"
+    type: "reference" 
+    description: "Quick reference and patterns"
+    published: true
+    metadata:
+      order: 3
+      icon: "document-text"
+
+commands:
+  auth.login:
+    id: "auth.login"
+    name: "login"
+    category: "auth"
+    description: "Authenticate with your Initiat account credentials"
+    usage: "initiat auth login [--email EMAIL]"
+    arguments: []
+    options:
+      - name: "email"
+        short: "e"
+        description: "Email address for login (optional, will prompt if not provided)"
+        required: false
+    examples:
+      - description: "Login with email prompt"
+        command: "initiat auth login"
+      - description: "Login with email specified"
+        command: "initiat auth login --email user@example.com"
+        output: |
+          ✅ Login successful! Registration token expires in 15 minutes.
+          💡 Next: Register this device with 'initiat device register <name>'
+    workflow_steps:
+      - "Prompts for your password (hidden input)"
+      - "Authenticates with the Initiat API"
+      - "Stores registration token securely in OS keychain"
+      - "Displays next steps for device registration"
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
+
+  device.register:
+    id: "device.register"
+    name: "register"
+    category: "device"
+    description: "Register this device with Initiat to enable secure secret access"
+    usage: "initiat device register <device-name>"
+    arguments:
+      - name: "device-name"
+        description: "Human-readable name for this device"
+        required: true
+    options: []
+    examples:
+      - description: "Register with descriptive name"
+        command: 'initiat device register "my-laptop"'
+      - description: "Register work device"
+        command: 'initiat device register "work-macbook"'
+    workflow_steps:
+      - "Generates Ed25519 signing keypair"
+      - "Generates X25519 encryption keypair"
+      - "Registers device with server using authentication token"
+      - "Stores keys securely in system keychain"
+      - "Clears temporary authentication token"
+    output: |
+      🔑 Registering device: my-laptop
+      🔑 Generating Ed25519 signing keypair...
+      🔒 Generating X25519 encryption keypair...
+      📡 Registering device with server...
+      🔐 Storing keys securely in system keychain...
+      ✅ Device registered successfully!
+
+      Device ID: dev_abc123
+      Device Name: my-laptop
+      Created: 2024-01-15T10:30:00Z
+
+      🔐 Keys stored securely in system keychain
+      💡 Next: Initialize workspace keys with 'initiat workspace list'
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "2 minutes"
+
+  device.unregister:
+    id: "device.unregister"
+    name: "unregister"
+    category: "device"
+    description: "Clear local device credentials from the system keychain"
+    usage: "initiat device unregister"
+    arguments: []
+    options: []
+    examples:
+      - description: "Clear device credentials"
+        command: "initiat device unregister"
+    workflow_steps:
+      - "Removes all device credentials stored locally"
+      - "Use when registering a fresh device or cleaning up after server deletion"
+    output: |
+      🔐 Clearing local device credentials...
+      ✅ Device credentials cleared successfully!
+
+      💡 You can now register a new device with 'initiat device register <name>'
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  device.clear_token:
+    id: "device.clear_token"
+    name: "clear-token"
+    category: "device"
+    description: "Clear stored authentication token"
+    usage: "initiat device clear-token"
+    arguments: []
+    options: []
+    examples:
+      - description: "Clear authentication token"
+        command: "initiat device clear-token"
+    when_to_use:
+      - "Getting 'Invalid or expired registration token' errors"
+      - "Need to re-authenticate"
+    output: |
+      🔐 Clearing authentication token...
+      ✅ Authentication token cleared successfully!
+      💡 You will need to authenticate again for device registration
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  device.approvals:
+    id: "device.approvals"
+    name: "approvals"
+    category: "device"
+    description: "List all pending device approvals for workspaces where you are an admin"
+    usage: "initiat device approvals"
+    arguments: []
+    options: []
+    examples:
+      - description: "List pending approvals"
+        command: "initiat device approvals"
+    output: |
+      📋 Pending Device Approvals (2)
+
+      ID  User           Device         Workspace      Requested
+      1   John Doe       work-laptop    acme/prod      Jan 15 10:30
+      2   Jane Smith     dev-machine    acme/staging   Jan 15 11:45
+
+      💡 Use 'initiat device approve --all' to approve all pending devices
+      💡 Use 'initiat device approve --id <id>' to approve a specific device
+    metadata:
+      difficulty: "intermediate"
+      estimated_time: "1 minute"
+
+  device.approve:
+    id: "device.approve"
+    name: "approve"
+    category: "device"
+    description: "Approve device access to workspaces"
+    usage: "initiat device approve [--all] [--id ID]"
+    arguments: []
+    options:
+      - name: "all"
+        description: "Approve all pending devices"
+        required: false
+      - name: "id"
+        description: "Approve specific device by approval ID"
+        required: false
+    examples:
+      - description: "Approve all pending devices"
+        command: "initiat device approve --all"
+      - description: "Approve specific device"
+        command: "initiat device approve --id 123"
+    output: |
+      🔐 Approving all pending devices...
+
+      Found 2 pending approvals:
+        • work-laptop (acme-corp/production) - John Doe
+        • dev-machine (acme-corp/staging) - Jane Smith
+
+      ✅ Approved 2 devices successfully!
+         All approved devices can now access their respective workspace secrets
+    metadata:
+      difficulty: "intermediate"
+      estimated_time: "1 minute"
+
+  device.reject:
+    id: "device.reject"
+    name: "reject"
+    category: "device"
+    description: "Reject device access to workspaces"
+    usage: "initiat device reject [--all] [--id ID]"
+    arguments: []
+    options:
+      - name: "all"
+        description: "Reject all pending devices"
+        required: false
+      - name: "id"
+        description: "Reject specific device by approval ID"
+        required: false
+    examples:
+      - description: "Reject all pending devices"
+        command: "initiat device reject --all"
+      - description: "Reject specific device"
+        command: "initiat device reject --id 123"
+    output: |
+      ❌ Rejecting all pending devices...
+
+      Found 2 pending approvals to reject
+      ❌ Rejected 2 devices
+         Users will need to request approval again
+    metadata:
+      difficulty: "intermediate"
+      estimated_time: "1 minute"
+
+  device.approval:
+    id: "device.approval"
+    name: "approval"
+    category: "device"
+    description: "Show detailed information about a specific device approval"
+    usage: "initiat device approval --id ID"
+    arguments: []
+    options:
+      - name: "id"
+        description: "Device approval ID to show"
+        required: true
+    examples:
+      - description: "Show approval details"
+        command: "initiat device approval --id 123"
+    output: |
+      📋 Device Approval Details
+
+      User: John Doe (john.doe@example.com)
+      Device: work-laptop (ID: 456)
+      Workspace: Acme Corp / Production (acme-corp/production)
+      Requested: Jan 15 10:30:00Z
+      Status: pending
+
+      🔑 Device Public Keys:
+        Ed25519: abc123def456... (for signing)
+        X25519: def456ghi789... (for encryption)
+    metadata:
+      difficulty: "intermediate"
+      estimated_time: "1 minute"
+
+  workspace.list:
+    id: "workspace.list"
+    name: "list"
+    category: "workspace"
+    description: "List all workspaces and their key initialization status"
+    usage: "initiat workspace list"
+    arguments: []
+    options: []
+    examples:
+      - description: "List all workspaces"
+        command: "initiat workspace list"
+    workflow_steps:
+      - "Fetches all workspaces accessible to your account"
+      - "Shows key initialization status"
+      - "Displays your role in each workspace"
+    output: |
+      🔍 Fetching workspaces...
+
+      Name           Composite Slug      Key Initialized  Role
+      Production     acme-corp/prod      ✅ Yes          admin
+      Staging        acme-corp/staging   ❌ No           member
+      Development    acme-corp/dev       ❌ No           member
+
+      💡 Initialize keys for workspaces marked "No" using:
+         initiat workspace init <org-slug/workspace-slug>
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  workspace.init:
+    id: "workspace.init"
+    name: "init"
+    category: "workspace"
+    description: "Initialize a new workspace key for secure secret storage"
+    usage: "initiat workspace init [workspace-path]"
+    arguments:
+      - name: "workspace-path"
+        description: "Full workspace path (org/workspace) or use flags"
+        required: false
+    options:
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "Using positional argument"
+        command: "initiat workspace init acme-corp/production"
+      - description: "Using flags"
+        command: "initiat workspace init --org acme-corp --workspace production"
+      - description: "Using short flags"
+        command: "initiat workspace init --org acme-corp -w production"
+      - description: "Workspace only (uses default org)"
+        command: "initiat workspace init --workspace production"
+    workflow_steps:
+      - "Generates secure 256-bit workspace key"
+      - "Encrypts workspace key with your device's X25519 key"
+      - "Uploads encrypted key to server"
+      - "Enables secret storage and retrieval for this workspace"
+    output: |
+      🔐 Initializing workspace key for "acme-corp/production"...
+      ⚡ Generating secure 256-bit workspace key...
+      🔒 Encrypting workspace key with your device's X25519 key...
+      📡 Uploading encrypted key to server...
+      ✅ Workspace key initialized successfully!
+      🎯 You can now store and retrieve secrets in this workspace.
+
+      Next steps:
+        • Add secrets: initiat secret set API_KEY --value your-secret
+        • List secrets: initiat secret list
+        • Invite devices: initiat workspace invite-device
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
+
+  secret.set:
+    id: "secret.set"
+    name: "set"
+    category: "secret"
+    description: "Set a secret value in the specified workspace"
+    usage: "initiat secret set <secret-key> --value VALUE [options]"
+    arguments:
+      - name: "secret-key"
+        description: "The key/name for the secret"
+        required: true
+    options:
+      - name: "value"
+        short: "v"
+        description: "Secret value"
+        required: true
+      - name: "description"
+        short: "d"
+        description: "Optional description for the secret"
+        required: false
+      - name: "force"
+        short: "f"
+        description: "Overwrite existing secret without confirmation"
+        required: false
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "Set secret with full workspace path"
+        command: 'initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production'
+      - description: "Set secret with separate org/workspace"
+        command: 'initiat secret set DB_PASSWORD --org acme-corp --workspace production --value "super-secret-pass" --description "Production database password"'
+      - description: "Set secret with short flags"
+        command: 'initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"'
+      - description: "Force overwrite existing secret"
+        command: 'initiat secret set API_KEY -w production -v "new-value" --force'
+    workflow_steps:
+      - "Validates secret key and value"
+      - "Retrieves workspace key from server"
+      - "Encrypts secret value client-side"
+      - "Uploads encrypted secret to server"
+      - "Shows confirmation with metadata"
+    output: |
+      🔐 Setting secret 'API_KEY' in workspace acme-corp/production...
+      🔒 Encrypting secret value...
+      📡 Uploading encrypted secret to server...
+      ✅ Secret 'API_KEY' set successfully!
+         Version: 1
+         Updated: 2024-01-15T10:30:00Z
+         Created by: my-laptop
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
+
+  secret.get:
+    id: "secret.get"
+    name: "get"
+    category: "secret"
+    description: "Get and decrypt a secret value from the specified workspace"
+    usage: "initiat secret get <secret-key> [options]"
+    arguments:
+      - name: "secret-key"
+        description: "The key/name for the secret"
+        required: true
+    options:
+      - name: "copy"
+        short: "c"
+        description: "Copy value to clipboard instead of printing"
+        required: false
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "Get secret with full workspace path"
+        command: "initiat secret get API_KEY --workspace-path acme-corp/production"
+      - description: "Get secret with short flags"
+        command: "initiat secret get API_KEY -W acme-corp/production"
+      - description: "Get secret and copy to clipboard"
+        command: "initiat secret get API_KEY -w production --copy"
+    workflow_steps:
+      - "Retrieves encrypted secret from server"
+      - "Gets workspace key and decrypts it"
+      - "Decrypts secret value client-side"
+      - "Outputs JSON with secret metadata"
+      - "Optionally copies to clipboard"
+    output: |
+      🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+      🔓 Decrypting secret value...
+      {
+        "key": "API_KEY",
+        "value": "sk-1234567890abcdef",
+        "version": 1,
+        "workspace_id": "ws_abc123",
+        "updated_at": "2024-01-15T10:30:00Z",
+        "created_by_device": "my-laptop"
+      }
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  secret.list:
+    id: "secret.list"
+    name: "list"
+    category: "secret"
+    description: "List all secrets in the specified workspace (metadata only, no values)"
+    usage: "initiat secret list [options]"
+    arguments: []
+    options:
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "List secrets with full workspace path"
+        command: "initiat secret list --workspace-path acme-corp/production"
+      - description: "List secrets with short flags"
+        command: "initiat secret list -W acme-corp/production"
+      - description: "List secrets with workspace only"
+        command: "initiat secret list --workspace production"
+    workflow_steps:
+      - "Fetches all secrets for the workspace"
+      - "Displays metadata in table format"
+      - "Shows key, encrypted status, and version"
+      - "Never exposes actual secret values"
+    output: |
+      🔍 Listing secrets in workspace acme-corp/production...
+
+      Key        Value        Version
+      API_KEY    [encrypted]  1
+      DB_PASS    [encrypted]  1
+      JWT_SECRET [encrypted]  2
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  secret.delete:
+    id: "secret.delete"
+    name: "delete"
+    category: "secret"
+    description: "Delete a secret from the specified workspace"
+    usage: "initiat secret delete <secret-key> [options]"
+    arguments:
+      - name: "secret-key"
+        description: "The key/name for the secret"
+        required: true
+    options:
+      - name: "force"
+        short: "f"
+        description: "Skip confirmation prompt"
+        required: false
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "Delete secret with confirmation"
+        command: "initiat secret delete API_KEY --workspace-path acme-corp/production"
+      - description: "Delete secret with short flags"
+        command: "initiat secret delete API_KEY -W acme-corp/production"
+      - description: "Force delete without confirmation"
+        command: "initiat secret delete OLD_API_KEY --workspace production --force"
+    workflow_steps:
+      - "Prompts for confirmation (unless --force is used)"
+      - "Deletes secret from server"
+      - "Shows confirmation message"
+    output: |
+      ⚠️  Are you sure you want to delete secret 'API_KEY' from workspace acme-corp/production? (y/N): y
+      🗑️  Deleting secret 'API_KEY' from workspace acme-corp/production...
+      ✅ Secret 'API_KEY' deleted successfully!
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  secret.export:
+    id: "secret.export"
+    name: "export"
+    category: "secret"
+    description: "Export a secret value to a file"
+    usage: "initiat secret export <secret-key> --output FILE [options]"
+    arguments:
+      - name: "secret-key"
+        description: "The key/name for the secret"
+        required: true
+    options:
+      - name: "output"
+        description: "Output file path"
+        required: true
+      - name: "force"
+        short: "f"
+        description: "Overwrite existing key without confirmation"
+        required: false
+      - name: "workspace-path"
+        short: "W"
+        description: "Full workspace path (org/workspace) or alias"
+        required: false
+      - name: "workspace"
+        short: "w"
+        description: "Workspace name (uses default org or --org)"
+        required: false
+      - name: "org"
+        description: "Organization slug (used with --workspace)"
+        required: false
+    examples:
+      - description: "Export secret to a file"
+        command: "initiat secret export API_KEY --output .env --workspace-path acme-corp/production"
+      - description: "Export to deep directory (creates folders)"
+        command: "initiat secret export API_KEY --output config/secrets.env -W acme-corp/production"
+      - description: "Export with force override"
+        command: "initiat secret export API_KEY --output secrets.txt --force"
+    workflow_steps:
+      - "Retrieves and decrypts secret from server"
+      - "Creates output directory if it doesn't exist"
+      - "Checks for existing key in file (prompts if found)"
+      - "Writes secret in KEY=VALUE format"
+      - "Detects git repository and suggests .gitignore"
+    output: |
+      🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+      🔓 Decrypting secret value...
+      ⚠️  File 'secrets.env' is not in .gitignore. Add it? (y/N): y
+      ✅ Added 'secrets.env' to .gitignore
+      ✅ Secret 'API_KEY' exported to secrets.env
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
+
+  version.version:
+    id: "version.version"
+    name: "version"
+    category: "version"
+    description: "Print the CLI version information"
+    usage: "initiat version"
+    arguments: []
+    options: []
+    examples:
+      - description: "Show version"
+        command: "initiat version"
+    output: |
+      initiat-cli v1.0.0
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "10 seconds"
+
+guides:
+  first_time_setup:
+    id: "first_time_setup"
+    title: "First Time Setup"
+    type: "scenario"
+    description: "Complete setup for new users getting started with Initiat"
+    difficulty: "beginner"
+    estimated_time: "5 minutes"
+    prerequisites: []
+    steps:
+      - step: 1
+        title: "Authenticate"
+        command: "initiat auth login"
+        description: "Authenticate with your Initiat account"
+        explanation: "This creates a temporary authentication token that expires in 15 minutes"
+      - step: 2
+        title: "Register Device"
+        command: 'initiat device register "my-laptop"'
+        description: "Register your device for secure access"
+        explanation: "This generates encryption keys and registers your device with the server"
+      - step: 3
+        title: "List Workspaces"
+        command: "initiat workspace list"
+        description: "See available workspaces"
+        explanation: "Lists all workspaces you have access to and their key initialization status"
+      - step: 4
+        title: "Initialize Workspace"
+        command: "initiat workspace init acme-corp/production"
+        description: "Initialize workspace keys"
+        explanation: "Generates and encrypts workspace keys to enable secret storage"
+      - step: 5
+        title: "Store First Secret"
+        command: 'initiat secret set API_KEY --value "your-secret-key"'
+        description: "Store your first secret"
+        explanation: "Encrypts and stores a secret in the workspace"
+    success_criteria:
+      - "You can now securely store and retrieve secrets in your workspace"
+    next_steps:
+      - "Invite team members to workspaces"
+      - "Set up additional workspaces for different environments"
+      - "Configure CI/CD integration"
+    metadata:
+      tags: ["getting-started", "authentication", "device-setup"]
+      order: 1
+
+  team_onboarding:
+    id: "team_onboarding"
+    title: "Team Onboarding"
+    type: "workflow"
+    description: "Add team members to workspaces and approve their devices"
+    difficulty: "intermediate"
+    estimated_time: "10 minutes"
+    prerequisites: ["admin_access"]
+    steps:
+      - step: 1
+        title: "Review Pending Approvals"
+        command: "initiat device approvals"
+        description: "Check for pending device approvals"
+        explanation: "Shows all devices waiting for approval to access workspaces"
+      - step: 2
+        title: "Review Device Details"
+        command: "initiat device approval --id 123"
+        description: "Review specific device information"
+        explanation: "Shows device information and public keys for verification"
+      - step: 3
+        title: "Approve Devices"
+        command: "initiat device approve --all"
+        description: "Approve all pending devices"
+        explanation: "Grants access to all approved devices for their respective workspaces"
+      - step: 4
+        title: "Verify Access"
+        command: "initiat workspace list"
+        description: "Verify team members can access workspaces"
+        explanation: "Confirm that team members can now access workspace secrets"
+    success_criteria:
+      - "All team devices are approved"
+      - "Team members can access workspace secrets"
+      - "No pending approvals remain"
+    next_steps:
+      - "Train team members on secret management"
+      - "Set up environment-specific workspaces"
+      - "Configure automated secret rotation"
+    metadata:
+      tags: ["team-management", "device-approval", "collaboration"]
+      order: 2
+
+  environment_setup:
+    id: "environment_setup"
+    title: "Multi-Environment Setup"
+    type: "workflow"
+    description: "Set up workspaces for different environments (dev, staging, prod)"
+    difficulty: "intermediate"
+    estimated_time: "20 minutes"
+    prerequisites: ["admin_access", "multiple_environments"]
+    steps:
+      - step: 1
+        title: "List Available Workspaces"
+        command: "initiat workspace list"
+        description: "See current workspace structure"
+        explanation: "Review existing workspaces and their initialization status"
+      - step: 2
+        title: "Initialize Production"
+        command: "initiat workspace init acme-corp/production"
+        description: "Initialize production workspace keys"
+        explanation: "Set up keys for production environment"
+      - step: 3
+        title: "Initialize Staging"
+        command: "initiat workspace init acme-corp/staging"
+        description: "Initialize staging workspace keys"
+        explanation: "Set up keys for staging environment"
+      - step: 4
+        title: "Initialize Development"
+        command: "initiat workspace init acme-corp/development"
+        description: "Initialize development workspace keys"
+        explanation: "Set up keys for development environment"
+      - step: 5
+        title: "Set Environment Secrets"
+        command: |
+          initiat secret set API_KEY --value "prod-key" --workspace-path acme-corp/production
+          initiat secret set API_KEY --value "staging-key" --workspace-path acme-corp/staging
+          initiat secret set API_KEY --value "dev-key" --workspace-path acme-corp/development
+        description: "Set environment-specific secrets"
+        explanation: "Store different secrets for each environment"
+      - step: 6
+        title: "Verify Setup"
+        command: "initiat secret list --workspace-path acme-corp/production"
+        description: "Verify secrets are properly stored"
+        explanation: "Confirm that environment-specific secrets are stored correctly"
+    success_criteria:
+      - "All environments have initialized workspace keys"
+      - "Environment-specific secrets are stored"
+      - "Team members can access appropriate environments"
+    next_steps:
+      - "Configure CI/CD pipelines for each environment"
+      - "Set up automated secret rotation"
+      - "Train team on environment-specific workflows"
+    metadata:
+      tags: ["environments", "workspace-setup", "devops"]
+      order: 3
+
+  secret_rotation:
+    id: "secret_rotation"
+    title: "Secret Rotation"
+    type: "workflow"
+    description: "Safely rotate secrets across environments"
+    difficulty: "intermediate"
+    estimated_time: "30 minutes"
+    prerequisites: ["access_to_all_environments", "new_secret_values_ready"]
+    steps:
+      - step: 1
+        title: "Audit Current Secrets"
+        command: "initiat secret list"
+        description: "Review current secrets and versions"
+        explanation: "Document existing secrets before rotation"
+      - step: 2
+        title: "Backup Current Secrets"
+        command: "initiat secret get <secret-key>"
+        description: "Retrieve current secret values for backup"
+        explanation: "Save current values in case rollback is needed"
+      - step: 3
+        title: "Update Development"
+        command: 'initiat secret set API_KEY --value "new-dev-key" --workspace-path acme-corp/development'
+        description: "Update secret in development environment"
+        explanation: "Test new secret in development first"
+      - step: 4
+        title: "Test in Development"
+        command: "initiat secret get API_KEY --workspace-path acme-corp/development"
+        description: "Verify new secret works in development"
+        explanation: "Confirm new secret is working correctly"
+      - step: 5
+        title: "Update Staging"
+        command: 'initiat secret set API_KEY --value "new-staging-key" --workspace-path acme-corp/staging'
+        description: "Update secret in staging environment"
+        explanation: "Deploy to staging for further testing"
+      - step: 6
+        title: "Test in Staging"
+        command: "initiat secret get API_KEY --workspace-path acme-corp/staging"
+        description: "Verify new secret works in staging"
+        explanation: "Confirm staging environment is working"
+      - step: 7
+        title: "Update Production"
+        command: 'initiat secret set API_KEY --value "new-prod-key" --workspace-path acme-corp/production'
+        description: "Update secret in production environment"
+        explanation: "Deploy to production after successful testing"
+      - step: 8
+        title: "Verify Production"
+        command: "initiat secret get API_KEY --workspace-path acme-corp/production"
+        description: "Verify new secret works in production"
+        explanation: "Confirm production environment is working"
+    success_criteria:
+      - "All environments have updated secrets"
+      - "New secrets are working correctly"
+      - "Old secrets are no longer accessible"
+    next_steps:
+      - "Update CI/CD pipelines with new secrets"
+      - "Notify team of secret rotation"
+      - "Document rotation process for future"
+    metadata:
+      tags: ["security", "secret-rotation", "production"]
+      order: 4
+
+  troubleshooting:
+    id: "troubleshooting"
+    title: "Troubleshooting"
+    type: "guide"
+    description: "Systematic approach to resolving common issues"
+    difficulty: "beginner"
+    estimated_time: "15 minutes"
+    prerequisites: ["basic_understanding_of_initiat_cli"]
+    steps:
+      - step: 1
+        title: "Check Authentication"
+        command: "initiat auth login"
+        description: "Verify authentication is working"
+        explanation: "Ensure you can authenticate with your account"
+      - step: 2
+        title: "Clear Expired Tokens"
+        command: "initiat device clear-token"
+        description: "Clear any expired authentication tokens"
+        explanation: "Remove any stale authentication data"
+      - step: 3
+        title: "Re-authenticate"
+        command: "initiat auth login"
+        description: "Get fresh authentication token"
+        explanation: "Obtain a new authentication token"
+      - step: 4
+        title: "Check Device Status"
+        command: "initiat device approvals"
+        description: "Verify device is approved for workspace access"
+        explanation: "Confirm your device has proper access"
+      - step: 5
+        title: "Re-register Device"
+        command: 'initiat device register "my-device"'
+        description: "Re-register device if needed"
+        explanation: "Re-register your device if there are issues"
+      - step: 6
+        title: "Test Workspace Access"
+        command: "initiat workspace list"
+        description: "Verify workspace access is working"
+        explanation: "Confirm you can access your workspaces"
+      - step: 7
+        title: "Test Secret Access"
+        command: "initiat secret list"
+        description: "Test secret retrieval functionality"
+        explanation: "Verify you can access secrets in your workspaces"
+    success_criteria:
+      - "Authentication is working"
+      - "Device is properly registered and approved"
+      - "Can access workspaces and secrets"
+    next_steps:
+      - "Contact support if issues persist"
+      - "Document the issue for future reference"
+      - "Update team on resolution"
+    metadata:
+      tags: ["troubleshooting", "debugging", "support"]
+      order: 7
+
+reference:
+  global_options:
+    id: "global_options"
+    title: "Global Options"
+    type: "reference"
+    description: "Global options that apply to all CLI commands"
+    content:
+      options:
+        - name: "config"
+          description: "Path to configuration file"
+          default: "~/.initiat/config.yaml"
+          environment_variable: null
+        - name: "api-url"
+          description: "API base URL"
+          default: "https://www.initiat.dev"
+          environment_variable: "INITIAT_API_BASE_URL"
+        - name: "service-name"
+          description: "Keyring service name"
+          default: "initiat-cli"
+          environment_variable: null
+        - name: "workspace-path"
+          short: "W"
+          description: "Full workspace path (org/workspace) or alias"
+          environment_variable: null
+        - name: "workspace"
+          short: "w"
+          description: "Workspace name (uses default org or --org)"
+          environment_variable: null
+        - name: "org"
+          description: "Organization slug (used with --workspace)"
+          environment_variable: null
+    metadata:
+      order: 1
+
+  workspace_context:
+    id: "workspace_context"
+    title: "Workspace Context Resolution"
+    type: "reference"
+    description: "Different ways to specify workspace context in commands"
+    content:
+      methods:
+        - method: "Full workspace path"
+          command: "initiat secret list --workspace-path acme-corp/production"
+          use_case: "When you need to specify the exact workspace"
+        - method: "Separate org and workspace"
+          command: "initiat secret list --org acme-corp --workspace production"
+          use_case: "When you want to be explicit about organization and workspace"
+        - method: "Workspace only (uses default org)"
+          command: "initiat secret list --workspace production"
+          use_case: "When using your default organization"
+        - method: "Short flags"
+          command: "initiat secret list -W acme-corp/production"
+          use_case: "For faster typing with short flags"
+        - method: "Mixed short flags"
+          command: "initiat secret list --org acme-corp -w production"
+          use_case: "Combining short flags for org and workspace"
+    metadata:
+      order: 2
+
+  error_handling:
+    id: "error_handling"
+    title: "Error Handling"
+    type: "reference"
+    description: "Common error scenarios and how to resolve them"
+    content:
+      error_types:
+        authentication:
+          - error: "Device not registered"
+            message: "❌ Device not registered. Please run 'initiat device register <name>' first"
+            solution: "Register your device with initiat device register <device-name>"
+          - error: "Workspace key not initialized"
+            message: "❌ Failed to get workspace key: workspace key not initialized"
+            solution: "Initialize workspace keys with initiat workspace init <workspace-path>"
+          - error: "Invalid registration token"
+            message: "❌ Invalid or expired registration token"
+            solution: "Clear token and re-authenticate with initiat device clear-token && initiat auth login"
+        network:
+          - error: "Network connection failed"
+            message: "❌ Failed to set secret: network connection failed"
+            solution: "Check your internet connection and try again"
+          - error: "Secret not found"
+            message: "❌ Failed to get secret: server returned 404"
+            solution: "Verify the secret key exists with initiat secret list"
+        validation:
+          - error: "Invalid secret key"
+            message: "❌ Invalid secret key: must contain only alphanumeric characters and underscores"
+            solution: "Use a valid secret key name"
+          - error: "Invalid secret value"
+            message: "❌ Invalid secret value: cannot be empty"
+            solution: "Provide a non-empty secret value"
+        configuration:
+          - error: "Permission denied"
+            message: "❌ Failed to initialize config: permission denied"
+            solution: "Check file permissions and try again"
+          - error: "Invalid workspace path"
+            message: "❌ Invalid workspace path: expected 'org-slug/workspace-slug'"
+            solution: "Use the correct workspace path format"
+    metadata:
+      order: 3
+
+  best_practices:
+    id: "best_practices"
+    title: "Best Practices"
+    type: "reference"
+    description: "Recommended practices for using Initiat CLI effectively"
+    content:
+      workspace_organization:
+        title: "Workspace Organization"
+        description: "Best practices for organizing workspaces and secrets"
+        tips:
+          - "Use descriptive workspace names: acme-corp/production, acme-corp/staging"
+          - "Initialize workspace keys before storing secrets"
+          - "Use consistent naming conventions for secret keys"
+          - "Group related secrets in the same workspace"
+      secret_management:
+        title: "Secret Management"
+        description: "Best practices for managing secrets securely"
+        tips:
+          - "Use descriptive secret keys: API_KEY, DB_PASSWORD, JWT_SECRET"
+          - "Add descriptions for complex secrets"
+          - "Regularly rotate secrets and update versions"
+          - "Never share secret values in plain text"
+      device_management:
+        title: "Device Management"
+        description: "Best practices for managing device access"
+        tips:
+          - "Use descriptive device names: john-macbook, ci-server-prod"
+          - "Register devices before team members need access"
+          - "Approve device access promptly for team productivity"
+          - "Regularly audit device access and remove unused devices"
+      security_considerations:
+        title: "Security Considerations"
+        description: "Important security practices to follow"
+        tips:
+          - "Never share device credentials or workspace keys"
+          - "Use --force flag carefully with secret operations"
+          - "Regularly audit device access and remove unused devices"
+          - "Keep CLI updated to latest version for security patches"
+          - "Use strong, unique device names for easy identification"
+    metadata:
+      order: 4

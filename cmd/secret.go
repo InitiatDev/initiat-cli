@@ -9,6 +9,7 @@ import (
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
+	"github.com/InitiatDev/initiat-cli/internal/export"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/validation"
@@ -19,6 +20,7 @@ var (
 	description   string
 	forceOverride bool
 	copyToClip    bool
+	outputFile    string
 )
 
 var secretCmd = &cobra.Command{
@@ -84,12 +86,25 @@ Examples:
 	RunE: runSecretDelete,
 }
 
+var secretExportCmd = &cobra.Command{
+	Use:   "export <secret-key>",
+	Short: "Export a secret to a file",
+	Long: `Export a secret value to a file. Creates directories if needed and handles overwrite prompts.
+
+Examples:
+  initiat secret export API_KEY -o .env
+  initiat secret export API_KEY -o config/secrets.env`,
+	Args: cobra.ExactArgs(1),
+	RunE: runSecretExport,
+}
+
 func init() {
 	rootCmd.AddCommand(secretCmd)
 	secretCmd.AddCommand(secretSetCmd)
 	secretCmd.AddCommand(secretGetCmd)
 	secretCmd.AddCommand(secretListCmd)
 	secretCmd.AddCommand(secretDeleteCmd)
+	secretCmd.AddCommand(secretExportCmd)
 
 	secretSetCmd.Flags().StringVarP(&secretValue, "value", "v", "", "Secret value (required)")
 	secretSetCmd.Flags().StringVarP(&description, "description", "d", "", "Optional description for the secret")
@@ -99,6 +114,9 @@ func init() {
 	secretGetCmd.Flags().BoolVarP(&copyToClip, "copy", "c", false, "Copy value to clipboard instead of printing")
 
 	secretDeleteCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Skip confirmation prompt")
+
+	secretExportCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file path (required)")
+	_ = secretExportCmd.MarkFlagRequired("output")
 }
 
 func runSecretSet(cmd *cobra.Command, args []string) error {
@@ -342,4 +360,44 @@ func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (stri
 	}
 
 	return crypto.DecryptSecretValue(ciphertext, nonceBytes, workspaceKey)
+}
+
+func runSecretExport(cmd *cobra.Command, args []string) error {
+	workspaceCtx, err := GetWorkspaceContext()
+	if err != nil {
+		return fmt.Errorf("❌ %w", err)
+	}
+
+	key := strings.TrimSpace(args[0])
+	if err := validation.ValidateSecretKey(key); err != nil {
+		return err
+	}
+
+	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
+
+	store := storage.New()
+	if !store.HasDeviceID() {
+		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
+	}
+
+	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+	}
+
+	c := client.New()
+	secretData, err := c.GetSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get secret: %w", err)
+	}
+
+	fmt.Println("🔓 Decrypting secret value...")
+
+	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, workspaceKey)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to decrypt secret: %w", err)
+	}
+
+	exportService := export.NewExportService(forceOverride)
+	return exportService.ExportSecret(key, decryptedValue, outputFile)
 }
