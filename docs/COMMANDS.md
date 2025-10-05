@@ -26,7 +26,9 @@ All commands support these global flags:
 
 ### Workspace Context Resolution
 
-The CLI supports multiple ways to specify workspace context:
+The CLI supports multiple ways to specify workspace context. If no workspace is specified, the CLI will intelligently prompt you to select from available workspaces.
+
+#### Specifying Workspace Explicitly
 
 ```bash
 # Method 1: Full workspace path
@@ -43,6 +45,41 @@ initiat secret list -W acme-corp/production
 initiat secret list --org acme-corp -w production
 initiat secret list -w production
 ```
+
+#### Interactive Workspace Selection
+
+When no workspace is specified, the CLI will prompt you to select from available workspaces:
+
+```bash
+# No workspace specified - CLI will prompt
+initiat secret list
+
+# Output:
+# ❓ Workspace context is required for this command.
+# 💡 You can specify workspace using:
+#    --workspace-path org/workspace
+#    --org org --workspace workspace
+#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+#
+# Available workspaces:
+#   1. Production Environment (acme-corp/production)
+#   2. Staging Environment (acme-corp/staging)
+#   3. Development Environment (acme-corp/dev)
+#   0. Enter custom workspace
+#
+# Select workspace (0 for custom): 
+```
+
+**Interactive Selection Options:**
+- **Number Selection**: Choose from the numbered list of available workspaces
+- **Custom Input**: Select option 0 to enter a custom workspace path manually
+- **Fallback**: If workspace fetching fails, you'll be prompted to enter manually
+
+**Benefits:**
+- **Faster Workflow**: No need to remember exact workspace names
+- **Discovery**: See all available workspaces at a glance
+- **Flexible**: Can still enter custom workspaces when needed
+- **User-Friendly**: Clear guidance and helpful error messages
 
 ## Authentication Commands
 

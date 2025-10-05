@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/workspace"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 	apiURL        string
 	serviceName   string
 	workspacePath string
-	workspace     string
+	workspaceName string
 	org           string
 )
 
@@ -51,7 +52,8 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&workspacePath, "workspace-path", "W", "",
 		"full workspace path (org/workspace) or alias")
-	rootCmd.PersistentFlags().StringVarP(&workspace, "workspace", "w", "", "workspace name (uses default org or --org)")
+	rootCmd.PersistentFlags().StringVarP(&workspaceName, "workspace", "w", "",
+		"workspace name (uses default org or --org)")
 	rootCmd.PersistentFlags().StringVar(&org, "org", "", "organization slug (used with --workspace)")
 
 	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "workspace")
@@ -59,7 +61,7 @@ func init() {
 }
 
 func GetWorkspaceContext() (*config.WorkspaceContext, error) {
-	return config.ResolveWorkspaceContext(workspacePath, org, workspace)
+	return workspace.GetWorkspaceContext(workspacePath, org, workspaceName)
 }
 
 func Execute() {

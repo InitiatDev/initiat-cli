@@ -27,14 +27,20 @@
 Transform how your team handles secrets with enterprise-grade security. Our zero-knowledge architecture ensures that even we can't decrypt your secrets - everything is encrypted client-side before transmission.
 
 ```bash
-# Set a secret for your team
-initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+# Set a secret for your team (with workspace selection)
+initiat secret set API_KEY --value "sk-1234567890abcdef"
+# CLI will prompt: Select workspace (0 for custom): 1
 
 # Get a secret (decrypted client-side)
-initiat secret get API_KEY --workspace-path acme-corp/production
+initiat secret get API_KEY
+# CLI will prompt: Select workspace (0 for custom): 1
 
 # List all secrets in a workspace
-initiat secret list --workspace-path acme-corp/production
+initiat secret list
+# CLI will prompt: Select workspace (0 for custom): 1
+
+# Or specify workspace explicitly
+initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
 ```
 
 - **Client-side encryption** with Ed25519/X25519 cryptography
@@ -67,6 +73,36 @@ initiat workspace init acme-corp/production
 - **Workspace-based organization** for teams and projects
 - **Role-based access control** with granular permissions
 - **Secure key storage** using OS keychain integration
+
+**Interactive Workspace Selection**
+
+Never remember workspace names again. When you don't specify a workspace, the CLI intelligently prompts you to select from available workspaces.
+
+```bash
+# No workspace specified - CLI will show interactive selection
+initiat secret list
+
+# Output:
+# ❓ Workspace context is required for this command.
+# 💡 You can specify workspace using:
+#    --workspace-path org/workspace
+#    --org org --workspace workspace
+#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+#
+# Available workspaces:
+#   1. Production Environment (acme-corp/production)
+#   2. Staging Environment (acme-corp/staging)
+#   3. Development Environment (acme-corp/dev)
+#   0. Enter custom workspace
+#
+# Select workspace (0 for custom): 
+```
+
+**Benefits:**
+- **Faster Workflow**: No need to remember exact workspace names
+- **Discovery**: See all available workspaces at a glance
+- **Flexible**: Can still enter custom workspaces when needed
+- **User-Friendly**: Clear guidance and helpful error messages
 
 ## What's Coming Next
 
@@ -171,7 +207,11 @@ Organize your secrets by team and project. Each workspace can have its own acces
 # List available workspaces
 initiat workspace list
 
-# Initialize a new workspace
+# Initialize a new workspace (with interactive selection)
+initiat workspace init
+# CLI will prompt: Select workspace (0 for custom): 1
+
+# Or specify workspace explicitly
 initiat workspace init acme-corp/production
 ```
 

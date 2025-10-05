@@ -924,6 +924,23 @@ reference:
     description: "Different ways to specify workspace context in commands"
     content:
       methods:
+        - method: "Interactive Selection (New!)"
+          command: "initiat secret list"
+          use_case: "When you want to select from available workspaces interactively"
+          output: |
+            ❓ Workspace context is required for this command.
+            💡 You can specify workspace using:
+               --workspace-path org/workspace
+               --org org --workspace workspace
+               Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+            
+            Available workspaces:
+              1. Production Environment (acme-corp/production)
+              2. Staging Environment (acme-corp/staging)
+              3. Development Environment (acme-corp/dev)
+              0. Enter custom workspace
+            
+            Select workspace (0 for custom): 
         - method: "Full workspace path"
           command: "initiat secret list --workspace-path acme-corp/production"
           use_case: "When you need to specify the exact workspace"
