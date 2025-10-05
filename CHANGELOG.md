@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-10-05
+
+### Added
+- **Interactive Workspace Selection**: When no workspace is specified, the CLI now intelligently prompts users to select from available workspaces
+  - Shows numbered list of available workspaces for easy selection
+  - Option to enter custom workspace path manually
+  - Graceful fallback when workspace fetching fails
+  - Improved user experience with clear guidance and helpful error messages
+- **Secret Export Functionality**: New `initiat secret export` command to export secrets to files
+  - Export secrets to `.env` files with proper formatting
+  - Automatic directory creation for nested paths
+  - Git integration with automatic `.gitignore` management
+  - Overwrite protection with user confirmation prompts
+- **Clipboard Integration**: Enhanced secret retrieval with clipboard support
+  - `--copy` flag to copy secret values directly to clipboard
+  - `--copy-kv` flag to copy secrets in KEY=VALUE format
+  - Cross-platform clipboard support using `golang.design/x/clipboard`
+
 ## [0.2.1] - 2025-10-04
 - Trigger homebrew publish on release
 
