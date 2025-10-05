@@ -425,6 +425,9 @@ commands:
         short: "c"
         description: "Copy value to clipboard instead of printing"
         required: false
+      - name: "copy-kv"
+        description: "Copy KEY=VALUE format to clipboard"
+        required: false
       - name: "workspace-path"
         short: "W"
         description: "Full workspace path (org/workspace) or alias"
@@ -441,14 +444,17 @@ commands:
         command: "initiat secret get API_KEY --workspace-path acme-corp/production"
       - description: "Get secret with short flags"
         command: "initiat secret get API_KEY -W acme-corp/production"
-      - description: "Get secret and copy to clipboard"
+      - description: "Get secret and copy value to clipboard"
         command: "initiat secret get API_KEY -w production --copy"
+      - description: "Get secret and copy KEY=VALUE format to clipboard"
+        command: "initiat secret get API_KEY -w production --copy-kv"
     workflow_steps:
       - "Retrieves encrypted secret from server"
       - "Gets workspace key and decrypts it"
       - "Decrypts secret value client-side"
-      - "Outputs JSON with secret metadata"
-      - "Optionally copies to clipboard"
+      - "Outputs JSON with secret metadata (default)"
+      - "Optionally copies value to clipboard (--copy)"
+      - "Optionally copies KEY=VALUE format to clipboard (--copy-kv)"
     output: |
       🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
       🔓 Decrypting secret value...

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.design/x/clipboard"
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
@@ -21,6 +22,7 @@ var (
 	forceOverride bool
 	copyToClip    bool
 	outputFile    string
+	copyKeyValue  bool
 )
 
 var secretCmd = &cobra.Command{
@@ -112,6 +114,7 @@ func init() {
 	_ = secretSetCmd.MarkFlagRequired("value")
 
 	secretGetCmd.Flags().BoolVarP(&copyToClip, "copy", "c", false, "Copy value to clipboard instead of printing")
+	secretGetCmd.Flags().BoolVar(&copyKeyValue, "copy-kv", false, "Copy KEY=VALUE format to clipboard")
 
 	secretDeleteCmd.Flags().BoolVarP(&forceOverride, "force", "f", false, "Skip confirmation prompt")
 
@@ -266,11 +269,29 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to format JSON output: %w", err)
 	}
 
-	if copyToClip {
-		fmt.Println("📋 Copied secret value to clipboard")
-		// TODO: Implement clipboard functionality
+	if copyToClip || copyKeyValue {
+		if err := copySecretToClipboard(key, decryptedValue, copyToClip, copyKeyValue); err != nil {
+			return err
+		}
 	} else {
 		fmt.Println(string(jsonData))
+	}
+
+	return nil
+}
+
+func copySecretToClipboard(key, value string, copyToClip, copyKeyValue bool) error {
+	if err := clipboard.Init(); err != nil {
+		return fmt.Errorf("❌ Failed to initialize clipboard: %w", err)
+	}
+
+	if copyToClip {
+		clipboard.Write(clipboard.FmtText, []byte(value))
+		fmt.Println("📋 Secret value copied to clipboard")
+	} else if copyKeyValue {
+		keyValue := fmt.Sprintf("%s=%s", key, value)
+		clipboard.Write(clipboard.FmtText, []byte(keyValue))
+		fmt.Println("📋 KEY=VALUE format copied to clipboard")
 	}
 
 	return nil

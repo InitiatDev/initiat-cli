@@ -374,6 +374,7 @@ Get and decrypt a secret value from the specified workspace.
 
 **Options:**
 - `--copy, -c`: Copy value to clipboard instead of printing
+- `--copy-kv`: Copy KEY=VALUE format to clipboard
 - `--workspace-path, -W`: Full workspace path (org/workspace) or alias
 - `--workspace, -w`: Workspace name (uses default org or --org)
 - `--org`: Organization slug (used with --workspace)
@@ -386,16 +387,20 @@ initiat secret get API_KEY --workspace-path acme-corp/production
 # Get secret with short flags
 initiat secret get API_KEY -W acme-corp/production
 
-# Get secret and copy to clipboard
+# Get secret and copy value to clipboard
 initiat secret get API_KEY -w production --copy
+
+# Get secret and copy KEY=VALUE format to clipboard
+initiat secret get API_KEY -w production --copy-kv
 ```
 
 **What it does:**
 1. Retrieves encrypted secret from server
 2. Gets workspace key and decrypts it
 3. Decrypts secret value client-side
-4. Outputs JSON with secret metadata
-5. Optionally copies to clipboard
+4. Outputs JSON with secret metadata (default)
+5. Optionally copies value to clipboard (`--copy`)
+6. Optionally copies KEY=VALUE format to clipboard (`--copy-kv`)
 
 **Output:**
 ```
