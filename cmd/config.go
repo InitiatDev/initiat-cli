@@ -13,6 +13,7 @@ import (
 const (
 	configSetArgsCount         = 2
 	workspacePathPartsExpected = 2
+	yesResponse                = "yes"
 )
 
 var configCmd = &cobra.Command{
@@ -66,6 +67,22 @@ Examples:
   initiat config clear api.timeout`,
 	Args: cobra.ExactArgs(1),
 	RunE: runConfigClear,
+}
+
+var configResetCmd = &cobra.Command{
+	Use:   "reset",
+	Short: "Reset configuration to defaults",
+	Long: `Reset all configuration values to their default settings.
+
+This will:
+- Reset all API settings to defaults
+- Clear workspace defaults (org and workspace)
+- Remove all workspace aliases
+- Reset service name to default
+
+Examples:
+  initiat config reset`,
+	RunE: runConfigReset,
 }
 
 var configAliasCmd = &cobra.Command{
@@ -126,6 +143,7 @@ func init() {
 	configCmd.AddCommand(configGetCmd)
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configClearCmd)
+	configCmd.AddCommand(configResetCmd)
 	configCmd.AddCommand(configAliasCmd)
 
 	configAliasCmd.AddCommand(configAliasSetCmd)
@@ -249,7 +267,7 @@ func runConfigClearAll() error {
 	_, _ = fmt.Scanln(&response)
 	response = strings.ToLower(strings.TrimSpace(response))
 
-	if response != "y" && response != "yes" {
+	if response != "y" && response != yesResponse {
 		fmt.Println("❌ Clear all cancelled")
 		return nil
 	}
@@ -339,5 +357,24 @@ func runConfigAliasRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Removed alias '%s'\n", alias)
+	return nil
+}
+
+func runConfigReset(cmd *cobra.Command, args []string) error {
+	fmt.Print("⚠️  Are you sure you want to reset all configuration to defaults? (y/N): ")
+	var response string
+	_, _ = fmt.Scanln(&response)
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	if response != "y" && response != yesResponse {
+		fmt.Println("❌ Reset cancelled")
+		return nil
+	}
+
+	if err := config.ResetToDefaults(); err != nil {
+		return fmt.Errorf("❌ Failed to reset configuration: %w", err)
+	}
+
+	fmt.Println("✅ Configuration reset to defaults")
 	return nil
 }

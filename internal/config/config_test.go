@@ -277,3 +277,50 @@ func TestWorkspaceContextResolution_ErrorCases(t *testing.T) {
 	assert.Nil(t, ctx)
 	assert.Contains(t, err.Error(), "no workspace context available")
 }
+
+func TestResetToDefaults(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	err := InitConfig()
+	require.NoError(t, err)
+
+	// Set some custom values
+	err = Set("api.base_url", "http://localhost:8080")
+	require.NoError(t, err)
+	err = Set("api.timeout", "60s")
+	require.NoError(t, err)
+	err = Set("workspace.default_org", "test-org")
+	require.NoError(t, err)
+	err = Set("workspace.default_workspace", "test-workspace")
+	require.NoError(t, err)
+	err = SetAlias("prod", "acme-corp/production")
+	require.NoError(t, err)
+
+	// Verify custom values are set
+	cfg := Get()
+	assert.Equal(t, "http://localhost:8080", cfg.API.BaseURL)
+	assert.Equal(t, "60s", cfg.API.Timeout)
+	assert.Equal(t, "test-org", cfg.Workspace.DefaultOrg)
+	assert.Equal(t, "test-workspace", cfg.Workspace.DefaultWorkspace)
+	assert.Equal(t, "acme-corp/production", GetAlias("prod"))
+
+	// Reset to defaults
+	err = ResetToDefaults()
+	require.NoError(t, err)
+
+	// Verify all values are reset to defaults
+	cfg = Get()
+	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
+	assert.Equal(t, "30s", cfg.API.Timeout)
+	assert.Equal(t, "initiat-cli", cfg.ServiceName)
+	assert.Equal(t, "", cfg.Workspace.DefaultOrg)
+	assert.Equal(t, "", cfg.Workspace.DefaultWorkspace)
+	assert.Equal(t, "", GetAlias("prod"))
+	assert.Empty(t, ListAliases())
+}

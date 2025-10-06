@@ -23,7 +23,7 @@ type ConfigKey struct {
 }
 
 var ConfigKeys = []ConfigKey{
-	{"api.url", "api.base_url", "https://www.initiat.dev"},
+	{"api.url", "api.base_url", defaultAPIBaseURL},
 	{"api.timeout", "api.timeout", "30s"},
 	{"service", "service_name", "initiat-cli"},
 	{"org", "workspace.default_org", ""},
@@ -370,4 +370,26 @@ func GetAllConfigKeys() []string {
 		keys[i] = key.Simplified
 	}
 	return keys
+}
+
+func ResetToDefaults() error {
+	for _, key := range ConfigKeys {
+		if err := Set(key.Actual, key.Default); err != nil {
+			return fmt.Errorf("failed to reset %s: %w", key.Simplified, err)
+		}
+	}
+
+	if err := Set("aliases", make(map[string]string)); err != nil {
+		return fmt.Errorf("failed to reset aliases: %w", err)
+	}
+
+	if err := viper.Unmarshal(globalConfig); err != nil {
+		return fmt.Errorf("failed to update config: %w", err)
+	}
+
+	if err := Save(); err != nil {
+		return fmt.Errorf("failed to save reset configuration: %w", err)
+	}
+
+	return nil
 }
