@@ -27,7 +27,7 @@ var configSetCmd = &cobra.Command{
 	Long: `Set a configuration value using dot notation for nested keys.
 
 Examples:
-  initiat config set api.url "https://api.initiat.dev"
+  initiat config set api.url "https://www.initiat.dev"
   initiat config set api.timeout "60s"
   initiat config set org "my-company"
   initiat config set workspace "production"
