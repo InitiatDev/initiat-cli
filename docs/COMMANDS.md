@@ -9,6 +9,7 @@ This document provides comprehensive documentation for all Initiat CLI commands,
 - [Device Management](#device-management)
 - [Workspace Management](#workspace-management)
 - [Secret Management](#secret-management)
+- [Configuration Management](#configuration-management)
 - [Version Information](#version-information)
 
 ## Global Options
@@ -568,6 +569,256 @@ initiat secret export API_KEY --output secrets.txt --force
 ✅ Added 'secrets.env' to .gitignore
 ✅ Secret 'API_KEY' exported to secrets.env
 ```
+
+## Configuration Management
+
+The Initiat CLI stores configuration in `~/.initiat/config.yaml` and provides commands to manage settings, workspace defaults, and aliases.
+
+### `initiat config set <key> <value>`
+
+Set a configuration value using dot notation for nested keys.
+
+**Arguments:**
+- `key`: Configuration key to set (required)
+- `value`: Value to set (required)
+
+**Available Keys:**
+- `api.url`: API base URL
+- `api.timeout`: API timeout duration
+- `org`: Default organization slug
+- `workspace`: Default workspace slug
+- `service`: Service name for keyring
+
+**Examples:**
+```bash
+# Set API URL
+initiat config set api.url "https://www.initiat.dev"
+
+# Set API timeout
+initiat config set api.timeout "60s"
+
+# Set default organization
+initiat config set org "my-company"
+
+# Set default workspace
+initiat config set workspace "production"
+
+# Set service name
+initiat config set service "my-custom-service"
+```
+
+**Output:**
+```
+✅ Set api.url = https://www.initiat.dev
+```
+
+### `initiat config get <key>`
+
+Get a configuration value using dot notation for nested keys.
+
+**Arguments:**
+- `key`: Configuration key to get (required)
+
+**Examples:**
+```bash
+# Get API URL
+initiat config get api.url
+
+# Get default organization
+initiat config get org
+
+# Get default workspace
+initiat config get workspace
+```
+
+**Output:**
+```
+api.url: https://www.initiat.dev
+org: my-company
+workspace: production
+```
+
+### `initiat config show`
+
+Show all current configuration values.
+
+**Examples:**
+```bash
+# Show all configuration
+initiat config show
+```
+
+**Output:**
+```
+Current configuration:
+  api.url: https://www.initiat.dev
+  api.timeout: 30s
+  service: initiat-cli
+  org: my-company
+  workspace: production
+
+Workspace aliases:
+  prod: acme-corp/production
+  staging: acme-corp/staging
+```
+
+### `initiat config clear <key>`
+
+Clear a configuration value using dot notation for nested keys.
+
+**Arguments:**
+- `key`: Configuration key to clear (required)
+
+**Options:**
+- `--all`: Clear all configuration values (with confirmation)
+
+**Examples:**
+```bash
+# Clear default organization
+initiat config clear org
+
+# Clear API timeout
+initiat config clear api.timeout
+
+# Clear all configuration
+initiat config clear --all
+```
+
+**Output:**
+```
+✅ Cleared org
+✅ Cleared api.timeout
+```
+
+### `initiat config reset`
+
+Reset all configuration values to their default settings.
+
+**What it does:**
+- Resets all API settings to defaults
+- Clears workspace defaults (org and workspace)
+- Removes all workspace aliases
+- Resets service name to default
+
+**Examples:**
+```bash
+# Reset all configuration to defaults
+initiat config reset
+```
+
+**Output:**
+```
+⚠️  Are you sure you want to reset all configuration to defaults? (y/N): y
+✅ Configuration reset to defaults
+```
+
+**Safety Features:**
+- Interactive confirmation prompt for safety
+- Clear description of what will be reset
+- Cancellation support if user doesn't confirm
+
+### `initiat config alias set <alias> <workspace-path>`
+
+Set a workspace alias to a full workspace path.
+
+**Arguments:**
+- `alias`: Alias name (required)
+- `workspace-path`: Full workspace path in format 'org/workspace' (required)
+
+**Examples:**
+```bash
+# Set production alias
+initiat config alias set prod "acme-corp/production"
+
+# Set staging alias
+initiat config alias set staging "acme-corp/staging"
+
+# Set development alias
+initiat config alias set dev "acme-corp/development"
+```
+
+**Output:**
+```
+✅ Set alias 'prod' = acme-corp/production
+```
+
+### `initiat config alias get <alias>`
+
+Get the workspace path for a specific alias.
+
+**Arguments:**
+- `alias`: Alias name to get (required)
+
+**Examples:**
+```bash
+# Get production alias
+initiat config alias get prod
+```
+
+**Output:**
+```
+prod: acme-corp/production
+```
+
+### `initiat config alias list`
+
+List all configured workspace aliases.
+
+**Examples:**
+```bash
+# List all aliases
+initiat config alias list
+```
+
+**Output:**
+```
+Workspace aliases:
+  prod: acme-corp/production
+  staging: acme-corp/staging
+  dev: acme-corp/development
+```
+
+### `initiat config alias remove <alias>`
+
+Remove a workspace alias.
+
+**Arguments:**
+- `alias`: Alias name to remove (required)
+
+**Examples:**
+```bash
+# Remove production alias
+initiat config alias remove prod
+```
+
+**Output:**
+```
+✅ Removed alias 'prod'
+```
+
+### Configuration File Location
+
+The CLI stores configuration in:
+- **File**: `~/.initiat/config.yaml`
+- **Format**: YAML
+- **Permissions**: 600 (owner read/write only)
+
+### Environment Variables
+
+Configuration can also be set via environment variables:
+- `INITIAT_API_BASE_URL`: API base URL
+- `INITIAT_API_TIMEOUT`: API timeout
+- `INITIAT_SERVICE_NAME`: Service name for keyring
+- `INITIAT_WORKSPACE_DEFAULT_ORG`: Default organization
+- `INITIAT_WORKSPACE_DEFAULT_WORKSPACE`: Default workspace
+
+### Configuration Precedence
+
+Settings are applied in this order (highest to lowest priority):
+1. Command-line flags
+2. Environment variables
+3. Configuration file
+4. Default values
 
 ## Version Information
 

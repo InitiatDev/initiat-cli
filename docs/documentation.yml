@@ -609,6 +609,228 @@ commands:
       difficulty: "beginner"
       estimated_time: "1 minute"
 
+  config.set:
+    id: "config.set"
+    name: "set"
+    category: "config"
+    description: "Set a configuration value using dot notation for nested keys"
+    usage: "initiat config set <key> <value>"
+    arguments:
+      - name: "key"
+        description: "Configuration key to set"
+        required: true
+      - name: "value"
+        description: "Value to set"
+        required: true
+    options: []
+    examples:
+      - description: "Set API URL"
+        command: 'initiat config set api.url "https://www.initiat.dev"'
+      - description: "Set API timeout"
+        command: 'initiat config set api.timeout "60s"'
+      - description: "Set default organization"
+        command: 'initiat config set org "my-company"'
+      - description: "Set default workspace"
+        command: 'initiat config set workspace "production"'
+      - description: "Set service name"
+        command: 'initiat config set service "my-custom-service"'
+    output: |
+      ✅ Set api.url = https://www.initiat.dev
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.get:
+    id: "config.get"
+    name: "get"
+    category: "config"
+    description: "Get a configuration value using dot notation for nested keys"
+    usage: "initiat config get <key>"
+    arguments:
+      - name: "key"
+        description: "Configuration key to get"
+        required: true
+    options: []
+    examples:
+      - description: "Get API URL"
+        command: "initiat config get api.url"
+      - description: "Get default organization"
+        command: "initiat config get org"
+      - description: "Get default workspace"
+        command: "initiat config get workspace"
+    output: |
+      api.url: https://www.initiat.dev
+      org: my-company
+      workspace: production
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.show:
+    id: "config.show"
+    name: "show"
+    category: "config"
+    description: "Show all current configuration values"
+    usage: "initiat config show"
+    arguments: []
+    options: []
+    examples:
+      - description: "Show all configuration"
+        command: "initiat config show"
+    output: |
+      Current configuration:
+        api.url: https://www.initiat.dev
+        api.timeout: 30s
+        service: initiat-cli
+        org: my-company
+        workspace: production
+
+      Workspace aliases:
+        prod: acme-corp/production
+        staging: acme-corp/staging
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.clear:
+    id: "config.clear"
+    name: "clear"
+    category: "config"
+    description: "Clear a configuration value using dot notation for nested keys"
+    usage: "initiat config clear <key>"
+    arguments:
+      - name: "key"
+        description: "Configuration key to clear"
+        required: true
+    options:
+      - name: "all"
+        description: "Clear all configuration values (with confirmation)"
+        required: false
+    examples:
+      - description: "Clear default organization"
+        command: "initiat config clear org"
+      - description: "Clear API timeout"
+        command: "initiat config clear api.timeout"
+      - description: "Clear all configuration"
+        command: "initiat config clear --all"
+    output: |
+      ✅ Cleared org
+      ✅ Cleared api.timeout
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.reset:
+    id: "config.reset"
+    name: "reset"
+    category: "config"
+    description: "Reset all configuration values to their default settings"
+    usage: "initiat config reset"
+    arguments: []
+    options: []
+    examples:
+      - description: "Reset all configuration to defaults"
+        command: "initiat config reset"
+    workflow_steps:
+      - "Prompts for confirmation to ensure user wants to reset"
+      - "Resets all API settings to defaults"
+      - "Clears workspace defaults (org and workspace)"
+      - "Removes all workspace aliases"
+      - "Resets service name to default"
+    output: |
+      ⚠️  Are you sure you want to reset all configuration to defaults? (y/N): y
+      ✅ Configuration reset to defaults
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.alias.set:
+    id: "config.alias.set"
+    name: "set"
+    category: "config"
+    description: "Set a workspace alias to a full workspace path"
+    usage: "initiat config alias set <alias> <workspace-path>"
+    arguments:
+      - name: "alias"
+        description: "Alias name"
+        required: true
+      - name: "workspace-path"
+        description: "Full workspace path in format 'org/workspace'"
+        required: true
+    options: []
+    examples:
+      - description: "Set production alias"
+        command: 'initiat config alias set prod "acme-corp/production"'
+      - description: "Set staging alias"
+        command: 'initiat config alias set staging "acme-corp/staging"'
+      - description: "Set development alias"
+        command: 'initiat config alias set dev "acme-corp/development"'
+    output: |
+      ✅ Set alias 'prod' = acme-corp/production
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.alias.get:
+    id: "config.alias.get"
+    name: "get"
+    category: "config"
+    description: "Get the workspace path for a specific alias"
+    usage: "initiat config alias get <alias>"
+    arguments:
+      - name: "alias"
+        description: "Alias name to get"
+        required: true
+    options: []
+    examples:
+      - description: "Get production alias"
+        command: "initiat config alias get prod"
+    output: |
+      prod: acme-corp/production
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.alias.list:
+    id: "config.alias.list"
+    name: "list"
+    category: "config"
+    description: "List all configured workspace aliases"
+    usage: "initiat config alias list"
+    arguments: []
+    options: []
+    examples:
+      - description: "List all aliases"
+        command: "initiat config alias list"
+    output: |
+      Workspace aliases:
+        prod: acme-corp/production
+        staging: acme-corp/staging
+        dev: acme-corp/development
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  config.alias.remove:
+    id: "config.alias.remove"
+    name: "remove"
+    category: "config"
+    description: "Remove a workspace alias"
+    usage: "initiat config alias remove <alias>"
+    arguments:
+      - name: "alias"
+        description: "Alias name to remove"
+        required: true
+    options: []
+    examples:
+      - description: "Remove production alias"
+        command: "initiat config alias remove prod"
+    output: |
+      ✅ Removed alias 'prod'
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
   version.version:
     id: "version.version"
     name: "version"
@@ -827,6 +1049,62 @@ guides:
       tags: ["security", "secret-rotation", "production"]
       order: 4
 
+  configuration_management:
+    id: "configuration_management"
+    title: "Configuration Management"
+    type: "guide"
+    description: "Complete guide to managing CLI configuration, workspace defaults, and aliases"
+    difficulty: "beginner"
+    estimated_time: "10 minutes"
+    prerequisites: ["basic_understanding_of_initiat_cli"]
+    steps:
+      - step: 1
+        title: "View Current Configuration"
+        command: "initiat config show"
+        description: "See all current configuration settings"
+        explanation: "Review your current configuration to understand what's set"
+      - step: 2
+        title: "Set Default Organization"
+        command: 'initiat config set org "my-company"'
+        description: "Set your default organization"
+        explanation: "This allows you to use workspace names without specifying the org"
+      - step: 3
+        title: "Set Default Workspace"
+        command: 'initiat config set workspace "production"'
+        description: "Set your default workspace"
+        explanation: "This allows you to run commands without specifying the workspace"
+      - step: 4
+        title: "Create Workspace Aliases"
+        command: |
+          initiat config alias set prod "my-company/production"
+          initiat config alias set staging "my-company/staging"
+          initiat config alias set dev "my-company/development"
+        description: "Create shortcuts for frequently used workspaces"
+        explanation: "Aliases make it easier to reference workspaces with short names"
+      - step: 5
+        title: "Configure API Settings"
+        command: |
+          initiat config set api.url "https://api.initiat.dev"
+          initiat config set api.timeout "60s"
+        description: "Configure API connection settings"
+        explanation: "Set custom API URL and timeout for your environment"
+      - step: 6
+        title: "Verify Configuration"
+        command: "initiat config show"
+        description: "Confirm all settings are correct"
+        explanation: "Review your configuration to ensure everything is set up properly"
+    success_criteria:
+      - "Default organization and workspace are set"
+      - "Workspace aliases are configured"
+      - "API settings are configured for your environment"
+    next_steps:
+      - "Use aliases in commands for faster workflow"
+      - "Set up team configuration standards"
+      - "Document configuration for team members"
+    metadata:
+      tags: ["configuration", "setup", "productivity"]
+      order: 5
+
   troubleshooting:
     id: "troubleshooting"
     title: "Troubleshooting"
@@ -1000,6 +1278,82 @@ reference:
     metadata:
       order: 3
 
+  configuration_reference:
+    id: "configuration_reference"
+    title: "Configuration Reference"
+    type: "reference"
+    description: "Complete reference for all configuration options and settings"
+    content:
+      configuration_file:
+        title: "Configuration File"
+        description: "Location and format of the configuration file"
+        details:
+          - "File: ~/.initiat/config.yaml"
+          - "Format: YAML"
+          - "Permissions: 600 (owner read/write only)"
+          - "Auto-created on first use"
+      available_keys:
+        title: "Available Configuration Keys"
+        description: "All configuration keys that can be set"
+        keys:
+          - key: "api.url"
+            description: "API base URL"
+            default: "https://www.initiat.dev"
+            example: 'initiat config set api.url "https://api.initiat.dev"'
+          - key: "api.timeout"
+            description: "API timeout duration"
+            default: "30s"
+            example: 'initiat config set api.timeout "60s"'
+          - key: "org"
+            description: "Default organization slug"
+            default: ""
+            example: 'initiat config set org "my-company"'
+          - key: "workspace"
+            description: "Default workspace slug"
+            default: ""
+            example: 'initiat config set workspace "production"'
+          - key: "service"
+            description: "Service name for keyring"
+            default: "initiat-cli"
+            example: 'initiat config set service "my-custom-service"'
+      environment_variables:
+        title: "Environment Variables"
+        description: "Configuration via environment variables"
+        variables:
+          - name: "INITIAT_API_BASE_URL"
+            description: "API base URL"
+            example: "export INITIAT_API_BASE_URL=https://api.initiat.dev"
+          - name: "INITIAT_API_TIMEOUT"
+            description: "API timeout"
+            example: "export INITIAT_API_TIMEOUT=60s"
+          - name: "INITIAT_SERVICE_NAME"
+            description: "Service name for keyring"
+            example: "export INITIAT_SERVICE_NAME=my-custom-service"
+          - name: "INITIAT_WORKSPACE_DEFAULT_ORG"
+            description: "Default organization"
+            example: "export INITIAT_WORKSPACE_DEFAULT_ORG=my-company"
+          - name: "INITIAT_WORKSPACE_DEFAULT_WORKSPACE"
+            description: "Default workspace"
+            example: "export INITIAT_WORKSPACE_DEFAULT_WORKSPACE=production"
+      configuration_precedence:
+        title: "Configuration Precedence"
+        description: "Order of configuration priority (highest to lowest)"
+        order:
+          - "Command-line flags"
+          - "Environment variables"
+          - "Configuration file"
+          - "Default values"
+      workspace_aliases:
+        title: "Workspace Aliases"
+        description: "Creating and managing workspace shortcuts"
+        examples:
+          - "Create alias: initiat config alias set prod acme-corp/production"
+          - "Use alias: initiat secret list --workspace-path prod"
+          - "List aliases: initiat config alias list"
+          - "Remove alias: initiat config alias remove prod"
+    metadata:
+      order: 4
+
   best_practices:
     id: "best_practices"
     title: "Best Practices"
@@ -1030,6 +1384,15 @@ reference:
           - "Register devices before team members need access"
           - "Approve device access promptly for team productivity"
           - "Regularly audit device access and remove unused devices"
+      configuration_management:
+        title: "Configuration Management"
+        description: "Best practices for managing CLI configuration"
+        tips:
+          - "Set default organization and workspace for faster workflows"
+          - "Use workspace aliases for frequently accessed workspaces"
+          - "Configure API settings for your environment"
+          - "Use environment variables for CI/CD pipelines"
+          - "Regularly review and clean up unused aliases"
       security_considerations:
         title: "Security Considerations"
         description: "Important security practices to follow"
@@ -1040,4 +1403,4 @@ reference:
           - "Keep CLI updated to latest version for security patches"
           - "Use strong, unique device names for easy identification"
     metadata:
-      order: 4
+      order: 5
