@@ -8,9 +8,6 @@
 
 > **For Engineering Leaders**: Stop losing weeks to environment setup, secret management, and onboarding friction. Initiat transforms your developer experience from days of setup to minutes of productivity.
 
-<img width="1024" height="1024" alt="ChatGPT Image Oct 6, 2025, 08_09_24 PM" src="https://github.com/user-attachments/assets/6356d039-849a-43d6-8ee5-19960dd6d45f" />
-
-
 ## The Problem: Developer Experience Debt
 
 **Every engineering team faces the same productivity killers:**
