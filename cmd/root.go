@@ -50,9 +50,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initiat-cli",
 		"keyring service name for credential storage")
 
-	rootCmd.PersistentFlags().StringVarP(&projectPath, "project-path", "W", "",
+	rootCmd.PersistentFlags().StringVarP(&projectPath, "project-path", "P", "",
 		"full project path (org/project) or alias")
-	rootCmd.PersistentFlags().StringVarP(&projectName, "project", "w", "",
+	rootCmd.PersistentFlags().StringVarP(&projectName, "project", "p", "",
 		"project name (uses default org or --org)")
 	rootCmd.PersistentFlags().StringVar(&org, "org", "", "organization slug (used with --project)")
 

@@ -325,7 +325,7 @@ commands:
       - description: "Using flags"
         command: "initiat project init --org acme-corp --project production"
       - description: "Using short flags"
-        command: "initiat project init --org acme-corp -w production"
+        command: "initiat project init --org acme-corp -p production"
       - description: "Project only (uses default org)"
         command: "initiat project init --project production"
     workflow_steps:
@@ -389,9 +389,9 @@ commands:
       - description: "Set secret with separate org/project"
         command: 'initiat secret set DB_PASSWORD --org acme-corp --project production --value "super-secret-pass" --description "Production database password"'
       - description: "Set secret with short flags"
-        command: 'initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"'
+        command: 'initiat secret set API_KEY -P acme-corp/production -v "sk-1234567890abcdef"'
       - description: "Force overwrite existing secret"
-        command: 'initiat secret set API_KEY -w production -v "new-value" --force'
+        command: 'initiat secret set API_KEY -p production -v "new-value" --force'
     workflow_steps:
       - "Validates secret key and value"
       - "Retrieves project key from server"
@@ -443,11 +443,11 @@ commands:
       - description: "Get secret with full project path"
         command: "initiat secret get API_KEY --project-path acme-corp/production"
       - description: "Get secret with short flags"
-        command: "initiat secret get API_KEY -W acme-corp/production"
+        command: "initiat secret get API_KEY -P acme-corp/production"
       - description: "Get secret and copy value to clipboard"
-        command: "initiat secret get API_KEY -w production --copy"
+        command: "initiat secret get API_KEY -p production --copy"
       - description: "Get secret and copy KEY=VALUE format to clipboard"
-        command: "initiat secret get API_KEY -w production --copy-kv"
+        command: "initiat secret get API_KEY -p production --copy-kv"
     workflow_steps:
       - "Retrieves encrypted secret from server"
       - "Gets project key and decrypts it"
@@ -493,7 +493,7 @@ commands:
       - description: "List secrets with full project path"
         command: "initiat secret list --project-path acme-corp/production"
       - description: "List secrets with short flags"
-        command: "initiat secret list -W acme-corp/production"
+        command: "initiat secret list -P acme-corp/production"
       - description: "List secrets with project only"
         command: "initiat secret list --project production"
     workflow_steps:
@@ -542,7 +542,7 @@ commands:
       - description: "Delete secret with confirmation"
         command: "initiat secret delete API_KEY --project-path acme-corp/production"
       - description: "Delete secret with short flags"
-        command: "initiat secret delete API_KEY -W acme-corp/production"
+        command: "initiat secret delete API_KEY -P acme-corp/production"
       - description: "Force delete without confirmation"
         command: "initiat secret delete OLD_API_KEY --project production --force"
     workflow_steps:
@@ -590,7 +590,7 @@ commands:
       - description: "Export secret to a file"
         command: "initiat secret export API_KEY --output .env --project-path acme-corp/production"
       - description: "Export to deep directory (creates folders)"
-        command: "initiat secret export API_KEY --output config/secrets.env -W acme-corp/production"
+        command: "initiat secret export API_KEY --output config/secrets.env -P acme-corp/production"
       - description: "Export with force override"
         command: "initiat secret export API_KEY --output secrets.txt --force"
     workflow_steps:
@@ -1229,10 +1229,10 @@ reference:
           command: "initiat secret list --project production"
           use_case: "When using your default organization"
         - method: "Short flags"
-          command: "initiat secret list -W acme-corp/production"
+          command: "initiat secret list -P acme-corp/production"
           use_case: "For faster typing with short flags"
         - method: "Mixed short flags"
-          command: "initiat secret list --org acme-corp -w production"
+          command: "initiat secret list --org acme-corp -p production"
           use_case: "Combining short flags for org and project"
     metadata:
       order: 2
@@ -1329,12 +1329,12 @@ reference:
           - name: "INITIAT_SERVICE_NAME"
             description: "Service name for keyring"
             example: "export INITIAT_SERVICE_NAME=my-custom-service"
-          - name: "INITIAT_WORKSPACE_DEFAULT_ORG"
+          - name: "INITIAT_PROJECT_DEFAULT_ORG"
             description: "Default organization"
-            example: "export INITIAT_WORKSPACE_DEFAULT_ORG=my-company"
-          - name: "INITIAT_WORKSPACE_DEFAULT_WORKSPACE"
+            example: "export INITIAT_PROJECT_DEFAULT_ORG=my-company"
+          - name: "INITIAT_PROJECT_DEFAULT_PROJECT"
             description: "Default project"
-            example: "export INITIAT_WORKSPACE_DEFAULT_WORKSPACE=production"
+            example: "export INITIAT_PROJECT_DEFAULT_PROJECT=production"
       configuration_precedence:
         title: "Configuration Precedence"
         description: "Order of configuration priority (highest to lowest)"

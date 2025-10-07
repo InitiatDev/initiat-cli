@@ -37,10 +37,10 @@ Examples:
   initiat project init acme-corp/production
   initiat project init acme-corp/production  # Using positional argument
   initiat project init --org acme-corp --project production
-  initiat project init -o acme-corp -w production
+  initiat project init -o acme-corp -p production
   initiat project init --project production  # Uses default org
-  initiat project init -w production
-  initiat project init -W prod  # Using alias`,
+  initiat project init -p production
+  initiat project init -P prod  # Using alias`,
 	RunE: runProjectInit,
 }
 

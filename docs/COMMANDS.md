@@ -21,8 +21,8 @@ All commands support these global flags:
 | `--config` | | | `~/.initiat/config.yaml` | Path to configuration file |
 | `--api-url` | | `INITIAT_API_BASE_URL` | `https://www.initiat.dev` | API base URL |
 | `--service-name` | | | `initiat-cli` | Keyring service name |
-| `--project-path` | `-W` | | | Full project path (org/project) or alias |
-| `--project` | `-w` | | | Project name (uses default org or --org) |
+| `--project-path` | `-P` | | | Full project path (org/project) or alias |
+| `--project` | `-p` | | | Project name (uses default org or --org) |
 | `--org` | | | | Organization slug (used with --project) |
 
 ### Project Context Resolution
@@ -42,9 +42,9 @@ initiat secret list --org acme-corp --project production
 initiat secret list --project production
 
 # Method 4: Short flags
-initiat secret list -W acme-corp/production
-initiat secret list --org acme-corp -w production
-initiat secret list -w production
+initiat secret list -P acme-corp/production
+initiat secret list --org acme-corp -p production
+initiat secret list -p production
 ```
 
 #### Interactive Project Selection
@@ -315,8 +315,8 @@ Initialize a new project key for secure secret storage.
 - `project-path`: Full project path (org/project) or use flags
 
 **Options:**
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -326,9 +326,9 @@ initiat project init acme-corp/production
 
 # Using flags
 initiat project init --org acme-corp --project production
-initiat project init --org acme-corp -w production
+initiat project init --org acme-corp -p production
 initiat project init --project production  # Uses default org
-initiat project init -w production
+initiat project init -p production
 ```
 
 **What it does:**
@@ -365,8 +365,8 @@ Set a secret value in the specified project.
 - `--value, -v`: Secret value (required)
 - `--description, -d`: Optional description for the secret
 - `--force, -f`: Overwrite existing secret without confirmation
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -379,10 +379,10 @@ initiat secret set DB_PASSWORD --org acme-corp --project production \
   --value "super-secret-pass" --description "Production database password"
 
 # Set secret with short flags
-initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"
+initiat secret set API_KEY -P acme-corp/production -v "sk-1234567890abcdef"
 
 # Force overwrite existing secret
-initiat secret set API_KEY -w production -v "new-value" --force
+initiat secret set API_KEY -p production -v "new-value" --force
 ```
 
 **What it does:**
@@ -413,8 +413,8 @@ Get and decrypt a secret value from the specified project.
 **Options:**
 - `--copy, -c`: Copy value to clipboard instead of printing
 - `--copy-kv`: Copy KEY=VALUE format to clipboard
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -423,13 +423,13 @@ Get and decrypt a secret value from the specified project.
 initiat secret get API_KEY --project-path acme-corp/production
 
 # Get secret with short flags
-initiat secret get API_KEY -W acme-corp/production
+initiat secret get API_KEY -P acme-corp/production
 
 # Get secret and copy value to clipboard
-initiat secret get API_KEY -w production --copy
+initiat secret get API_KEY -p production --copy
 
 # Get secret and copy KEY=VALUE format to clipboard
-initiat secret get API_KEY -w production --copy-kv
+initiat secret get API_KEY -p production --copy-kv
 ```
 
 **What it does:**
@@ -459,8 +459,8 @@ initiat secret get API_KEY -w production --copy-kv
 List all secrets in the specified project (metadata only, no values).
 
 **Options:**
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -469,7 +469,7 @@ List all secrets in the specified project (metadata only, no values).
 initiat secret list --project-path acme-corp/production
 
 # List secrets with short flags
-initiat secret list -W acme-corp/production
+initiat secret list -P acme-corp/production
 
 # List secrets with project only
 initiat secret list --project production
@@ -500,8 +500,8 @@ Delete a secret from the specified project.
 
 **Options:**
 - `--force, -f`: Skip confirmation prompt
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -510,7 +510,7 @@ Delete a secret from the specified project.
 initiat secret delete API_KEY --project-path acme-corp/production
 
 # Delete secret with short flags
-initiat secret delete API_KEY -W acme-corp/production
+initiat secret delete API_KEY -P acme-corp/production
 
 # Force delete without confirmation
 initiat secret delete OLD_API_KEY --project production --force
@@ -538,8 +538,8 @@ Export a secret value to a file. Creates directories if needed and handles overw
 **Options:**
 - `--output, -o`: Output file path (required)
 - `--force, -f`: Overwrite existing key without confirmation
-- `--project-path, -W`: Full project path (org/project) or alias
-- `--project, -w`: Project name (uses default org or --org)
+- `--project-path, -P`: Full project path (org/project) or alias
+- `--project, -p`: Project name (uses default org or --org)
 - `--org`: Organization slug (used with --project)
 
 **Examples:**
@@ -548,7 +548,7 @@ Export a secret value to a file. Creates directories if needed and handles overw
 initiat secret export API_KEY --output .env --project-path acme-corp/production
 
 # Export to deep directory (creates folders)
-initiat secret export API_KEY --output config/secrets.env -W acme-corp/production
+initiat secret export API_KEY --output config/secrets.env -P acme-corp/production
 
 # Export with force override
 initiat secret export API_KEY --output secrets.txt --force
@@ -809,8 +809,8 @@ Configuration can also be set via environment variables:
 - `INITIAT_API_BASE_URL`: API base URL
 - `INITIAT_API_TIMEOUT`: API timeout
 - `INITIAT_SERVICE_NAME`: Service name for keyring
-- `INITIAT_WORKSPACE_DEFAULT_ORG`: Default organization
-- `INITIAT_WORKSPACE_DEFAULT_WORKSPACE`: Default project
+- `INITIAT_PROJECT_DEFAULT_ORG`: Default organization
+- `INITIAT_PROJECT_DEFAULT_PROJECT`: Default project
 
 ### Configuration Precedence
 

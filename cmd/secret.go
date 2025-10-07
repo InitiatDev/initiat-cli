@@ -39,10 +39,10 @@ before being sent to the server.
 
 Examples:
   initiat secret set API_KEY --project-path acme-corp/production --value "sk-1234567890abcdef"
-  initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"
+  initiat secret set API_KEY -P acme-corp/production -v "sk-1234567890abcdef"
   initiat secret set DB_PASSWORD --org acme-corp --project production \
     --value "super-secret-pass" --description "Production database password"
-  initiat secret set API_KEY -w production -v "new-value" --force`,
+  initiat secret set API_KEY -p production -v "new-value" --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretSet,
 }
@@ -55,9 +55,9 @@ Output is always in JSON format.
 
 Examples:
   initiat secret get API_KEY --project-path acme-corp/production
-  initiat secret get API_KEY -W acme-corp/production
+  initiat secret get API_KEY -P acme-corp/production
   initiat secret get DB_PASSWORD --project production
-  initiat secret get API_KEY -w production --copy`,
+  initiat secret get API_KEY -p production --copy`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretGet,
 }
@@ -70,7 +70,7 @@ Output is always in table format showing key, value preview, and version.
 
 Examples:
   initiat secret list --project-path acme-corp/production
-  initiat secret list -W acme-corp/production
+  initiat secret list -P acme-corp/production
   initiat secret list --project production`,
 	RunE: runSecretList,
 }
@@ -82,7 +82,7 @@ var secretDeleteCmd = &cobra.Command{
 
 Examples:
   initiat secret delete API_KEY --project-path acme-corp/production
-  initiat secret delete API_KEY -W acme-corp/production
+  initiat secret delete API_KEY -P acme-corp/production
   initiat secret delete OLD_API_KEY --project production`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretDelete,
