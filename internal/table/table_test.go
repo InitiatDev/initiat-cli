@@ -101,7 +101,7 @@ func TestTable_AddRows(t *testing.T) {
 	}
 }
 
-func TestTable_WorkspaceScenario(t *testing.T) {
+func TestTable_ProjectScenario(t *testing.T) {
 	capture := testutil.CaptureStdout()
 	defer capture.Restore()
 

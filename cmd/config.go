@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	configSetArgsCount         = 2
-	workspacePathPartsExpected = 2
-	yesResponse                = "yes"
+	configSetArgsCount       = 2
+	projectPathPartsExpected = 2
+	yesResponse              = "yes"
 )
 
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage CLI configuration",
-	Long:  `Manage CLI configuration including API settings, workspace defaults, and aliases.`,
+	Long:  `Manage CLI configuration including API settings, project defaults, and aliases.`,
 }
 
 var configSetCmd = &cobra.Command{
@@ -31,7 +31,7 @@ Examples:
   initiat config set api.url "https://www.initiat.dev"
   initiat config set api.timeout "60s"
   initiat config set org "my-company"
-  initiat config set workspace "production"
+  initiat config set project "production"
   initiat config set service "my-custom-service"`,
 	Args: cobra.ExactArgs(configSetArgsCount),
 	RunE: runConfigSet,
@@ -45,7 +45,7 @@ var configGetCmd = &cobra.Command{
 Examples:
   initiat config get api.url
   initiat config get org
-  initiat config get workspace`,
+  initiat config get project`,
 	Args: cobra.ExactArgs(1),
 	RunE: runConfigGet,
 }
@@ -76,8 +76,8 @@ var configResetCmd = &cobra.Command{
 
 This will:
 - Reset all API settings to defaults
-- Clear workspace defaults (org and workspace)
-- Remove all workspace aliases
+- Clear project defaults (org and project)
+- Remove all project aliases
 - Reset service name to default
 
 Examples:
@@ -87,14 +87,14 @@ Examples:
 
 var configAliasCmd = &cobra.Command{
 	Use:   "alias",
-	Short: "Manage workspace aliases",
-	Long:  `Manage workspace aliases for convenient workspace references.`,
+	Short: "Manage project aliases",
+	Long:  `Manage project aliases for convenient project references.`,
 }
 
 var configAliasSetCmd = &cobra.Command{
-	Use:   "set <alias> <workspace-path>",
-	Short: "Set a workspace alias",
-	Long: `Set a workspace alias to a full workspace path.
+	Use:   "set <alias> <project-path>",
+	Short: "Set a project alias",
+	Long: `Set a project alias to a full project path.
 
 Examples:
   initiat config alias set prod "acme-corp/production"
@@ -106,8 +106,8 @@ Examples:
 
 var configAliasGetCmd = &cobra.Command{
 	Use:   "get <alias>",
-	Short: "Get a workspace alias",
-	Long: `Get the workspace path for a specific alias.
+	Short: "Get a project alias",
+	Long: `Get the project path for a specific alias.
 
 Examples:
   initiat config alias get prod`,
@@ -117,15 +117,15 @@ Examples:
 
 var configAliasListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all workspace aliases",
-	Long:  `List all configured workspace aliases.`,
+	Short: "List all project aliases",
+	Long:  `List all configured project aliases.`,
 	RunE:  runConfigAliasList,
 }
 
 var configAliasRemoveCmd = &cobra.Command{
 	Use:   "remove <alias>",
-	Short: "Remove a workspace alias",
-	Long: `Remove a workspace alias.
+	Short: "Remove a project alias",
+	Long: `Remove a project alias.
 
 Examples:
   initiat config alias remove prod`,
@@ -208,26 +208,26 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  api.timeout: %s\n", cfg.API.Timeout)
 	fmt.Printf("  service: %s\n", cfg.ServiceName)
 
-	if cfg.Workspace.DefaultOrg != "" {
-		fmt.Printf("  org: %s\n", cfg.Workspace.DefaultOrg)
+	if cfg.Project.DefaultOrg != "" {
+		fmt.Printf("  org: %s\n", cfg.Project.DefaultOrg)
 	} else {
 		fmt.Printf("  org: (not set)\n")
 	}
 
-	if cfg.Workspace.DefaultWorkspace != "" {
-		fmt.Printf("  workspace: %s\n", cfg.Workspace.DefaultWorkspace)
+	if cfg.Project.DefaultProject != "" {
+		fmt.Printf("  project: %s\n", cfg.Project.DefaultProject)
 	} else {
-		fmt.Printf("  workspace: (not set)\n")
+		fmt.Printf("  project: (not set)\n")
 	}
 
 	aliases := config.ListAliases()
 	if len(aliases) > 0 {
-		fmt.Println("\nWorkspace aliases:")
+		fmt.Println("\nProject aliases:")
 		for alias, path := range aliases {
 			fmt.Printf("  %s: %s\n", alias, path)
 		}
 	} else {
-		fmt.Println("\nWorkspace aliases: (none configured)")
+		fmt.Println("\nProject aliases: (none configured)")
 	}
 
 	return nil
@@ -292,26 +292,26 @@ func runConfigClearAll() error {
 
 func runConfigAliasSet(cmd *cobra.Command, args []string) error {
 	alias := args[0]
-	workspacePath := args[1]
+	projectPath := args[1]
 
-	if !strings.Contains(workspacePath, "/") {
-		return fmt.Errorf("❌ Workspace path must be in format 'org/workspace', got: %s", workspacePath)
+	if !strings.Contains(projectPath, "/") {
+		return fmt.Errorf("❌ Project path must be in format 'org/project', got: %s", projectPath)
 	}
 
-	parts := strings.Split(workspacePath, "/")
-	if len(parts) != workspacePathPartsExpected {
-		return fmt.Errorf("❌ Workspace path must be in format 'org/workspace', got: %s", workspacePath)
+	parts := strings.Split(projectPath, "/")
+	if len(parts) != projectPathPartsExpected {
+		return fmt.Errorf("❌ Project path must be in format 'org/project', got: %s", projectPath)
 	}
 
 	if err := config.EnsureConfigFileExists(); err != nil {
 		return err
 	}
 
-	if err := config.SetAlias(alias, workspacePath); err != nil {
+	if err := config.SetAlias(alias, projectPath); err != nil {
 		return fmt.Errorf("❌ Failed to set alias: %w", err)
 	}
 
-	fmt.Printf("✅ Set alias '%s' = %s\n", alias, workspacePath)
+	fmt.Printf("✅ Set alias '%s' = %s\n", alias, projectPath)
 	return nil
 }
 
@@ -332,12 +332,12 @@ func runConfigAliasList(cmd *cobra.Command, args []string) error {
 	aliases := config.ListAliases()
 
 	if len(aliases) == 0 {
-		fmt.Println("No workspace aliases configured")
-		fmt.Println("💡 Set an alias with: initiat config alias set <alias> <org/workspace>")
+		fmt.Println("No project aliases configured")
+		fmt.Println("💡 Set an alias with: initiat config alias set <alias> <org/project>")
 		return nil
 	}
 
-	fmt.Println("Workspace aliases:")
+	fmt.Println("Project aliases:")
 	for alias, path := range aliases {
 		fmt.Printf("  %s: %s\n", alias, path)
 	}

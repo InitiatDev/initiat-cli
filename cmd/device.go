@@ -55,21 +55,21 @@ var clearTokenCmd = &cobra.Command{
 var approvalsCmd = &cobra.Command{
 	Use:   "approvals",
 	Short: "List pending device approvals",
-	Long:  "List all pending device approvals for workspaces where you are an admin.",
+	Long:  "List all pending device approvals for projects where you are an admin.",
 	RunE:  runListApprovals,
 }
 
 var approveCmd = &cobra.Command{
 	Use:   "approve [approval-id]",
-	Short: "Approve a device for workspace access",
-	Long:  "Approve a specific device or all pending devices for workspace access.",
+	Short: "Approve a device for project access",
+	Long:  "Approve a specific device or all pending devices for project access.",
 	RunE:  runApproveDevice,
 }
 
 var rejectCmd = &cobra.Command{
 	Use:   "reject [approval-id]",
-	Short: "Reject a device for workspace access",
-	Long:  "Reject a specific device or all pending devices for workspace access.",
+	Short: "Reject a device for project access",
+	Long:  "Reject a specific device or all pending devices for project access.",
 	RunE:  runRejectDevice,
 }
 
@@ -251,7 +251,7 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Created: %s\n", deviceResp.Device.CreatedAt)
 	fmt.Println()
 	fmt.Println("🔐 Keys stored securely in system keychain")
-	fmt.Println("💡 Next: Initialize workspace keys with 'initiat workspace list'")
+	fmt.Println("💡 Next: Initialize project keys with 'initiat project list'")
 
 	return nil
 }
@@ -315,20 +315,20 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 	fmt.Printf("📋 Pending Device Approvals (%d)\n\n", len(approvals))
 
 	t := table.New()
-	t.SetHeaders("ID", "User", "Device", "Workspace", "Requested")
+	t.SetHeaders("ID", "User", "Device", "Project", "Requested")
 
 	for _, approval := range approvals {
 		if approval.Status == statusPending {
-			userName := fmt.Sprintf("%s %s", approval.WorkspaceMembership.User.Name, approval.WorkspaceMembership.User.Surname)
-			orgSlug := approval.WorkspaceMembership.Workspace.Organization.Slug
-			workspaceSlug := approval.WorkspaceMembership.Workspace.Slug
-			workspaceName := fmt.Sprintf("%s/%s", orgSlug, workspaceSlug)
+			userName := fmt.Sprintf("%s %s", approval.ProjectMembership.User.Name, approval.ProjectMembership.User.Surname)
+			orgSlug := approval.ProjectMembership.Project.Organization.Slug
+			projectSlug := approval.ProjectMembership.Project.Slug
+			projectName := fmt.Sprintf("%s/%s", orgSlug, projectSlug)
 
 			t.AddRow(
 				fmt.Sprintf("%d", approval.ID),
 				truncateString(userName, maxDisplayLength),
 				truncateString(approval.Device.Name, maxDisplayLength),
-				truncateString(workspaceName, maxDisplayLength),
+				truncateString(projectName, maxDisplayLength),
 				truncateString(formatTime(approval.InsertedAt), maxDisplayLength),
 			)
 		}
@@ -399,15 +399,15 @@ func runShowApproval(cmd *cobra.Command, args []string) error {
 	fmt.Println("📋 Device Approval Details")
 	fmt.Println()
 	fmt.Printf("User: %s %s (%s)\n",
-		approval.WorkspaceMembership.User.Name,
-		approval.WorkspaceMembership.User.Surname,
-		approval.WorkspaceMembership.User.Email)
+		approval.ProjectMembership.User.Name,
+		approval.ProjectMembership.User.Surname,
+		approval.ProjectMembership.User.Email)
 	fmt.Printf("Device: %s (ID: %d)\n", approval.Device.Name, approval.Device.ID)
-	fmt.Printf("Workspace: %s / %s (%s/%s)\n",
-		approval.WorkspaceMembership.Workspace.Organization.Name,
-		approval.WorkspaceMembership.Workspace.Name,
-		approval.WorkspaceMembership.Workspace.Organization.Slug,
-		approval.WorkspaceMembership.Workspace.Slug)
+	fmt.Printf("Project: %s / %s (%s/%s)\n",
+		approval.ProjectMembership.Project.Organization.Name,
+		approval.ProjectMembership.Project.Name,
+		approval.ProjectMembership.Project.Organization.Slug,
+		approval.ProjectMembership.Project.Slug)
 	fmt.Printf("Requested: %s\n", formatTime(approval.InsertedAt))
 	fmt.Printf("Status: %s\n", approval.Status)
 
@@ -441,16 +441,16 @@ func runApproveAllDevices(apiClient *client.Client) error {
 	fmt.Printf("🔐 Approving all pending devices...\n\n")
 	fmt.Printf("Found %d pending approvals:\n", len(pendingApprovals))
 
-	workspaceKeys := collectWorkspaceKeys(pendingApprovals)
-	if len(workspaceKeys) == 0 {
-		return fmt.Errorf("❌ No workspace keys found")
+	projectKeys := collectProjectKeys(pendingApprovals)
+	if len(projectKeys) == 0 {
+		return fmt.Errorf("❌ No project keys found")
 	}
 
 	fmt.Println()
-	successCount := approveDevicesBatch(apiClient, pendingApprovals, workspaceKeys)
+	successCount := approveDevicesBatch(apiClient, pendingApprovals, projectKeys)
 
 	fmt.Printf("✅ Approved %d devices successfully!\n", successCount)
-	fmt.Println("   All approved devices can now access their respective workspace secrets")
+	fmt.Println("   All approved devices can now access their respective project secrets")
 
 	return nil
 }
@@ -465,41 +465,41 @@ func filterPendingApprovals(approvals []types.DeviceApproval) []types.DeviceAppr
 	return pendingApprovals
 }
 
-func collectWorkspaceKeys(pendingApprovals []types.DeviceApproval) map[string][]byte {
-	workspaceKeys := make(map[string][]byte)
+func collectProjectKeys(pendingApprovals []types.DeviceApproval) map[string][]byte {
+	projectKeys := make(map[string][]byte)
 
 	for _, approval := range pendingApprovals {
-		workspaceSlug := buildWorkspaceSlug(approval)
+		projectSlug := buildProjectSlug(approval)
 
 		fmt.Printf("  • %s (%s) - %s %s\n",
 			approval.Device.Name,
-			workspaceSlug,
-			approval.WorkspaceMembership.User.Name,
-			approval.WorkspaceMembership.User.Surname)
+			projectSlug,
+			approval.ProjectMembership.User.Name,
+			approval.ProjectMembership.User.Surname)
 
-		if _, exists := workspaceKeys[workspaceSlug]; !exists {
-			key, err := getWorkspaceKeyForApproval(workspaceSlug)
+		if _, exists := projectKeys[projectSlug]; !exists {
+			key, err := getProjectKeyForApproval(projectSlug)
 			if err != nil {
-				fmt.Printf("❌ Failed to get workspace key for %s: %v\n", workspaceSlug, err)
+				fmt.Printf("❌ Failed to get project key for %s: %v\n", projectSlug, err)
 				continue
 			}
-			workspaceKeys[workspaceSlug] = key
+			projectKeys[projectSlug] = key
 		}
 	}
 
-	return workspaceKeys
+	return projectKeys
 }
 
 func approveDevicesBatch(
 	apiClient *client.Client,
 	pendingApprovals []types.DeviceApproval,
-	workspaceKeys map[string][]byte,
+	projectKeys map[string][]byte,
 ) int {
 	successCount := 0
 
 	for _, approval := range pendingApprovals {
-		workspaceSlug := buildWorkspaceSlug(approval)
-		workspaceKey := workspaceKeys[workspaceSlug]
+		projectSlug := buildProjectSlug(approval)
+		projectKey := projectKeys[projectSlug]
 
 		devicePublicKey, err := crypto.Decode(approval.Device.PublicKeyX25519)
 		if err != nil {
@@ -507,9 +507,9 @@ func approveDevicesBatch(
 			continue
 		}
 
-		wrappedKey, err := crypto.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+		wrappedKey, err := crypto.WrapProjectKey(projectKey, devicePublicKey)
 		if err != nil {
-			fmt.Printf("❌ Failed to wrap workspace key for %s: %v\n", approval.Device.Name, err)
+			fmt.Printf("❌ Failed to wrap project key for %s: %v\n", approval.Device.Name, err)
 			continue
 		}
 
@@ -535,13 +535,13 @@ func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
 		return fmt.Errorf("❌ Device approval is not pending (status: %s)", approval.Status)
 	}
 
-	workspaceSlug := buildWorkspaceSlug(*approval)
+	projectSlug := buildProjectSlug(*approval)
 
 	fmt.Printf("🔐 Approving device for %s...\n", approval.Device.Name)
 
-	workspaceKey, err := getWorkspaceKeyForApproval(workspaceSlug)
+	projectKey, err := getProjectKeyForApproval(projectSlug)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+		return fmt.Errorf("❌ Failed to get project key: %w", err)
 	}
 
 	devicePublicKey, err := crypto.Decode(approval.Device.PublicKeyX25519)
@@ -549,9 +549,9 @@ func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
 		return fmt.Errorf("❌ Failed to decode device public key: %w", err)
 	}
 
-	wrappedKey, err := crypto.WrapWorkspaceKey(workspaceKey, devicePublicKey)
+	wrappedKey, err := crypto.WrapProjectKey(projectKey, devicePublicKey)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to wrap workspace key: %w", err)
+		return fmt.Errorf("❌ Failed to wrap project key: %w", err)
 	}
 
 	_, err = apiClient.ApproveDevice(approvalID, wrappedKey)
@@ -560,7 +560,7 @@ func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
 	}
 
 	fmt.Println("✅ Device approved successfully!")
-	fmt.Println("   Device can now access workspace secrets")
+	fmt.Println("   Device can now access project secrets")
 
 	return nil
 }
@@ -625,42 +625,42 @@ func runRejectSingleDevice(apiClient *client.Client, approvalID string) error {
 	return nil
 }
 
-func buildWorkspaceSlug(approval types.DeviceApproval) string {
-	workspaceSlug := fmt.Sprintf("%s/%s",
-		approval.WorkspaceMembership.Workspace.Organization.Slug,
-		approval.WorkspaceMembership.Workspace.Slug)
+func buildProjectSlug(approval types.DeviceApproval) string {
+	projectSlug := fmt.Sprintf("%s/%s",
+		approval.ProjectMembership.Project.Organization.Slug,
+		approval.ProjectMembership.Project.Slug)
 
-	if approval.WorkspaceMembership.Workspace.Organization.Slug == "" {
-		workspaceSlug = approval.WorkspaceMembership.Workspace.Slug
+	if approval.ProjectMembership.Project.Organization.Slug == "" {
+		projectSlug = approval.ProjectMembership.Project.Slug
 	}
 
-	return workspaceSlug
+	return projectSlug
 }
 
-func parseWorkspaceSlug(compositeSlug string) (string, string, error) {
+func parseProjectSlug(compositeSlug string) (string, string, error) {
 	parts := strings.Split(compositeSlug, "/")
 	const expectedParts = 2
 	if len(parts) != expectedParts {
 		return "", "", fmt.Errorf(
-			"invalid workspace slug format: expected 'org-slug/workspace-slug', got '%s'",
+			"invalid project slug format: expected 'org-slug/project-slug', got '%s'",
 			compositeSlug,
 		)
 	}
 	return parts[0], parts[1], nil
 }
 
-func getWorkspaceKeyForApproval(compositeSlug string) ([]byte, error) {
+func getProjectKeyForApproval(compositeSlug string) ([]byte, error) {
 	store := storage.New()
 
-	orgSlug, workspaceSlug, err := parseWorkspaceSlug(compositeSlug)
+	orgSlug, projectSlug, err := parseProjectSlug(compositeSlug)
 	if err != nil {
 		return nil, err
 	}
 
 	apiClient := client.New()
-	wrappedKey, err := apiClient.GetWrappedWorkspaceKey(orgSlug, workspaceSlug)
+	wrappedKey, err := apiClient.GetWrappedProjectKey(orgSlug, projectSlug)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch wrapped workspace key: %w", err)
+		return nil, fmt.Errorf("failed to fetch wrapped project key: %w", err)
 	}
 
 	devicePrivateKey, err := store.GetEncryptionPrivateKey()
@@ -668,17 +668,17 @@ func getWorkspaceKeyForApproval(compositeSlug string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get device private key: %w", err)
 	}
 
-	workspaceKey, err := crypto.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	projectKey, err := crypto.UnwrapProjectKey(wrappedKey, devicePrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
+		return nil, fmt.Errorf("failed to unwrap project key: %w", err)
 	}
 
-	if len(workspaceKey) != crypto.WorkspaceKeySize {
-		return nil, fmt.Errorf("invalid workspace key size: %d bytes (expected %d)",
-			len(workspaceKey), crypto.WorkspaceKeySize)
+	if len(projectKey) != crypto.ProjectKeySize {
+		return nil, fmt.Errorf("invalid project key size: %d bytes (expected %d)",
+			len(projectKey), crypto.ProjectKeySize)
 	}
 
-	return workspaceKey, nil
+	return projectKey, nil
 }
 
 func truncateString(s string, maxLen int) string {

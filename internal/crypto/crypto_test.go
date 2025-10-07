@@ -33,37 +33,37 @@ func TestGenerateX25519Keypair(t *testing.T) {
 }
 
 func TestEncryptDecryptSecretValue(t *testing.T) {
-	workspaceKey := make([]byte, WorkspaceKeySize)
-	for i := range workspaceKey {
-		workspaceKey[i] = byte(i)
+	projectKey := make([]byte, ProjectKeySize)
+	for i := range projectKey {
+		projectKey[i] = byte(i)
 	}
 
 	originalValue := "test-secret-value"
 
 	// Encrypt
-	ciphertext, nonce, err := EncryptSecretValue(originalValue, workspaceKey)
+	ciphertext, nonce, err := EncryptSecretValue(originalValue, projectKey)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, ciphertext)
 	assert.Equal(t, SecretboxNonceSize, len(nonce))
 
 	// Decrypt
-	decryptedValue, err := DecryptSecretValue(ciphertext, nonce, workspaceKey)
+	decryptedValue, err := DecryptSecretValue(ciphertext, nonce, projectKey)
 	assert.NoError(t, err)
 	assert.Equal(t, originalValue, decryptedValue)
 }
 
 func TestEncryptSecretValueDifferentNonces(t *testing.T) {
-	workspaceKey := make([]byte, WorkspaceKeySize)
-	for i := range workspaceKey {
-		workspaceKey[i] = byte(i)
+	projectKey := make([]byte, ProjectKeySize)
+	for i := range projectKey {
+		projectKey[i] = byte(i)
 	}
 
 	originalValue := "test-secret-value"
 
-	_, nonce1, err := EncryptSecretValue(originalValue, workspaceKey)
+	_, nonce1, err := EncryptSecretValue(originalValue, projectKey)
 	assert.NoError(t, err)
 
-	_, nonce2, err := EncryptSecretValue(originalValue, workspaceKey)
+	_, nonce2, err := EncryptSecretValue(originalValue, projectKey)
 	assert.NoError(t, err)
 
 	// Nonces should be different
@@ -74,20 +74,20 @@ func TestEncryptSecretValueInvalidKey(t *testing.T) {
 	invalidKey := make([]byte, 16) // Wrong size
 	_, _, err := EncryptSecretValue("test", invalidKey)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid workspace key size")
+	assert.Contains(t, err.Error(), "invalid project key size")
 }
 
 func TestDecryptSecretValueInvalidKey(t *testing.T) {
 	invalidKey := make([]byte, 16) // Wrong size
 	_, err := DecryptSecretValue([]byte("test"), []byte("test"), invalidKey)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid workspace key size")
+	assert.Contains(t, err.Error(), "invalid project key size")
 }
 
 func TestDecryptSecretValueInvalidNonce(t *testing.T) {
-	workspaceKey := make([]byte, WorkspaceKeySize)
+	projectKey := make([]byte, ProjectKeySize)
 	invalidNonce := make([]byte, 16) // Wrong size
-	_, err := DecryptSecretValue([]byte("test"), invalidNonce, workspaceKey)
+	_, err := DecryptSecretValue([]byte("test"), invalidNonce, projectKey)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid nonce size")
 }

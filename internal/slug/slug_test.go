@@ -88,17 +88,17 @@ func TestParseCompositeSlug(t *testing.T) {
 			name:          "valid composite slug",
 			compositeSlug: "acme-corp/production",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
 		{
 			name:          "valid composite slug with numbers",
-			compositeSlug: "org123/workspace456",
+			compositeSlug: "org123/project456",
 			want: CompositeSlug{
-				OrgSlug:       "org123",
-				WorkspaceSlug: "workspace456",
+				OrgSlug:     "org123",
+				ProjectSlug: "project456",
 			},
 			wantErr: false,
 		},
@@ -109,7 +109,7 @@ func TestParseCompositeSlug(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name:          "missing workspace slug",
+			name:          "missing project slug",
 			compositeSlug: "acme-corp/",
 			want:          CompositeSlug{},
 			wantErr:       true,
@@ -139,7 +139,7 @@ func TestParseCompositeSlug(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name:          "invalid workspace slug",
+			name:          "invalid project slug",
 			compositeSlug: "acme-corp/Production",
 			want:          CompositeSlug{},
 			wantErr:       true,
@@ -148,8 +148,8 @@ func TestParseCompositeSlug(t *testing.T) {
 			name:          "whitespace handling",
 			compositeSlug: " acme-corp / production ",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
@@ -169,7 +169,7 @@ func TestParseCompositeSlug(t *testing.T) {
 	}
 }
 
-func TestResolveWorkspaceSlug(t *testing.T) {
+func TestResolveProjectSlug(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          string
@@ -182,8 +182,8 @@ func TestResolveWorkspaceSlug(t *testing.T) {
 			input:          "acme-corp/production",
 			defaultOrgSlug: "default-org",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
@@ -192,23 +192,23 @@ func TestResolveWorkspaceSlug(t *testing.T) {
 			input:          "acme-corp/production",
 			defaultOrgSlug: "",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
 		{
-			name:           "workspace slug only with default org",
+			name:           "project slug only with default org",
 			input:          "production",
 			defaultOrgSlug: "acme-corp",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
 		{
-			name:           "workspace slug only without default org",
+			name:           "project slug only without default org",
 			input:          "production",
 			defaultOrgSlug: "",
 			want:           CompositeSlug{},
@@ -222,7 +222,7 @@ func TestResolveWorkspaceSlug(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           "invalid workspace slug",
+			name:           "invalid project slug",
 			input:          "Production",
 			defaultOrgSlug: "acme-corp",
 			want:           CompositeSlug{},
@@ -239,13 +239,13 @@ func TestResolveWorkspaceSlug(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveWorkspaceSlug(tt.input, tt.defaultOrgSlug)
+			got, err := ResolveProjectSlug(tt.input, tt.defaultOrgSlug)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ResolveWorkspaceSlug() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ResolveProjectSlug() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ResolveWorkspaceSlug() = %v, want %v", got, tt.want)
+				t.Errorf("ResolveProjectSlug() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -260,8 +260,8 @@ func TestCompositeSlug_String(t *testing.T) {
 		{
 			name: "normal composite slug",
 			cs: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			want: "acme-corp/production",
 		},
@@ -290,24 +290,24 @@ func TestCompositeSlug_IsEmpty(t *testing.T) {
 		{
 			name: "both slugs present",
 			cs: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			want: false,
 		},
 		{
 			name: "missing org slug",
 			cs: CompositeSlug{
-				OrgSlug:       "",
-				WorkspaceSlug: "production",
+				OrgSlug:     "",
+				ProjectSlug: "production",
 			},
 			want: true,
 		},
 		{
-			name: "missing workspace slug",
+			name: "missing project slug",
 			cs: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "",
 			},
 			want: true,
 		},
@@ -329,55 +329,55 @@ func TestCompositeSlug_IsEmpty(t *testing.T) {
 
 func TestBuildCompositeSlug(t *testing.T) {
 	tests := []struct {
-		name          string
-		orgSlug       string
-		workspaceSlug string
-		want          CompositeSlug
-		wantErr       bool
+		name        string
+		orgSlug     string
+		projectSlug string
+		want        CompositeSlug
+		wantErr     bool
 	}{
 		{
-			name:          "valid slugs",
-			orgSlug:       "acme-corp",
-			workspaceSlug: "production",
+			name:        "valid slugs",
+			orgSlug:     "acme-corp",
+			projectSlug: "production",
 			want: CompositeSlug{
-				OrgSlug:       "acme-corp",
-				WorkspaceSlug: "production",
+				OrgSlug:     "acme-corp",
+				ProjectSlug: "production",
 			},
 			wantErr: false,
 		},
 		{
-			name:          "invalid org slug",
-			orgSlug:       "Acme-Corp",
-			workspaceSlug: "production",
-			want:          CompositeSlug{},
-			wantErr:       true,
+			name:        "invalid org slug",
+			orgSlug:     "Acme-Corp",
+			projectSlug: "production",
+			want:        CompositeSlug{},
+			wantErr:     true,
 		},
 		{
-			name:          "invalid workspace slug",
-			orgSlug:       "acme-corp",
-			workspaceSlug: "Production",
-			want:          CompositeSlug{},
-			wantErr:       true,
+			name:        "invalid project slug",
+			orgSlug:     "acme-corp",
+			projectSlug: "Production",
+			want:        CompositeSlug{},
+			wantErr:     true,
 		},
 		{
-			name:          "empty org slug",
-			orgSlug:       "",
-			workspaceSlug: "production",
-			want:          CompositeSlug{},
-			wantErr:       true,
+			name:        "empty org slug",
+			orgSlug:     "",
+			projectSlug: "production",
+			want:        CompositeSlug{},
+			wantErr:     true,
 		},
 		{
-			name:          "empty workspace slug",
-			orgSlug:       "acme-corp",
-			workspaceSlug: "",
-			want:          CompositeSlug{},
-			wantErr:       true,
+			name:        "empty project slug",
+			orgSlug:     "acme-corp",
+			projectSlug: "",
+			want:        CompositeSlug{},
+			wantErr:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildCompositeSlug(tt.orgSlug, tt.workspaceSlug)
+			got, err := BuildCompositeSlug(tt.orgSlug, tt.projectSlug)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildCompositeSlug() error = %v, wantErr %v", err, tt.wantErr)
 				return

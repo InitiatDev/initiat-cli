@@ -27,20 +27,20 @@ var (
 
 var secretCmd = &cobra.Command{
 	Use:   "secret",
-	Short: "Manage secrets in workspaces",
-	Long:  `Manage secrets in Initiat workspaces with client-side encryption.`,
+	Short: "Manage secrets in projects",
+	Long:  `Manage secrets in Initiat projects with client-side encryption.`,
 }
 
 var secretSetCmd = &cobra.Command{
 	Use:   "set <secret-key>",
 	Short: "Set a secret value",
-	Long: `Set a secret value in the specified workspace. The value is encrypted client-side 
+	Long: `Set a secret value in the specified project. The value is encrypted client-side 
 before being sent to the server.
 
 Examples:
-  initiat secret set API_KEY --workspace-path acme-corp/production --value "sk-1234567890abcdef"
+  initiat secret set API_KEY --project-path acme-corp/production --value "sk-1234567890abcdef"
   initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"
-  initiat secret set DB_PASSWORD --org acme-corp --workspace production \
+  initiat secret set DB_PASSWORD --org acme-corp --project production \
     --value "super-secret-pass" --description "Production database password"
   initiat secret set API_KEY -w production -v "new-value" --force`,
 	Args: cobra.ExactArgs(1),
@@ -50,13 +50,13 @@ Examples:
 var secretGetCmd = &cobra.Command{
 	Use:   "get <secret-key>",
 	Short: "Get a secret value (JSON output)",
-	Long: `Get and decrypt a secret value from the specified workspace.
+	Long: `Get and decrypt a secret value from the specified project.
 Output is always in JSON format.
 
 Examples:
-  initiat secret get API_KEY --workspace-path acme-corp/production
+  initiat secret get API_KEY --project-path acme-corp/production
   initiat secret get API_KEY -W acme-corp/production
-  initiat secret get DB_PASSWORD --workspace production
+  initiat secret get DB_PASSWORD --project production
   initiat secret get API_KEY -w production --copy`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretGet,
@@ -65,25 +65,25 @@ Examples:
 var secretListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all secrets (table format)",
-	Long: `List all secrets in the specified workspace (metadata only, no values).
+	Long: `List all secrets in the specified project (metadata only, no values).
 Output is always in table format showing key, value preview, and version.
 
 Examples:
-  initiat secret list --workspace-path acme-corp/production
+  initiat secret list --project-path acme-corp/production
   initiat secret list -W acme-corp/production
-  initiat secret list --workspace production`,
+  initiat secret list --project production`,
 	RunE: runSecretList,
 }
 
 var secretDeleteCmd = &cobra.Command{
 	Use:   "delete <secret-key>",
 	Short: "Delete a secret",
-	Long: `Delete a secret from the specified workspace.
+	Long: `Delete a secret from the specified project.
 
 Examples:
-  initiat secret delete API_KEY --workspace-path acme-corp/production
+  initiat secret delete API_KEY --project-path acme-corp/production
   initiat secret delete API_KEY -W acme-corp/production
-  initiat secret delete OLD_API_KEY --workspace production`,
+  initiat secret delete OLD_API_KEY --project production`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSecretDelete,
 }
@@ -123,7 +123,7 @@ func init() {
 }
 
 func runSecretSet(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	projectCtx, err := GetProjectContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
@@ -138,21 +138,21 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔐 Setting secret '%s' in workspace %s...\n", key, workspaceCtx.String())
+	fmt.Printf("🔐 Setting secret '%s' in project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
-	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
+	projectKey, err := getProjectKey(projectCtx.String(), store)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+		return fmt.Errorf("❌ Failed to get project key: %w", err)
 	}
 
 	fmt.Println("🔒 Encrypting secret value...")
 
-	encryptedValue, nonce, err := encryptSecretValue(value, workspaceKey)
+	encryptedValue, nonce, err := encryptSecretValue(value, projectKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to encrypt secret: %w", err)
 	}
@@ -161,7 +161,7 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 
 	c := client.New()
 	secret, err := c.SetSecret(
-		workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key,
+		projectCtx.OrgSlug, projectCtx.ProjectSlug, key,
 		encryptedValue, nonce, description, forceOverride,
 	)
 	if err != nil {
@@ -183,23 +183,23 @@ func parseCompositeSlug(compositeSlug string) (string, string, error) {
 	const expectedParts = 2
 	if len(parts) != expectedParts {
 		return "", "", fmt.Errorf(
-			"invalid composite slug format: expected 'org-slug/workspace-slug', got '%s'",
+			"invalid composite slug format: expected 'org-slug/project-slug', got '%s'",
 			compositeSlug,
 		)
 	}
 	return parts[0], parts[1], nil
 }
 
-func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, error) {
-	orgSlug, workspaceSlug, err := parseCompositeSlug(compositeSlug)
+func getProjectKey(compositeSlug string, store *storage.Storage) ([]byte, error) {
+	orgSlug, projectSlug, err := parseCompositeSlug(compositeSlug)
 	if err != nil {
 		return nil, err
 	}
 
 	c := client.New()
-	wrappedKey, err := c.GetWrappedWorkspaceKey(orgSlug, workspaceSlug)
+	wrappedKey, err := c.GetWrappedProjectKey(orgSlug, projectSlug)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch wrapped workspace key: %w", err)
+		return nil, fmt.Errorf("failed to fetch wrapped project key: %w", err)
 	}
 
 	devicePrivateKey, err := store.GetEncryptionPrivateKey()
@@ -207,20 +207,20 @@ func getWorkspaceKey(compositeSlug string, store *storage.Storage) ([]byte, erro
 		return nil, fmt.Errorf("failed to get device private key: %w", err)
 	}
 
-	workspaceKey, err := crypto.UnwrapWorkspaceKey(wrappedKey, devicePrivateKey)
+	projectKey, err := crypto.UnwrapProjectKey(wrappedKey, devicePrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unwrap workspace key: %w", err)
+		return nil, fmt.Errorf("failed to unwrap project key: %w", err)
 	}
 
-	return workspaceKey, nil
+	return projectKey, nil
 }
 
-func encryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, error) {
-	return crypto.EncryptSecretValue(value, workspaceKey)
+func encryptSecretValue(value string, projectKey []byte) ([]byte, []byte, error) {
+	return crypto.EncryptSecretValue(value, projectKey)
 }
 
 func runSecretGet(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	projectCtx, err := GetProjectContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
@@ -230,27 +230,27 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
+	fmt.Printf("🔍 Getting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
-	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
+	projectKey, err := getProjectKey(projectCtx.String(), store)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+		return fmt.Errorf("❌ Failed to get project key: %w", err)
 	}
 
 	c := client.New()
-	secretData, err := c.GetSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key)
+	secretData, err := c.GetSecret(projectCtx.OrgSlug, projectCtx.ProjectSlug, key)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get secret: %w", err)
 	}
 
 	fmt.Println("🔓 Decrypting secret value...")
 
-	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, workspaceKey)
+	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, projectKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to decrypt secret: %w", err)
 	}
@@ -259,7 +259,7 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		"key":               secretData.Key,
 		"value":             decryptedValue,
 		"version":           secretData.Version,
-		"workspace_id":      secretData.WorkspaceID,
+		"project_id":        secretData.ProjectID,
 		"updated_at":        secretData.UpdatedAt,
 		"created_by_device": secretData.CreatedByDevice.Name,
 	}
@@ -302,12 +302,12 @@ func copySecretToClipboard(key, value string, copyToClip, copyKeyValue bool) err
 }
 
 func runSecretList(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	projectCtx, err := GetProjectContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔍 Listing secrets in workspace %s...\n", workspaceCtx.String())
+	fmt.Printf("🔍 Listing secrets in project %s...\n", projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -315,13 +315,13 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	secrets, err := c.ListSecrets(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug)
+	secrets, err := c.ListSecrets(projectCtx.OrgSlug, projectCtx.ProjectSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to list secrets: %w", err)
 	}
 
 	if len(secrets) == 0 {
-		fmt.Println("No secrets found in this workspace.")
+		fmt.Println("No secrets found in this project.")
 		return nil
 	}
 
@@ -336,7 +336,7 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 }
 
 func runSecretDelete(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	projectCtx, err := GetProjectContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
@@ -347,8 +347,8 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	if !forceOverride {
-		fmt.Printf("⚠️  Are you sure you want to delete secret '%s' from workspace %s? (y/N): ",
-			key, workspaceCtx.String())
+		fmt.Printf("⚠️  Are you sure you want to delete secret '%s' from project %s? (y/N): ",
+			key, projectCtx.String())
 		var response string
 		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -358,7 +358,7 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("🗑️  Deleting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
+	fmt.Printf("🗑️  Deleting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -366,14 +366,14 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	c := client.New()
-	if err := c.DeleteSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key); err != nil {
+	if err := c.DeleteSecret(projectCtx.OrgSlug, projectCtx.ProjectSlug, key); err != nil {
 		return fmt.Errorf("❌ Failed to delete secret: %w", err)
 	}
 
 	fmt.Printf("✅ Secret '%s' deleted successfully!\n", key)
 	return nil
 }
-func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (string, error) {
+func decryptSecretValue(encryptedValue, nonce string, projectKey []byte) (string, error) {
 	ciphertext, err := crypto.Decode(encryptedValue)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode encrypted value: %w", err)
@@ -384,11 +384,11 @@ func decryptSecretValue(encryptedValue, nonce string, workspaceKey []byte) (stri
 		return "", fmt.Errorf("failed to decode nonce: %w", err)
 	}
 
-	return crypto.DecryptSecretValue(ciphertext, nonceBytes, workspaceKey)
+	return crypto.DecryptSecretValue(ciphertext, nonceBytes, projectKey)
 }
 
 func runSecretExport(cmd *cobra.Command, args []string) error {
-	workspaceCtx, err := GetWorkspaceContext()
+	projectCtx, err := GetProjectContext()
 	if err != nil {
 		return fmt.Errorf("❌ %w", err)
 	}
@@ -398,27 +398,27 @@ func runSecretExport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔍 Getting secret '%s' from workspace %s...\n", key, workspaceCtx.String())
+	fmt.Printf("🔍 Getting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
-	workspaceKey, err := getWorkspaceKey(workspaceCtx.String(), store)
+	projectKey, err := getProjectKey(projectCtx.String(), store)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to get workspace key: %w", err)
+		return fmt.Errorf("❌ Failed to get project key: %w", err)
 	}
 
 	c := client.New()
-	secretData, err := c.GetSecret(workspaceCtx.OrgSlug, workspaceCtx.WorkspaceSlug, key)
+	secretData, err := c.GetSecret(projectCtx.OrgSlug, projectCtx.ProjectSlug, key)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get secret: %w", err)
 	}
 
 	fmt.Println("🔓 Decrypting secret value...")
 
-	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, workspaceKey)
+	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, projectKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to decrypt secret: %w", err)
 	}

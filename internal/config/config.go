@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	configDirPermissions       = 0750
-	workspacePathPartsExpected = 2
+	configDirPermissions     = 0750
+	projectPathPartsExpected = 2
 )
 
 var defaultAPIBaseURL = "https://www.initiat.dev"
@@ -26,13 +26,13 @@ var ConfigKeys = []ConfigKey{
 	{"api.url", "api.base_url", defaultAPIBaseURL},
 	{"api.timeout", "api.timeout", "30s"},
 	{"service", "service_name", "initiat-cli"},
-	{"org", "workspace.default_org", ""},
-	{"workspace", "workspace.default_workspace", ""},
+	{"org", "project.default_org", ""},
+	{"project", "project.default_project", ""},
 }
 
 type Config struct {
 	API         APIConfig         `mapstructure:"api"`
-	Workspace   WorkspaceConfig   `mapstructure:"workspace"`
+	Project     ProjectConfig     `mapstructure:"project"`
 	Aliases     map[string]string `mapstructure:"aliases"`
 	ServiceName string            `mapstructure:"service_name"`
 }
@@ -42,9 +42,9 @@ type APIConfig struct {
 	Timeout string `mapstructure:"timeout"`
 }
 
-type WorkspaceConfig struct {
-	DefaultOrg       string `mapstructure:"default_org"`
-	DefaultWorkspace string `mapstructure:"default_workspace"`
+type ProjectConfig struct {
+	DefaultOrg     string `mapstructure:"default_org"`
+	DefaultProject string `mapstructure:"default_project"`
 }
 
 var globalConfig *Config
@@ -55,9 +55,9 @@ func DefaultConfig() *Config {
 			BaseURL: defaultAPIBaseURL,
 			Timeout: "30s",
 		},
-		Workspace: WorkspaceConfig{
-			DefaultOrg:       "",
-			DefaultWorkspace: "",
+		Project: ProjectConfig{
+			DefaultOrg:     "",
+			DefaultProject: "",
 		},
 		Aliases:     make(map[string]string),
 		ServiceName: "initiat-cli",
@@ -81,8 +81,8 @@ func InitConfig() error {
 	viper.SetDefault("api.base_url", defaultAPIBaseURL)
 	viper.SetDefault("api.timeout", defaults.API.Timeout)
 	viper.SetDefault("service_name", defaults.ServiceName)
-	viper.SetDefault("workspace.default_org", defaults.Workspace.DefaultOrg)
-	viper.SetDefault("workspace.default_workspace", defaults.Workspace.DefaultWorkspace)
+	viper.SetDefault("project.default_org", defaults.Project.DefaultOrg)
+	viper.SetDefault("project.default_project", defaults.Project.DefaultProject)
 	viper.SetDefault("aliases", defaults.Aliases)
 
 	viper.SetEnvPrefix("INITIAT")
@@ -137,12 +137,12 @@ func Save() error {
 
 func GetDefaultOrgSlug() string {
 	cfg := Get()
-	return cfg.Workspace.DefaultOrg
+	return cfg.Project.DefaultOrg
 }
 
-func GetDefaultWorkspaceSlug() string {
+func GetDefaultProjectSlug() string {
 	cfg := Get()
-	return cfg.Workspace.DefaultWorkspace
+	return cfg.Project.DefaultProject
 }
 
 func GetAPIBaseURL() string {
@@ -165,13 +165,13 @@ func GetAlias(alias string) string {
 	return aliases[alias]
 }
 
-func SetAlias(alias, workspacePath string) error {
+func SetAlias(alias, projectPath string) error {
 	cfg := Get()
 	if cfg.Aliases == nil {
 		cfg.Aliases = make(map[string]string)
 	}
 
-	if err := Set("aliases."+alias, workspacePath); err != nil {
+	if err := Set("aliases."+alias, projectPath); err != nil {
 		return fmt.Errorf("failed to set alias: %w", err)
 	}
 
@@ -217,7 +217,7 @@ func ListAliases() map[string]string {
 }
 
 func SetDefaultOrgSlug(orgSlug string) error {
-	if err := Set("workspace.default_org", orgSlug); err != nil {
+	if err := Set("project.default_org", orgSlug); err != nil {
 		return fmt.Errorf("failed to set default org slug: %w", err)
 	}
 
@@ -228,9 +228,9 @@ func SetDefaultOrgSlug(orgSlug string) error {
 	return nil
 }
 
-func SetDefaultWorkspaceSlug(workspaceSlug string) error {
-	if err := Set("workspace.default_workspace", workspaceSlug); err != nil {
-		return fmt.Errorf("failed to set default workspace slug: %w", err)
+func SetDefaultProjectSlug(projectSlug string) error {
+	if err := Set("project.default_project", projectSlug); err != nil {
+		return fmt.Errorf("failed to set default project slug: %w", err)
 	}
 
 	if err := Save(); err != nil {
@@ -244,78 +244,78 @@ func ClearDefaultOrgSlug() error {
 	return SetDefaultOrgSlug("")
 }
 
-func ClearDefaultWorkspaceSlug() error {
-	return SetDefaultWorkspaceSlug("")
+func ClearDefaultProjectSlug() error {
+	return SetDefaultProjectSlug("")
 }
 
-type WorkspaceContext struct {
-	OrgSlug       string
-	WorkspaceSlug string
+type ProjectContext struct {
+	OrgSlug     string
+	ProjectSlug string
 }
 
-func (w WorkspaceContext) String() string {
-	return fmt.Sprintf("%s/%s", w.OrgSlug, w.WorkspaceSlug)
+func (w ProjectContext) String() string {
+	return fmt.Sprintf("%s/%s", w.OrgSlug, w.ProjectSlug)
 }
 
-// ResolveWorkspaceContext resolves workspace context based on priority:
-// 1. workspacePath (full path or alias) 2. org + workspace 3. default org + workspace 4. full defaults
-func ResolveWorkspaceContext(workspacePath, org, workspace string) (*WorkspaceContext, error) {
-	if workspacePath != "" {
-		if aliasPath := GetAlias(workspacePath); aliasPath != "" {
-			workspacePath = aliasPath
+// ResolveProjectContext resolves project context based on priority:
+// 1. projectPath (full path or alias) 2. org + project 3. default org + project 4. full defaults
+func ResolveProjectContext(projectPath, org, project string) (*ProjectContext, error) {
+	if projectPath != "" {
+		if aliasPath := GetAlias(projectPath); aliasPath != "" {
+			projectPath = aliasPath
 		}
 
-		parts := strings.Split(workspacePath, "/")
-		if len(parts) != workspacePathPartsExpected {
-			return nil, fmt.Errorf("workspace path must be in format 'org/workspace', got: %s", workspacePath)
+		parts := strings.Split(projectPath, "/")
+		if len(parts) != projectPathPartsExpected {
+			return nil, fmt.Errorf("project path must be in format 'org/project', got: %s", projectPath)
 		}
 
-		return &WorkspaceContext{
-			OrgSlug:       parts[0],
-			WorkspaceSlug: parts[1],
+		return &ProjectContext{
+			OrgSlug:     parts[0],
+			ProjectSlug: parts[1],
 		}, nil
 	}
 
-	if org != "" && workspace != "" {
-		return &WorkspaceContext{
-			OrgSlug:       org,
-			WorkspaceSlug: workspace,
+	if org != "" && project != "" {
+		return &ProjectContext{
+			OrgSlug:     org,
+			ProjectSlug: project,
 		}, nil
 	}
 
-	if workspace != "" {
+	if project != "" {
 		defaultOrg := GetDefaultOrgSlug()
 		if defaultOrg == "" {
-			return nil, fmt.Errorf("workspace specified but no default organization configured. " +
+			return nil, fmt.Errorf("project specified but no default organization configured. " +
 				"Use 'initiat config set org <org>' or specify --org")
 		}
 
-		return &WorkspaceContext{
-			OrgSlug:       defaultOrg,
-			WorkspaceSlug: workspace,
+		return &ProjectContext{
+			OrgSlug:     defaultOrg,
+			ProjectSlug: project,
 		}, nil
 	}
 
 	defaultOrg := GetDefaultOrgSlug()
-	defaultWorkspace := GetDefaultWorkspaceSlug()
+	defaultProject := GetDefaultProjectSlug()
 
-	if defaultOrg != "" && defaultWorkspace != "" {
-		return &WorkspaceContext{
-			OrgSlug:       defaultOrg,
-			WorkspaceSlug: defaultWorkspace,
+	if defaultOrg != "" && defaultProject != "" {
+		return &ProjectContext{
+			OrgSlug:     defaultOrg,
+			ProjectSlug: defaultProject,
 		}, nil
 	}
 
 	switch {
-	case defaultOrg == "" && defaultWorkspace == "":
-		return nil, fmt.Errorf("no workspace context available. Specify --workspace-path, --org and --workspace, " +
-			"or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'")
+	case defaultOrg == "" && defaultProject == "":
+		return nil, fmt.Errorf("no project context available. Specify --project-path, --org and --project, " +
+			"or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'")
 	case defaultOrg == "":
-		return nil, fmt.Errorf("no organization context available. Specify --workspace-path, --org, " +
+		return nil, fmt.Errorf("no organization context available. Specify --project-path, --org, " +
 			"or configure default with 'initiat config set org <org>'")
 	default:
-		return nil, fmt.Errorf("no workspace context available. Specify --workspace-path, --workspace, " +
-			"or configure default with 'initiat config set workspace <workspace>'")
+		return nil, fmt.Errorf("no project context available. Specify --project-path, --project, " +
+			"or configure default with 'initiat config set project <project>'")
 	}
 }
 

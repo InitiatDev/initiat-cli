@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	UserAgent = "initiat-cli/1.0"
+	UserAgent                = "initiat-cli/1.0"
+	MaxResponsePreviewLength = 200
 )
 
 func ParseAPIResponse(body []byte, target interface{}) error {
@@ -46,7 +47,12 @@ func ParseValidationErrorResponse(body []byte) error {
 	if err := json.Unmarshal(body, &validationResp); err != nil {
 		var apiResp types.APIResponse
 		if err := json.Unmarshal(body, &apiResp); err != nil {
-			return fmt.Errorf("failed to parse error response: %w", err)
+			responsePreview := string(body)
+			if len(responsePreview) > MaxResponsePreviewLength {
+				responsePreview = responsePreview[:MaxResponsePreviewLength] + "..."
+			}
+			return fmt.Errorf("failed to parse error response (status may indicate auth/device issues): %w\nResponse body: %s",
+				err, responsePreview)
 		}
 		if len(apiResp.Errors) > 0 {
 			return fmt.Errorf("validation error: %s", apiResp.Errors[0])

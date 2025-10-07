@@ -17,7 +17,7 @@ Initiat streamlines developer onboarding, environment setup, and day-to-day prod
 
 ### 1. **Secrets Management**
 
-* **Encrypted Workspace Keys**: Secure distribution of API keys, tokens, and secrets.
+* **Encrypted Project Keys**: Secure distribution of API keys, tokens, and secrets.
 * **CLI Access**: Developers retrieve secrets via `initiat-cli` with transparent decryption.
 * **Access Control**: Seat-based model, with audit logging for compliance.
 * **Abuse Mitigation**: Seats cannot be “rotated” to bypass pricing (once assigned, they remain tied).
@@ -27,7 +27,7 @@ Initiat streamlines developer onboarding, environment setup, and day-to-day prod
 * **Upload Docs → Generate Scripts**: Teams upload setup instructions, and Initiat generates reproducible scripts (with AI assistance).
 * **Periodic Validation**: Scripts are automatically run in clean VMs to ensure they still work.
 * **Self-Healing**: AI updates scripts/documentation when drift or errors are detected.
-* **Workspace Readmes**: Auto-generated onboarding docs tailored per app or service.
+* **Project Readmes**: Auto-generated onboarding docs tailored per app or service.
 
 ### 3. **Mock Server Infrastructure**
 
@@ -70,7 +70,7 @@ Initiat streamlines developer onboarding, environment setup, and day-to-day prod
 
 * **CLI (Go, open source)**:
 
-  * `initiat secrets get` → retrieve workspace keys
+  * `initiat secrets get` → retrieve project keys
   * `initiat env setup` → run validated setup scripts
   * `initiat mock start` → boot local mock server with synced data
 

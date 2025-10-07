@@ -103,7 +103,7 @@ commands:
       Created: 2024-01-15T10:30:00Z
 
       🔐 Keys stored securely in system keychain
-      💡 Next: Initialize workspace keys with 'initiat workspace list'
+      💡 Next: Initialize project keys with 'initiat project list'
     metadata:
       difficulty: "beginner"
       estimated_time: "2 minutes"
@@ -157,7 +157,7 @@ commands:
     id: "device.approvals"
     name: "approvals"
     category: "device"
-    description: "List all pending device approvals for workspaces where you are an admin"
+    description: "List all pending device approvals for projects where you are an admin"
     usage: "initiat device approvals"
     arguments: []
     options: []
@@ -167,7 +167,7 @@ commands:
     output: |
       📋 Pending Device Approvals (2)
 
-      ID  User           Device         Workspace      Requested
+      ID  User           Device         Project      Requested
       1   John Doe       work-laptop    acme/prod      Jan 15 10:30
       2   Jane Smith     dev-machine    acme/staging   Jan 15 11:45
 
@@ -181,7 +181,7 @@ commands:
     id: "device.approve"
     name: "approve"
     category: "device"
-    description: "Approve device access to workspaces"
+    description: "Approve device access to projects"
     usage: "initiat device approve [--all] [--id ID]"
     arguments: []
     options:
@@ -204,7 +204,7 @@ commands:
         • dev-machine (acme-corp/staging) - Jane Smith
 
       ✅ Approved 2 devices successfully!
-         All approved devices can now access their respective workspace secrets
+         All approved devices can now access their respective project secrets
     metadata:
       difficulty: "intermediate"
       estimated_time: "1 minute"
@@ -213,7 +213,7 @@ commands:
     id: "device.reject"
     name: "reject"
     category: "device"
-    description: "Reject device access to workspaces"
+    description: "Reject device access to projects"
     usage: "initiat device reject [--all] [--id ID]"
     arguments: []
     options:
@@ -257,7 +257,7 @@ commands:
 
       User: John Doe (john.doe@example.com)
       Device: work-laptop (ID: 456)
-      Workspace: Acme Corp / Production (acme-corp/production)
+      Project: Acme Corp / Production (acme-corp/production)
       Requested: Jan 15 10:30:00Z
       Status: pending
 
@@ -268,83 +268,83 @@ commands:
       difficulty: "intermediate"
       estimated_time: "1 minute"
 
-  workspace.list:
-    id: "workspace.list"
+  project.list:
+    id: "project.list"
     name: "list"
-    category: "workspace"
-    description: "List all workspaces and their key initialization status"
-    usage: "initiat workspace list"
+    category: "project"
+    description: "List all projects and their key initialization status"
+    usage: "initiat project list"
     arguments: []
     options: []
     examples:
-      - description: "List all workspaces"
-        command: "initiat workspace list"
+      - description: "List all projects"
+        command: "initiat project list"
     workflow_steps:
-      - "Fetches all workspaces accessible to your account"
+      - "Fetches all projects accessible to your account"
       - "Shows key initialization status"
-      - "Displays your role in each workspace"
+      - "Displays your role in each project"
     output: |
-      🔍 Fetching workspaces...
+      🔍 Fetching projects...
 
       Name           Composite Slug      Key Initialized  Role
       Production     acme-corp/prod      ✅ Yes          admin
       Staging        acme-corp/staging   ❌ No           member
       Development    acme-corp/dev       ❌ No           member
 
-      💡 Initialize keys for workspaces marked "No" using:
-         initiat workspace init <org-slug/workspace-slug>
+      💡 Initialize keys for projects marked "No" using:
+         initiat project init <org-slug/project-slug>
     metadata:
       difficulty: "beginner"
       estimated_time: "30 seconds"
 
-  workspace.init:
-    id: "workspace.init"
+  project.init:
+    id: "project.init"
     name: "init"
-    category: "workspace"
-    description: "Initialize a new workspace key for secure secret storage"
-    usage: "initiat workspace init [workspace-path]"
+    category: "project"
+    description: "Initialize a new project key for secure secret storage"
+    usage: "initiat project init [project-path]"
     arguments:
-      - name: "workspace-path"
-        description: "Full workspace path (org/workspace) or use flags"
+      - name: "project-path"
+        description: "Full project path (org/project) or use flags"
         required: false
     options:
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
       - description: "Using positional argument"
-        command: "initiat workspace init acme-corp/production"
+        command: "initiat project init acme-corp/production"
       - description: "Using flags"
-        command: "initiat workspace init --org acme-corp --workspace production"
+        command: "initiat project init --org acme-corp --project production"
       - description: "Using short flags"
-        command: "initiat workspace init --org acme-corp -w production"
-      - description: "Workspace only (uses default org)"
-        command: "initiat workspace init --workspace production"
+        command: "initiat project init --org acme-corp -w production"
+      - description: "Project only (uses default org)"
+        command: "initiat project init --project production"
     workflow_steps:
-      - "Generates secure 256-bit workspace key"
-      - "Encrypts workspace key with your device's X25519 key"
+      - "Generates secure 256-bit project key"
+      - "Encrypts project key with your device's X25519 key"
       - "Uploads encrypted key to server"
-      - "Enables secret storage and retrieval for this workspace"
+      - "Enables secret storage and retrieval for this project"
     output: |
-      🔐 Initializing workspace key for "acme-corp/production"...
-      ⚡ Generating secure 256-bit workspace key...
-      🔒 Encrypting workspace key with your device's X25519 key...
+      🔐 Initializing project key for "acme-corp/production"...
+      ⚡ Generating secure 256-bit project key...
+      🔒 Encrypting project key with your device's X25519 key...
       📡 Uploading encrypted key to server...
-      ✅ Workspace key initialized successfully!
-      🎯 You can now store and retrieve secrets in this workspace.
+      ✅ Project key initialized successfully!
+      🎯 You can now store and retrieve secrets in this project.
 
       Next steps:
         • Add secrets: initiat secret set API_KEY --value your-secret
         • List secrets: initiat secret list
-        • Invite devices: initiat workspace invite-device
+        • Invite devices: initiat project invite-device
     metadata:
       difficulty: "beginner"
       estimated_time: "1 minute"
@@ -353,7 +353,7 @@ commands:
     id: "secret.set"
     name: "set"
     category: "secret"
-    description: "Set a secret value in the specified workspace"
+    description: "Set a secret value in the specified project"
     usage: "initiat secret set <secret-key> --value VALUE [options]"
     arguments:
       - name: "secret-key"
@@ -372,34 +372,34 @@ commands:
         short: "f"
         description: "Overwrite existing secret without confirmation"
         required: false
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
-      - description: "Set secret with full workspace path"
-        command: 'initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production'
-      - description: "Set secret with separate org/workspace"
-        command: 'initiat secret set DB_PASSWORD --org acme-corp --workspace production --value "super-secret-pass" --description "Production database password"'
+      - description: "Set secret with full project path"
+        command: 'initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production'
+      - description: "Set secret with separate org/project"
+        command: 'initiat secret set DB_PASSWORD --org acme-corp --project production --value "super-secret-pass" --description "Production database password"'
       - description: "Set secret with short flags"
         command: 'initiat secret set API_KEY -W acme-corp/production -v "sk-1234567890abcdef"'
       - description: "Force overwrite existing secret"
         command: 'initiat secret set API_KEY -w production -v "new-value" --force'
     workflow_steps:
       - "Validates secret key and value"
-      - "Retrieves workspace key from server"
+      - "Retrieves project key from server"
       - "Encrypts secret value client-side"
       - "Uploads encrypted secret to server"
       - "Shows confirmation with metadata"
     output: |
-      🔐 Setting secret 'API_KEY' in workspace acme-corp/production...
+      🔐 Setting secret 'API_KEY' in project acme-corp/production...
       🔒 Encrypting secret value...
       📡 Uploading encrypted secret to server...
       ✅ Secret 'API_KEY' set successfully!
@@ -414,7 +414,7 @@ commands:
     id: "secret.get"
     name: "get"
     category: "secret"
-    description: "Get and decrypt a secret value from the specified workspace"
+    description: "Get and decrypt a secret value from the specified project"
     usage: "initiat secret get <secret-key> [options]"
     arguments:
       - name: "secret-key"
@@ -428,20 +428,20 @@ commands:
       - name: "copy-kv"
         description: "Copy KEY=VALUE format to clipboard"
         required: false
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
-      - description: "Get secret with full workspace path"
-        command: "initiat secret get API_KEY --workspace-path acme-corp/production"
+      - description: "Get secret with full project path"
+        command: "initiat secret get API_KEY --project-path acme-corp/production"
       - description: "Get secret with short flags"
         command: "initiat secret get API_KEY -W acme-corp/production"
       - description: "Get secret and copy value to clipboard"
@@ -450,19 +450,19 @@ commands:
         command: "initiat secret get API_KEY -w production --copy-kv"
     workflow_steps:
       - "Retrieves encrypted secret from server"
-      - "Gets workspace key and decrypts it"
+      - "Gets project key and decrypts it"
       - "Decrypts secret value client-side"
       - "Outputs JSON with secret metadata (default)"
       - "Optionally copies value to clipboard (--copy)"
       - "Optionally copies KEY=VALUE format to clipboard (--copy-kv)"
     output: |
-      🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+      🔍 Getting secret 'API_KEY' from project acme-corp/production...
       🔓 Decrypting secret value...
       {
         "key": "API_KEY",
         "value": "sk-1234567890abcdef",
         "version": 1,
-        "workspace_id": "ws_abc123",
+        "project_id": "ws_abc123",
         "updated_at": "2024-01-15T10:30:00Z",
         "created_by_device": "my-laptop"
       }
@@ -474,35 +474,35 @@ commands:
     id: "secret.list"
     name: "list"
     category: "secret"
-    description: "List all secrets in the specified workspace (metadata only, no values)"
+    description: "List all secrets in the specified project (metadata only, no values)"
     usage: "initiat secret list [options]"
     arguments: []
     options:
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
-      - description: "List secrets with full workspace path"
-        command: "initiat secret list --workspace-path acme-corp/production"
+      - description: "List secrets with full project path"
+        command: "initiat secret list --project-path acme-corp/production"
       - description: "List secrets with short flags"
         command: "initiat secret list -W acme-corp/production"
-      - description: "List secrets with workspace only"
-        command: "initiat secret list --workspace production"
+      - description: "List secrets with project only"
+        command: "initiat secret list --project production"
     workflow_steps:
-      - "Fetches all secrets for the workspace"
+      - "Fetches all secrets for the project"
       - "Displays metadata in table format"
       - "Shows key, encrypted status, and version"
       - "Never exposes actual secret values"
     output: |
-      🔍 Listing secrets in workspace acme-corp/production...
+      🔍 Listing secrets in project acme-corp/production...
 
       Key        Value        Version
       API_KEY    [encrypted]  1
@@ -516,7 +516,7 @@ commands:
     id: "secret.delete"
     name: "delete"
     category: "secret"
-    description: "Delete a secret from the specified workspace"
+    description: "Delete a secret from the specified project"
     usage: "initiat secret delete <secret-key> [options]"
     arguments:
       - name: "secret-key"
@@ -527,31 +527,31 @@ commands:
         short: "f"
         description: "Skip confirmation prompt"
         required: false
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
       - description: "Delete secret with confirmation"
-        command: "initiat secret delete API_KEY --workspace-path acme-corp/production"
+        command: "initiat secret delete API_KEY --project-path acme-corp/production"
       - description: "Delete secret with short flags"
         command: "initiat secret delete API_KEY -W acme-corp/production"
       - description: "Force delete without confirmation"
-        command: "initiat secret delete OLD_API_KEY --workspace production --force"
+        command: "initiat secret delete OLD_API_KEY --project production --force"
     workflow_steps:
       - "Prompts for confirmation (unless --force is used)"
       - "Deletes secret from server"
       - "Shows confirmation message"
     output: |
-      ⚠️  Are you sure you want to delete secret 'API_KEY' from workspace acme-corp/production? (y/N): y
-      🗑️  Deleting secret 'API_KEY' from workspace acme-corp/production...
+      ⚠️  Are you sure you want to delete secret 'API_KEY' from project acme-corp/production? (y/N): y
+      🗑️  Deleting secret 'API_KEY' from project acme-corp/production...
       ✅ Secret 'API_KEY' deleted successfully!
     metadata:
       difficulty: "beginner"
@@ -575,20 +575,20 @@ commands:
         short: "f"
         description: "Overwrite existing key without confirmation"
         required: false
-      - name: "workspace-path"
+      - name: "project-path"
         short: "W"
-        description: "Full workspace path (org/workspace) or alias"
+        description: "Full project path (org/project) or alias"
         required: false
-      - name: "workspace"
+      - name: "project"
         short: "w"
-        description: "Workspace name (uses default org or --org)"
+        description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
-        description: "Organization slug (used with --workspace)"
+        description: "Organization slug (used with --project)"
         required: false
     examples:
       - description: "Export secret to a file"
-        command: "initiat secret export API_KEY --output .env --workspace-path acme-corp/production"
+        command: "initiat secret export API_KEY --output .env --project-path acme-corp/production"
       - description: "Export to deep directory (creates folders)"
         command: "initiat secret export API_KEY --output config/secrets.env -W acme-corp/production"
       - description: "Export with force override"
@@ -600,7 +600,7 @@ commands:
       - "Writes secret in KEY=VALUE format"
       - "Detects git repository and suggests .gitignore"
     output: |
-      🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+      🔍 Getting secret 'API_KEY' from project acme-corp/production...
       🔓 Decrypting secret value...
       ⚠️  File 'secrets.env' is not in .gitignore. Add it? (y/N): y
       ✅ Added 'secrets.env' to .gitignore
@@ -630,8 +630,8 @@ commands:
         command: 'initiat config set api.timeout "60s"'
       - description: "Set default organization"
         command: 'initiat config set org "my-company"'
-      - description: "Set default workspace"
-        command: 'initiat config set workspace "production"'
+      - description: "Set default project"
+        command: 'initiat config set project "production"'
       - description: "Set service name"
         command: 'initiat config set service "my-custom-service"'
     output: |
@@ -656,12 +656,12 @@ commands:
         command: "initiat config get api.url"
       - description: "Get default organization"
         command: "initiat config get org"
-      - description: "Get default workspace"
-        command: "initiat config get workspace"
+      - description: "Get default project"
+        command: "initiat config get project"
     output: |
       api.url: https://www.initiat.dev
       org: my-company
-      workspace: production
+      project: production
     metadata:
       difficulty: "beginner"
       estimated_time: "30 seconds"
@@ -683,9 +683,9 @@ commands:
         api.timeout: 30s
         service: initiat-cli
         org: my-company
-        workspace: production
+        project: production
 
-      Workspace aliases:
+      Project aliases:
         prod: acme-corp/production
         staging: acme-corp/staging
     metadata:
@@ -734,8 +734,8 @@ commands:
     workflow_steps:
       - "Prompts for confirmation to ensure user wants to reset"
       - "Resets all API settings to defaults"
-      - "Clears workspace defaults (org and workspace)"
-      - "Removes all workspace aliases"
+      - "Clears project defaults (org and project)"
+      - "Removes all project aliases"
       - "Resets service name to default"
     output: |
       ⚠️  Are you sure you want to reset all configuration to defaults? (y/N): y
@@ -748,14 +748,14 @@ commands:
     id: "config.alias.set"
     name: "set"
     category: "config"
-    description: "Set a workspace alias to a full workspace path"
-    usage: "initiat config alias set <alias> <workspace-path>"
+    description: "Set a project alias to a full project path"
+    usage: "initiat config alias set <alias> <project-path>"
     arguments:
       - name: "alias"
         description: "Alias name"
         required: true
-      - name: "workspace-path"
-        description: "Full workspace path in format 'org/workspace'"
+      - name: "project-path"
+        description: "Full project path in format 'org/project'"
         required: true
     options: []
     examples:
@@ -775,7 +775,7 @@ commands:
     id: "config.alias.get"
     name: "get"
     category: "config"
-    description: "Get the workspace path for a specific alias"
+    description: "Get the project path for a specific alias"
     usage: "initiat config alias get <alias>"
     arguments:
       - name: "alias"
@@ -795,7 +795,7 @@ commands:
     id: "config.alias.list"
     name: "list"
     category: "config"
-    description: "List all configured workspace aliases"
+    description: "List all configured project aliases"
     usage: "initiat config alias list"
     arguments: []
     options: []
@@ -803,7 +803,7 @@ commands:
       - description: "List all aliases"
         command: "initiat config alias list"
     output: |
-      Workspace aliases:
+      Project aliases:
         prod: acme-corp/production
         staging: acme-corp/staging
         dev: acme-corp/development
@@ -815,7 +815,7 @@ commands:
     id: "config.alias.remove"
     name: "remove"
     category: "config"
-    description: "Remove a workspace alias"
+    description: "Remove a project alias"
     usage: "initiat config alias remove <alias>"
     arguments:
       - name: "alias"
@@ -869,25 +869,25 @@ guides:
         description: "Register your device for secure access"
         explanation: "This generates encryption keys and registers your device with the server"
       - step: 3
-        title: "List Workspaces"
-        command: "initiat workspace list"
-        description: "See available workspaces"
-        explanation: "Lists all workspaces you have access to and their key initialization status"
+        title: "List Projects"
+        command: "initiat project list"
+        description: "See available projects"
+        explanation: "Lists all projects you have access to and their key initialization status"
       - step: 4
-        title: "Initialize Workspace"
-        command: "initiat workspace init acme-corp/production"
-        description: "Initialize workspace keys"
-        explanation: "Generates and encrypts workspace keys to enable secret storage"
+        title: "Initialize Project"
+        command: "initiat project init acme-corp/production"
+        description: "Initialize project keys"
+        explanation: "Generates and encrypts project keys to enable secret storage"
       - step: 5
         title: "Store First Secret"
         command: 'initiat secret set API_KEY --value "your-secret-key"'
         description: "Store your first secret"
-        explanation: "Encrypts and stores a secret in the workspace"
+        explanation: "Encrypts and stores a secret in the project"
     success_criteria:
-      - "You can now securely store and retrieve secrets in your workspace"
+      - "You can now securely store and retrieve secrets in your project"
     next_steps:
-      - "Invite team members to workspaces"
-      - "Set up additional workspaces for different environments"
+      - "Invite team members to projects"
+      - "Set up additional projects for different environments"
       - "Configure CI/CD integration"
     metadata:
       tags: ["getting-started", "authentication", "device-setup"]
@@ -897,7 +897,7 @@ guides:
     id: "team_onboarding"
     title: "Team Onboarding"
     type: "workflow"
-    description: "Add team members to workspaces and approve their devices"
+    description: "Add team members to projects and approve their devices"
     difficulty: "intermediate"
     estimated_time: "10 minutes"
     prerequisites: ["admin_access"]
@@ -906,7 +906,7 @@ guides:
         title: "Review Pending Approvals"
         command: "initiat device approvals"
         description: "Check for pending device approvals"
-        explanation: "Shows all devices waiting for approval to access workspaces"
+        explanation: "Shows all devices waiting for approval to access projects"
       - step: 2
         title: "Review Device Details"
         command: "initiat device approval --id 123"
@@ -916,19 +916,19 @@ guides:
         title: "Approve Devices"
         command: "initiat device approve --all"
         description: "Approve all pending devices"
-        explanation: "Grants access to all approved devices for their respective workspaces"
+        explanation: "Grants access to all approved devices for their respective projects"
       - step: 4
         title: "Verify Access"
-        command: "initiat workspace list"
-        description: "Verify team members can access workspaces"
-        explanation: "Confirm that team members can now access workspace secrets"
+        command: "initiat project list"
+        description: "Verify team members can access projects"
+        explanation: "Confirm that team members can now access project secrets"
     success_criteria:
       - "All team devices are approved"
-      - "Team members can access workspace secrets"
+      - "Team members can access project secrets"
       - "No pending approvals remain"
     next_steps:
       - "Train team members on secret management"
-      - "Set up environment-specific workspaces"
+      - "Set up environment-specific projects"
       - "Configure automated secret rotation"
     metadata:
       tags: ["team-management", "device-approval", "collaboration"]
@@ -938,46 +938,46 @@ guides:
     id: "environment_setup"
     title: "Multi-Environment Setup"
     type: "workflow"
-    description: "Set up workspaces for different environments (dev, staging, prod)"
+    description: "Set up projects for different environments (dev, staging, prod)"
     difficulty: "intermediate"
     estimated_time: "20 minutes"
     prerequisites: ["admin_access", "multiple_environments"]
     steps:
       - step: 1
-        title: "List Available Workspaces"
-        command: "initiat workspace list"
-        description: "See current workspace structure"
-        explanation: "Review existing workspaces and their initialization status"
+        title: "List Available Projects"
+        command: "initiat project list"
+        description: "See current project structure"
+        explanation: "Review existing projects and their initialization status"
       - step: 2
         title: "Initialize Production"
-        command: "initiat workspace init acme-corp/production"
-        description: "Initialize production workspace keys"
+        command: "initiat project init acme-corp/production"
+        description: "Initialize production project keys"
         explanation: "Set up keys for production environment"
       - step: 3
         title: "Initialize Staging"
-        command: "initiat workspace init acme-corp/staging"
-        description: "Initialize staging workspace keys"
+        command: "initiat project init acme-corp/staging"
+        description: "Initialize staging project keys"
         explanation: "Set up keys for staging environment"
       - step: 4
         title: "Initialize Development"
-        command: "initiat workspace init acme-corp/development"
-        description: "Initialize development workspace keys"
+        command: "initiat project init acme-corp/development"
+        description: "Initialize development project keys"
         explanation: "Set up keys for development environment"
       - step: 5
         title: "Set Environment Secrets"
         command: |
-          initiat secret set API_KEY --value "prod-key" --workspace-path acme-corp/production
-          initiat secret set API_KEY --value "staging-key" --workspace-path acme-corp/staging
-          initiat secret set API_KEY --value "dev-key" --workspace-path acme-corp/development
+          initiat secret set API_KEY --value "prod-key" --project-path acme-corp/production
+          initiat secret set API_KEY --value "staging-key" --project-path acme-corp/staging
+          initiat secret set API_KEY --value "dev-key" --project-path acme-corp/development
         description: "Set environment-specific secrets"
         explanation: "Store different secrets for each environment"
       - step: 6
         title: "Verify Setup"
-        command: "initiat secret list --workspace-path acme-corp/production"
+        command: "initiat secret list --project-path acme-corp/production"
         description: "Verify secrets are properly stored"
         explanation: "Confirm that environment-specific secrets are stored correctly"
     success_criteria:
-      - "All environments have initialized workspace keys"
+      - "All environments have initialized project keys"
       - "Environment-specific secrets are stored"
       - "Team members can access appropriate environments"
     next_steps:
@@ -985,7 +985,7 @@ guides:
       - "Set up automated secret rotation"
       - "Train team on environment-specific workflows"
     metadata:
-      tags: ["environments", "workspace-setup", "devops"]
+      tags: ["environments", "project-setup", "devops"]
       order: 3
 
   secret_rotation:
@@ -1009,32 +1009,32 @@ guides:
         explanation: "Save current values in case rollback is needed"
       - step: 3
         title: "Update Development"
-        command: 'initiat secret set API_KEY --value "new-dev-key" --workspace-path acme-corp/development'
+        command: 'initiat secret set API_KEY --value "new-dev-key" --project-path acme-corp/development'
         description: "Update secret in development environment"
         explanation: "Test new secret in development first"
       - step: 4
         title: "Test in Development"
-        command: "initiat secret get API_KEY --workspace-path acme-corp/development"
+        command: "initiat secret get API_KEY --project-path acme-corp/development"
         description: "Verify new secret works in development"
         explanation: "Confirm new secret is working correctly"
       - step: 5
         title: "Update Staging"
-        command: 'initiat secret set API_KEY --value "new-staging-key" --workspace-path acme-corp/staging'
+        command: 'initiat secret set API_KEY --value "new-staging-key" --project-path acme-corp/staging'
         description: "Update secret in staging environment"
         explanation: "Deploy to staging for further testing"
       - step: 6
         title: "Test in Staging"
-        command: "initiat secret get API_KEY --workspace-path acme-corp/staging"
+        command: "initiat secret get API_KEY --project-path acme-corp/staging"
         description: "Verify new secret works in staging"
         explanation: "Confirm staging environment is working"
       - step: 7
         title: "Update Production"
-        command: 'initiat secret set API_KEY --value "new-prod-key" --workspace-path acme-corp/production'
+        command: 'initiat secret set API_KEY --value "new-prod-key" --project-path acme-corp/production'
         description: "Update secret in production environment"
         explanation: "Deploy to production after successful testing"
       - step: 8
         title: "Verify Production"
-        command: "initiat secret get API_KEY --workspace-path acme-corp/production"
+        command: "initiat secret get API_KEY --project-path acme-corp/production"
         description: "Verify new secret works in production"
         explanation: "Confirm production environment is working"
     success_criteria:
@@ -1053,7 +1053,7 @@ guides:
     id: "configuration_management"
     title: "Configuration Management"
     type: "guide"
-    description: "Complete guide to managing CLI configuration, workspace defaults, and aliases"
+    description: "Complete guide to managing CLI configuration, project defaults, and aliases"
     difficulty: "beginner"
     estimated_time: "10 minutes"
     prerequisites: ["basic_understanding_of_initiat_cli"]
@@ -1067,20 +1067,20 @@ guides:
         title: "Set Default Organization"
         command: 'initiat config set org "my-company"'
         description: "Set your default organization"
-        explanation: "This allows you to use workspace names without specifying the org"
+        explanation: "This allows you to use project names without specifying the org"
       - step: 3
-        title: "Set Default Workspace"
-        command: 'initiat config set workspace "production"'
-        description: "Set your default workspace"
-        explanation: "This allows you to run commands without specifying the workspace"
+        title: "Set Default Project"
+        command: 'initiat config set project "production"'
+        description: "Set your default project"
+        explanation: "This allows you to run commands without specifying the project"
       - step: 4
-        title: "Create Workspace Aliases"
+        title: "Create Project Aliases"
         command: |
           initiat config alias set prod "my-company/production"
           initiat config alias set staging "my-company/staging"
           initiat config alias set dev "my-company/development"
-        description: "Create shortcuts for frequently used workspaces"
-        explanation: "Aliases make it easier to reference workspaces with short names"
+        description: "Create shortcuts for frequently used projects"
+        explanation: "Aliases make it easier to reference projects with short names"
       - step: 5
         title: "Configure API Settings"
         command: |
@@ -1094,8 +1094,8 @@ guides:
         description: "Confirm all settings are correct"
         explanation: "Review your configuration to ensure everything is set up properly"
     success_criteria:
-      - "Default organization and workspace are set"
-      - "Workspace aliases are configured"
+      - "Default organization and project are set"
+      - "Project aliases are configured"
       - "API settings are configured for your environment"
     next_steps:
       - "Use aliases in commands for faster workflow"
@@ -1132,7 +1132,7 @@ guides:
       - step: 4
         title: "Check Device Status"
         command: "initiat device approvals"
-        description: "Verify device is approved for workspace access"
+        description: "Verify device is approved for project access"
         explanation: "Confirm your device has proper access"
       - step: 5
         title: "Re-register Device"
@@ -1140,19 +1140,19 @@ guides:
         description: "Re-register device if needed"
         explanation: "Re-register your device if there are issues"
       - step: 6
-        title: "Test Workspace Access"
-        command: "initiat workspace list"
-        description: "Verify workspace access is working"
-        explanation: "Confirm you can access your workspaces"
+        title: "Test Project Access"
+        command: "initiat project list"
+        description: "Verify project access is working"
+        explanation: "Confirm you can access your projects"
       - step: 7
         title: "Test Secret Access"
         command: "initiat secret list"
         description: "Test secret retrieval functionality"
-        explanation: "Verify you can access secrets in your workspaces"
+        explanation: "Verify you can access secrets in your projects"
     success_criteria:
       - "Authentication is working"
       - "Device is properly registered and approved"
-      - "Can access workspaces and secrets"
+      - "Can access projects and secrets"
     next_steps:
       - "Contact support if issues persist"
       - "Document the issue for future reference"
@@ -1181,59 +1181,59 @@ reference:
           description: "Keyring service name"
           default: "initiat-cli"
           environment_variable: null
-        - name: "workspace-path"
+        - name: "project-path"
           short: "W"
-          description: "Full workspace path (org/workspace) or alias"
+          description: "Full project path (org/project) or alias"
           environment_variable: null
-        - name: "workspace"
+        - name: "project"
           short: "w"
-          description: "Workspace name (uses default org or --org)"
+          description: "Project name (uses default org or --org)"
           environment_variable: null
         - name: "org"
-          description: "Organization slug (used with --workspace)"
+          description: "Organization slug (used with --project)"
           environment_variable: null
     metadata:
       order: 1
 
-  workspace_context:
-    id: "workspace_context"
-    title: "Workspace Context Resolution"
+  project_context:
+    id: "project_context"
+    title: "Project Context Resolution"
     type: "reference"
-    description: "Different ways to specify workspace context in commands"
+    description: "Different ways to specify project context in commands"
     content:
       methods:
         - method: "Interactive Selection (New!)"
           command: "initiat secret list"
-          use_case: "When you want to select from available workspaces interactively"
+          use_case: "When you want to select from available projects interactively"
           output: |
-            ❓ Workspace context is required for this command.
-            💡 You can specify workspace using:
-               --workspace-path org/workspace
-               --org org --workspace workspace
-               Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+            ❓ Project context is required for this command.
+            💡 You can specify project using:
+               --project-path org/project
+               --org org --project project
+               Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
             
-            Available workspaces:
+            Available projects:
               1. Production Environment (acme-corp/production)
               2. Staging Environment (acme-corp/staging)
               3. Development Environment (acme-corp/dev)
-              0. Enter custom workspace
+              0. Enter custom project
             
-            Select workspace (0 for custom): 
-        - method: "Full workspace path"
-          command: "initiat secret list --workspace-path acme-corp/production"
-          use_case: "When you need to specify the exact workspace"
-        - method: "Separate org and workspace"
-          command: "initiat secret list --org acme-corp --workspace production"
-          use_case: "When you want to be explicit about organization and workspace"
-        - method: "Workspace only (uses default org)"
-          command: "initiat secret list --workspace production"
+            Select project (0 for custom): 
+        - method: "Full project path"
+          command: "initiat secret list --project-path acme-corp/production"
+          use_case: "When you need to specify the exact project"
+        - method: "Separate org and project"
+          command: "initiat secret list --org acme-corp --project production"
+          use_case: "When you want to be explicit about organization and project"
+        - method: "Project only (uses default org)"
+          command: "initiat secret list --project production"
           use_case: "When using your default organization"
         - method: "Short flags"
           command: "initiat secret list -W acme-corp/production"
           use_case: "For faster typing with short flags"
         - method: "Mixed short flags"
           command: "initiat secret list --org acme-corp -w production"
-          use_case: "Combining short flags for org and workspace"
+          use_case: "Combining short flags for org and project"
     metadata:
       order: 2
 
@@ -1248,9 +1248,9 @@ reference:
           - error: "Device not registered"
             message: "❌ Device not registered. Please run 'initiat device register <name>' first"
             solution: "Register your device with initiat device register <device-name>"
-          - error: "Workspace key not initialized"
-            message: "❌ Failed to get workspace key: workspace key not initialized"
-            solution: "Initialize workspace keys with initiat workspace init <workspace-path>"
+          - error: "Project key not initialized"
+            message: "❌ Failed to get project key: project key not initialized"
+            solution: "Initialize project keys with initiat project init <project-path>"
           - error: "Invalid registration token"
             message: "❌ Invalid or expired registration token"
             solution: "Clear token and re-authenticate with initiat device clear-token && initiat auth login"
@@ -1272,9 +1272,9 @@ reference:
           - error: "Permission denied"
             message: "❌ Failed to initialize config: permission denied"
             solution: "Check file permissions and try again"
-          - error: "Invalid workspace path"
-            message: "❌ Invalid workspace path: expected 'org-slug/workspace-slug'"
-            solution: "Use the correct workspace path format"
+          - error: "Invalid project path"
+            message: "❌ Invalid project path: expected 'org-slug/project-slug'"
+            solution: "Use the correct project path format"
     metadata:
       order: 3
 
@@ -1308,10 +1308,10 @@ reference:
             description: "Default organization slug"
             default: ""
             example: 'initiat config set org "my-company"'
-          - key: "workspace"
-            description: "Default workspace slug"
+          - key: "project"
+            description: "Default project slug"
             default: ""
-            example: 'initiat config set workspace "production"'
+            example: 'initiat config set project "production"'
           - key: "service"
             description: "Service name for keyring"
             default: "initiat-cli"
@@ -1333,7 +1333,7 @@ reference:
             description: "Default organization"
             example: "export INITIAT_WORKSPACE_DEFAULT_ORG=my-company"
           - name: "INITIAT_WORKSPACE_DEFAULT_WORKSPACE"
-            description: "Default workspace"
+            description: "Default project"
             example: "export INITIAT_WORKSPACE_DEFAULT_WORKSPACE=production"
       configuration_precedence:
         title: "Configuration Precedence"
@@ -1343,12 +1343,12 @@ reference:
           - "Environment variables"
           - "Configuration file"
           - "Default values"
-      workspace_aliases:
-        title: "Workspace Aliases"
-        description: "Creating and managing workspace shortcuts"
+      project_aliases:
+        title: "Project Aliases"
+        description: "Creating and managing project shortcuts"
         examples:
           - "Create alias: initiat config alias set prod acme-corp/production"
-          - "Use alias: initiat secret list --workspace-path prod"
+          - "Use alias: initiat secret list --project-path prod"
           - "List aliases: initiat config alias list"
           - "Remove alias: initiat config alias remove prod"
     metadata:
@@ -1360,14 +1360,14 @@ reference:
     type: "reference"
     description: "Recommended practices for using Initiat CLI effectively"
     content:
-      workspace_organization:
-        title: "Workspace Organization"
-        description: "Best practices for organizing workspaces and secrets"
+      project_organization:
+        title: "Project Organization"
+        description: "Best practices for organizing projects and secrets"
         tips:
-          - "Use descriptive workspace names: acme-corp/production, acme-corp/staging"
-          - "Initialize workspace keys before storing secrets"
+          - "Use descriptive project names: acme-corp/production, acme-corp/staging"
+          - "Initialize project keys before storing secrets"
           - "Use consistent naming conventions for secret keys"
-          - "Group related secrets in the same workspace"
+          - "Group related secrets in the same project"
       secret_management:
         title: "Secret Management"
         description: "Best practices for managing secrets securely"
@@ -1388,8 +1388,8 @@ reference:
         title: "Configuration Management"
         description: "Best practices for managing CLI configuration"
         tips:
-          - "Set default organization and workspace for faster workflows"
-          - "Use workspace aliases for frequently accessed workspaces"
+          - "Set default organization and project for faster workflows"
+          - "Use project aliases for frequently accessed projects"
           - "Configure API settings for your environment"
           - "Use environment variables for CI/CD pipelines"
           - "Regularly review and clean up unused aliases"
@@ -1397,7 +1397,7 @@ reference:
         title: "Security Considerations"
         description: "Important security practices to follow"
         tips:
-          - "Never share device credentials or workspace keys"
+          - "Never share device credentials or project keys"
           - "Use --force flag carefully with secret operations"
           - "Regularly audit device access and remove unused devices"
           - "Keep CLI updated to latest version for security patches"

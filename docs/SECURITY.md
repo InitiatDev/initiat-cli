@@ -16,20 +16,20 @@ This document provides a detailed technical description of Initiat's security ar
 
 ## Zero-Knowledge Architecture
 
-Initiat implements a true zero-knowledge architecture where the server has no access to plaintext secrets or workspace keys. This ensures that even if the server is compromised, your secrets remain secure.
+Initiat implements a true zero-knowledge architecture where the server has no access to plaintext secrets or project keys. This ensures that even if the server is compromised, your secrets remain secure.
 
 ### Core Principles
 
 1. **Client-Side Encryption**: All secrets are encrypted on the client before transmission
-2. **Server Blindness**: The server never sees plaintext secrets or workspace keys
-3. **Key Isolation**: Workspace keys are generated client-side and never transmitted in plaintext
+2. **Server Blindness**: The server never sees plaintext secrets or project keys
+3. **Key Isolation**: Project keys are generated client-side and never transmitted in plaintext
 4. **Forward Secrecy**: Compromising one device doesn't affect other devices
 5. **Audit Trail**: All operations are cryptographically signed and logged
 
 ### Zero-Knowledge Guarantees
 
 - **Secrets**: Server cannot decrypt your secrets, even with full database access
-- **Workspace Keys**: Server cannot access workspace keys, even with admin privileges
+- **Project Keys**: Server cannot access project keys, even with admin privileges
 - **Device Keys**: Private keys never leave the client device
 - **Authentication**: Passwords are never stored, only used for initial authentication
 
@@ -42,9 +42,9 @@ Initiat uses industry-standard cryptographic primitives with proven security:
 | Component | Algorithm | Key Size | Purpose |
 |-----------|-----------|---------|---------|
 | **Signing** | Ed25519 | 256-bit | Device authentication, request signing |
-| **Encryption** | X25519 | 256-bit | Key exchange, workspace key wrapping |
+| **Encryption** | X25519 | 256-bit | Key exchange, project key wrapping |
 | **Secret Encryption** | XSalsa20Poly1305 | 256-bit | Secret value encryption |
-| **Key Wrapping** | ChaCha20Poly1305 | 256-bit | Workspace key encryption |
+| **Key Wrapping** | ChaCha20Poly1305 | 256-bit | Project key encryption |
 | **Key Derivation** | HKDF-SHA256 | 256-bit | Key derivation from shared secrets |
 | **Random Generation** | OS CSPRNG | 256-bit | All cryptographic randomness |
 
@@ -67,12 +67,12 @@ Each device generates two keypairs during registration. The implementation can b
 2. Generate X25519 encryption keypair for key exchange
 3. Store private keys securely in OS keychain
 
-### Workspace Key Generation
+### Project Key Generation
 
-Workspace keys are generated client-side using cryptographically secure random number generation. The implementation can be found in `internal/crypto/crypto.go`.
+Project keys are generated client-side using cryptographically secure random number generation. The implementation can be found in `internal/crypto/crypto.go`.
 
 **Process:**
-1. Generate 256-bit (32-byte) random workspace key
+1. Generate 256-bit (32-byte) random project key
 2. Use OS CSPRNG for cryptographic randomness
 3. Key is generated locally and never transmitted in plaintext
 
@@ -88,28 +88,28 @@ All private keys are stored securely in the operating system's credential manage
 
 ### Secret Value Encryption
 
-Secrets are encrypted using XSalsa20Poly1305 (NaCl secretbox) with workspace keys. The implementation can be found in `internal/crypto/crypto.go` in the `EncryptSecretValue` function.
+Secrets are encrypted using XSalsa20Poly1305 (NaCl secretbox) with project keys. The implementation can be found in `internal/crypto/crypto.go` in the `EncryptSecretValue` function.
 
 **Process:**
 1. Generate a random 24-byte nonce
-2. Use the workspace key as the encryption key
+2. Use the project key as the encryption key
 3. Encrypt the secret value using authenticated encryption
 4. Return the ciphertext and nonce
 
 **Security Properties:**
 - **Authenticated Encryption**: Prevents tampering and ensures authenticity
 - **Nonce Randomness**: Each encryption uses a unique random nonce
-- **Key Isolation**: Each workspace has its own encryption key
+- **Key Isolation**: Each project has its own encryption key
 
-### Workspace Key Wrapping
+### Project Key Wrapping
 
-Workspace keys are wrapped using X25519 key exchange and ChaCha20Poly1305. The implementation can be found in `internal/crypto/crypto.go` in the `WrapWorkspaceKey` function.
+Project keys are wrapped using X25519 key exchange and ChaCha20Poly1305. The implementation can be found in `internal/crypto/crypto.go` in the `WrapProjectKey` function.
 
 **Process:**
 1. Generate an ephemeral X25519 keypair
 2. Compute shared secret using X25519 key agreement
 3. Derive encryption key using HKDF-SHA256
-4. Encrypt workspace key with ChaCha20Poly1305
+4. Encrypt project key with ChaCha20Poly1305
 5. Package ephemeral public key, nonce, and ciphertext
 6. Encode the result in base64url format
 
@@ -120,15 +120,15 @@ Workspace keys are wrapped using X25519 key exchange and ChaCha20Poly1305. The i
 
 ### Key Unwrapping
 
-The unwrapping process reverses the wrapping operation. The implementation can be found in `internal/crypto/crypto.go` in the `UnwrapWorkspaceKey` function.
+The unwrapping process reverses the wrapping operation. The implementation can be found in `internal/crypto/crypto.go` in the `UnwrapProjectKey` function.
 
 **Process:**
 1. Decode the base64url-encoded wrapped key
 2. Extract ephemeral public key, nonce, and ciphertext
 3. Compute shared secret using X25519 key agreement
 4. Derive decryption key using HKDF-SHA256
-5. Decrypt workspace key with ChaCha20Poly1305
-6. Return the decrypted workspace key
+5. Decrypt project key with ChaCha20Poly1305
+6. Return the decrypted project key
 
 ## Authentication & Authorization
 
@@ -153,9 +153,9 @@ All API requests are authenticated using Ed25519 digital signatures following RF
 ### Authorization Model
 
 - **Device Registration**: Requires valid authentication token
-- **Workspace Access**: Requires device approval by workspace admin
-- **Secret Operations**: Requires workspace key access
-- **Admin Operations**: Requires workspace admin role
+- **Project Access**: Requires device approval by project admin
+- **Secret Operations**: Requires project key access
+- **Admin Operations**: Requires project admin role
 
 ## Secure Storage
 
@@ -230,7 +230,7 @@ Initiat's security model protects against:
 
 #### Server Compromise Protection
 - **Zero-Knowledge**: Server cannot decrypt secrets even with full access
-- **Key Isolation**: Workspace keys never stored on server in plaintext
+- **Key Isolation**: Project keys never stored on server in plaintext
 - **Forward Secrecy**: Compromising server doesn't affect historical data
 
 #### Network Attack Protection
@@ -256,7 +256,7 @@ Initiat's security model protects against:
 ### Operational Guarantees
 
 1. **Zero-Knowledge**: Server has no access to plaintext secrets
-2. **Key Isolation**: Each workspace has independent encryption keys
+2. **Key Isolation**: Each project has independent encryption keys
 3. **Device Independence**: Compromising one device doesn't affect others
 4. **Audit Trail**: All operations are cryptographically signed and logged
 5. **Secure Deletion**: Keys can be securely revoked and deleted
@@ -276,10 +276,10 @@ Initiat uses industry-standard cryptographic algorithms and security practices:
 ### For Users
 
 1. **Device Security**: Keep devices updated and use strong authentication
-2. **Key Management**: Never share device credentials or workspace keys
+2. **Key Management**: Never share device credentials or project keys
 3. **Access Control**: Regularly audit device access and remove unused devices
 4. **Secret Rotation**: Regularly rotate secrets and update versions
-5. **Backup**: Ensure secure backup of critical workspace keys
+5. **Backup**: Ensure secure backup of critical project keys
 
 ### For Administrators
 

@@ -131,39 +131,39 @@ func (c *Client) RegisterDevice(
 	return &deviceResp, nil
 }
 
-func (c *Client) ListWorkspaces() ([]types.Workspace, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspaces)
+func (c *Client) ListProjects() ([]types.Project, error) {
+	url := routes.BuildURL(c.baseURL, routes.Projects)
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var workspacesResp types.ListWorkspacesResponse
-	if err := httputil.HandleGetResponse(statusCode, body, &workspacesResp); err != nil {
-		return nil, fmt.Errorf("list workspaces failed: %w", err)
+	var projectsResp types.ListProjectsResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &projectsResp); err != nil {
+		return nil, fmt.Errorf("list projects failed: %w", err)
 	}
 
-	return workspacesResp.Workspaces, nil
+	return projectsResp.Projects, nil
 }
 
-func (c *Client) GetWorkspaceBySlug(orgSlug, workspaceSlug string) (*types.Workspace, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.GetBySlug(orgSlug, workspaceSlug))
+func (c *Client) GetProjectBySlug(orgSlug, projectSlug string) (*types.Project, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.GetBySlug(orgSlug, projectSlug))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var workspace types.Workspace
-	if err := httputil.HandleGetResponse(statusCode, body, &workspace); err != nil {
-		return nil, fmt.Errorf("get workspace failed: %w", err)
+	var project types.Project
+	if err := httputil.HandleGetResponse(statusCode, body, &project); err != nil {
+		return nil, fmt.Errorf("get project failed: %w", err)
 	}
 
-	return &workspace, nil
+	return &project, nil
 }
 
-func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKey []byte) error {
-	initReq := types.InitializeWorkspaceKeyRequest{
-		WrappedWorkspaceKey: crypto.Encode(wrappedKey),
+func (c *Client) InitializeProjectKey(orgSlug, projectSlug string, wrappedKey []byte) error {
+	initReq := types.InitializeProjectKeyRequest{
+		WrappedProjectKey: crypto.Encode(wrappedKey),
 	}
 
 	jsonData, err := json.Marshal(initReq)
@@ -171,7 +171,7 @@ func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKe
 		return fmt.Errorf("failed to marshal initialize key request: %w", err)
 	}
 
-	url := routes.BuildURL(c.baseURL, routes.Workspace.InitializeKey(orgSlug, workspaceSlug))
+	url := routes.BuildURL(c.baseURL, routes.Project.InitializeKey(orgSlug, projectSlug))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.POST, url, jsonData)
 	if err != nil {
 		return err
@@ -180,23 +180,23 @@ func (c *Client) InitializeWorkspaceKey(orgSlug, workspaceSlug string, wrappedKe
 	return httputil.HandleStandardResponse(statusCode, body, nil)
 }
 
-func (c *Client) GetWrappedWorkspaceKey(orgSlug, workspaceSlug string) (string, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.GetWorkspaceKey(orgSlug, workspaceSlug))
+func (c *Client) GetWrappedProjectKey(orgSlug, projectSlug string) (string, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.GetProjectKey(orgSlug, projectSlug))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	var keyResp types.GetWorkspaceKeyResponse
+	var keyResp types.GetProjectKeyResponse
 	if err := httputil.HandleGetResponse(statusCode, body, &keyResp); err != nil {
-		return "", fmt.Errorf("get workspace key failed: %w", err)
+		return "", fmt.Errorf("get project key failed: %w", err)
 	}
 
-	return keyResp.WrappedWorkspaceKey, nil
+	return keyResp.WrappedProjectKey, nil
 }
 
 func (c *Client) SetSecret(
-	orgSlug, workspaceSlug, key string, encryptedValue, nonce []byte, description string, force bool,
+	orgSlug, projectSlug, key string, encryptedValue, nonce []byte, description string, force bool,
 ) (*types.Secret, error) {
 	setReq := types.SetSecretRequest{
 		Key:            key,
@@ -210,7 +210,7 @@ func (c *Client) SetSecret(
 		return nil, fmt.Errorf("failed to marshal set secret request: %w", err)
 	}
 
-	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(orgSlug, workspaceSlug))
+	url := routes.BuildURL(c.baseURL, routes.Project.Secrets(orgSlug, projectSlug))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.POST, url, jsonData)
 	if err != nil {
 		return nil, err
@@ -224,8 +224,8 @@ func (c *Client) SetSecret(
 	return &setResp.Secret, nil
 }
 
-func (c *Client) GetSecret(orgSlug, workspaceSlug, secretKey string) (*types.SecretWithValue, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(orgSlug, workspaceSlug, secretKey))
+func (c *Client) GetSecret(orgSlug, projectSlug, secretKey string) (*types.SecretWithValue, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.SecretByKey(orgSlug, projectSlug, secretKey))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
 	if err != nil {
 		return nil, err
@@ -239,8 +239,8 @@ func (c *Client) GetSecret(orgSlug, workspaceSlug, secretKey string) (*types.Sec
 	return &getResp.Secret, nil
 }
 
-func (c *Client) ListSecrets(orgSlug, workspaceSlug string) ([]types.Secret, error) {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.Secrets(orgSlug, workspaceSlug))
+func (c *Client) ListSecrets(orgSlug, projectSlug string) ([]types.Secret, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.Secrets(orgSlug, projectSlug))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
 	if err != nil {
 		return nil, err
@@ -254,8 +254,8 @@ func (c *Client) ListSecrets(orgSlug, workspaceSlug string) ([]types.Secret, err
 	return listResp.Secrets, nil
 }
 
-func (c *Client) DeleteSecret(orgSlug, workspaceSlug, secretKey string) error {
-	url := routes.BuildURL(c.baseURL, routes.Workspace.SecretByKey(orgSlug, workspaceSlug, secretKey))
+func (c *Client) DeleteSecret(orgSlug, projectSlug, secretKey string) error {
+	url := routes.BuildURL(c.baseURL, routes.Project.SecretByKey(orgSlug, projectSlug, secretKey))
 	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.DELETE, url, nil)
 	if err != nil {
 		return err
@@ -294,9 +294,9 @@ func (c *Client) GetDeviceApproval(approvalID string) (*types.DeviceApproval, er
 	return &approvalResp.DeviceApproval, nil
 }
 
-func (c *Client) ApproveDevice(approvalID string, wrappedWorkspaceKey string) (*types.DeviceApproval, error) {
+func (c *Client) ApproveDevice(approvalID string, wrappedProjectKey string) (*types.DeviceApproval, error) {
 	approveReq := types.ApproveDeviceRequest{
-		WrappedWorkspaceKey: wrappedWorkspaceKey,
+		WrappedProjectKey: wrappedProjectKey,
 	}
 
 	jsonData, err := json.Marshal(approveReq)

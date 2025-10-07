@@ -7,7 +7,7 @@ This document provides comprehensive documentation for all Initiat CLI commands,
 - [Global Options](#global-options)
 - [Authentication Commands](#authentication-commands)
 - [Device Management](#device-management)
-- [Workspace Management](#workspace-management)
+- [Project Management](#project-management)
 - [Secret Management](#secret-management)
 - [Configuration Management](#configuration-management)
 - [Version Information](#version-information)
@@ -21,25 +21,25 @@ All commands support these global flags:
 | `--config` | | | `~/.initiat/config.yaml` | Path to configuration file |
 | `--api-url` | | `INITIAT_API_BASE_URL` | `https://www.initiat.dev` | API base URL |
 | `--service-name` | | | `initiat-cli` | Keyring service name |
-| `--workspace-path` | `-W` | | | Full workspace path (org/workspace) or alias |
-| `--workspace` | `-w` | | | Workspace name (uses default org or --org) |
-| `--org` | | | | Organization slug (used with --workspace) |
+| `--project-path` | `-W` | | | Full project path (org/project) or alias |
+| `--project` | `-w` | | | Project name (uses default org or --org) |
+| `--org` | | | | Organization slug (used with --project) |
 
-### Workspace Context Resolution
+### Project Context Resolution
 
-The CLI supports multiple ways to specify workspace context. If no workspace is specified, the CLI will intelligently prompt you to select from available workspaces.
+The CLI supports multiple ways to specify project context. If no project is specified, the CLI will intelligently prompt you to select from available projects.
 
-#### Specifying Workspace Explicitly
+#### Specifying Project Explicitly
 
 ```bash
-# Method 1: Full workspace path
-initiat secret list --workspace-path acme-corp/production
+# Method 1: Full project path
+initiat secret list --project-path acme-corp/production
 
-# Method 2: Separate org and workspace
-initiat secret list --org acme-corp --workspace production
+# Method 2: Separate org and project
+initiat secret list --org acme-corp --project production
 
-# Method 3: Workspace only (uses default org)
-initiat secret list --workspace production
+# Method 3: Project only (uses default org)
+initiat secret list --project production
 
 # Method 4: Short flags
 initiat secret list -W acme-corp/production
@@ -47,39 +47,39 @@ initiat secret list --org acme-corp -w production
 initiat secret list -w production
 ```
 
-#### Interactive Workspace Selection
+#### Interactive Project Selection
 
-When no workspace is specified, the CLI will prompt you to select from available workspaces:
+When no project is specified, the CLI will prompt you to select from available projects:
 
 ```bash
-# No workspace specified - CLI will prompt
+# No project specified - CLI will prompt
 initiat secret list
 
 # Output:
-# ❓ Workspace context is required for this command.
-# 💡 You can specify workspace using:
-#    --workspace-path org/workspace
-#    --org org --workspace workspace
-#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+# ❓ Project context is required for this command.
+# 💡 You can specify project using:
+#    --project-path org/project
+#    --org org --project project
+#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
 #
-# Available workspaces:
+# Available projects:
 #   1. Production Environment (acme-corp/production)
 #   2. Staging Environment (acme-corp/staging)
 #   3. Development Environment (acme-corp/dev)
-#   0. Enter custom workspace
+#   0. Enter custom project
 #
-# Select workspace (0 for custom): 
+# Select project (0 for custom): 
 ```
 
 **Interactive Selection Options:**
-- **Number Selection**: Choose from the numbered list of available workspaces
-- **Custom Input**: Select option 0 to enter a custom workspace path manually
-- **Fallback**: If workspace fetching fails, you'll be prompted to enter manually
+- **Number Selection**: Choose from the numbered list of available projects
+- **Custom Input**: Select option 0 to enter a custom project path manually
+- **Fallback**: If project fetching fails, you'll be prompted to enter manually
 
 **Benefits:**
-- **Faster Workflow**: No need to remember exact workspace names
-- **Discovery**: See all available workspaces at a glance
-- **Flexible**: Can still enter custom workspaces when needed
+- **Faster Workflow**: No need to remember exact project names
+- **Discovery**: See all available projects at a glance
+- **Flexible**: Can still enter custom projects when needed
 - **User-Friendly**: Clear guidance and helpful error messages
 
 ## Authentication Commands
@@ -149,7 +149,7 @@ Device Name: my-laptop
 Created: 2024-01-15T10:30:00Z
 
 🔐 Keys stored securely in system keychain
-💡 Next: Initialize workspace keys with 'initiat workspace list'
+💡 Next: Initialize project keys with 'initiat project list'
 ```
 
 ### `initiat device unregister`
@@ -185,13 +185,13 @@ Clear stored authentication token.
 
 ### `initiat device approvals`
 
-List all pending device approvals for workspaces where you are an admin.
+List all pending device approvals for projects where you are an admin.
 
 **Output:**
 ```
 📋 Pending Device Approvals (2)
 
-ID  User           Device         Workspace      Requested
+ID  User           Device         Project      Requested
 1   John Doe       work-laptop    acme/prod      Jan 15 10:30
 2   Jane Smith     dev-machine    acme/staging   Jan 15 11:45
 
@@ -201,7 +201,7 @@ ID  User           Device         Workspace      Requested
 
 ### `initiat device approve [--all] [--id ID]`
 
-Approve device access to workspaces.
+Approve device access to projects.
 
 **Options:**
 - `--all`: Approve all pending devices
@@ -226,12 +226,12 @@ Found 2 pending approvals:
   • dev-machine (acme-corp/staging) - Jane Smith
 
 ✅ Approved 2 devices successfully!
-   All approved devices can now access their respective workspace secrets
+   All approved devices can now access their respective project secrets
 ```
 
 ### `initiat device reject [--all] [--id ID]`
 
-Reject device access to workspaces.
+Reject device access to projects.
 
 **Options:**
 - `--all`: Reject all pending devices
@@ -274,7 +274,7 @@ initiat device approval --id 123
 
 User: John Doe (john.doe@example.com)
 Device: work-laptop (ID: 456)
-Workspace: Acme Corp / Production (acme-corp/production)
+Project: Acme Corp / Production (acme-corp/production)
 Requested: Jan 15 10:30:00Z
 Status: pending
 
@@ -283,80 +283,80 @@ Status: pending
   X25519: def456ghi789... (for encryption)
 ```
 
-## Workspace Management
+## Project Management
 
-### `initiat workspace list`
+### `initiat project list`
 
-List all workspaces and their key initialization status.
+List all projects and their key initialization status.
 
 **What it does:**
-- Fetches all workspaces accessible to your account
+- Fetches all projects accessible to your account
 - Shows key initialization status
-- Displays your role in each workspace
+- Displays your role in each project
 
 **Output:**
 ```
-🔍 Fetching workspaces...
+🔍 Fetching projects...
 
 Name           Composite Slug      Key Initialized  Role
 Production     acme-corp/prod      ✅ Yes          admin
 Staging        acme-corp/staging   ❌ No           member
 Development    acme-corp/dev       ❌ No           member
 
-💡 Initialize keys for workspaces marked "No" using:
-   initiat workspace init <org-slug/workspace-slug>
+💡 Initialize keys for projects marked "No" using:
+   initiat project init <org-slug/project-slug>
 ```
 
-### `initiat workspace init [workspace-path]`
+### `initiat project init [project-path]`
 
-Initialize a new workspace key for secure secret storage.
+Initialize a new project key for secure secret storage.
 
 **Arguments:**
-- `workspace-path`: Full workspace path (org/workspace) or use flags
+- `project-path`: Full project path (org/project) or use flags
 
 **Options:**
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
 # Using positional argument
-initiat workspace init acme-corp/production
+initiat project init acme-corp/production
 
 # Using flags
-initiat workspace init --org acme-corp --workspace production
-initiat workspace init --org acme-corp -w production
-initiat workspace init --workspace production  # Uses default org
-initiat workspace init -w production
+initiat project init --org acme-corp --project production
+initiat project init --org acme-corp -w production
+initiat project init --project production  # Uses default org
+initiat project init -w production
 ```
 
 **What it does:**
-1. Generates secure 256-bit workspace key
-2. Encrypts workspace key with your device's X25519 key
+1. Generates secure 256-bit project key
+2. Encrypts project key with your device's X25519 key
 3. Uploads encrypted key to server
-4. Enables secret storage and retrieval for this workspace
+4. Enables secret storage and retrieval for this project
 
 **Output:**
 ```
-🔐 Initializing workspace key for "acme-corp/production"...
-⚡ Generating secure 256-bit workspace key...
-🔒 Encrypting workspace key with your device's X25519 key...
+🔐 Initializing project key for "acme-corp/production"...
+⚡ Generating secure 256-bit project key...
+🔒 Encrypting project key with your device's X25519 key...
 📡 Uploading encrypted key to server...
-✅ Workspace key initialized successfully!
-🎯 You can now store and retrieve secrets in this workspace.
+✅ Project key initialized successfully!
+🎯 You can now store and retrieve secrets in this project.
 
 Next steps:
   • Add secrets: initiat secret set API_KEY --value your-secret
   • List secrets: initiat secret list
-  • Invite devices: initiat workspace invite-device
+  • Invite devices: initiat project invite-device
 ```
 
 ## Secret Management
 
 ### `initiat secret set <secret-key> --value VALUE [options]`
 
-Set a secret value in the specified workspace.
+Set a secret value in the specified project.
 
 **Arguments:**
 - `secret-key`: The key/name for the secret (required)
@@ -365,17 +365,17 @@ Set a secret value in the specified workspace.
 - `--value, -v`: Secret value (required)
 - `--description, -d`: Optional description for the secret
 - `--force, -f`: Overwrite existing secret without confirmation
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
-# Set secret with full workspace path
-initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+# Set secret with full project path
+initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production
 
-# Set secret with separate org/workspace
-initiat secret set DB_PASSWORD --org acme-corp --workspace production \
+# Set secret with separate org/project
+initiat secret set DB_PASSWORD --org acme-corp --project production \
   --value "super-secret-pass" --description "Production database password"
 
 # Set secret with short flags
@@ -387,14 +387,14 @@ initiat secret set API_KEY -w production -v "new-value" --force
 
 **What it does:**
 1. Validates secret key and value
-2. Retrieves workspace key from server
+2. Retrieves project key from server
 3. Encrypts secret value client-side
 4. Uploads encrypted secret to server
 5. Shows confirmation with metadata
 
 **Output:**
 ```
-🔐 Setting secret 'API_KEY' in workspace acme-corp/production...
+🔐 Setting secret 'API_KEY' in project acme-corp/production...
 🔒 Encrypting secret value...
 📡 Uploading encrypted secret to server...
 ✅ Secret 'API_KEY' set successfully!
@@ -405,7 +405,7 @@ initiat secret set API_KEY -w production -v "new-value" --force
 
 ### `initiat secret get <secret-key> [options]`
 
-Get and decrypt a secret value from the specified workspace.
+Get and decrypt a secret value from the specified project.
 
 **Arguments:**
 - `secret-key`: The key/name for the secret (required)
@@ -413,14 +413,14 @@ Get and decrypt a secret value from the specified workspace.
 **Options:**
 - `--copy, -c`: Copy value to clipboard instead of printing
 - `--copy-kv`: Copy KEY=VALUE format to clipboard
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
-# Get secret with full workspace path
-initiat secret get API_KEY --workspace-path acme-corp/production
+# Get secret with full project path
+initiat secret get API_KEY --project-path acme-corp/production
 
 # Get secret with short flags
 initiat secret get API_KEY -W acme-corp/production
@@ -434,7 +434,7 @@ initiat secret get API_KEY -w production --copy-kv
 
 **What it does:**
 1. Retrieves encrypted secret from server
-2. Gets workspace key and decrypts it
+2. Gets project key and decrypts it
 3. Decrypts secret value client-side
 4. Outputs JSON with secret metadata (default)
 5. Optionally copies value to clipboard (`--copy`)
@@ -442,13 +442,13 @@ initiat secret get API_KEY -w production --copy-kv
 
 **Output:**
 ```
-🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+🔍 Getting secret 'API_KEY' from project acme-corp/production...
 🔓 Decrypting secret value...
 {
   "key": "API_KEY",
   "value": "sk-1234567890abcdef",
   "version": 1,
-  "workspace_id": "ws_abc123",
+  "project_id": "ws_abc123",
   "updated_at": "2024-01-15T10:30:00Z",
   "created_by_device": "my-laptop"
 }
@@ -456,34 +456,34 @@ initiat secret get API_KEY -w production --copy-kv
 
 ### `initiat secret list [options]`
 
-List all secrets in the specified workspace (metadata only, no values).
+List all secrets in the specified project (metadata only, no values).
 
 **Options:**
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
-# List secrets with full workspace path
-initiat secret list --workspace-path acme-corp/production
+# List secrets with full project path
+initiat secret list --project-path acme-corp/production
 
 # List secrets with short flags
 initiat secret list -W acme-corp/production
 
-# List secrets with workspace only
-initiat secret list --workspace production
+# List secrets with project only
+initiat secret list --project production
 ```
 
 **What it does:**
-1. Fetches all secrets for the workspace
+1. Fetches all secrets for the project
 2. Displays metadata in table format
 3. Shows key, encrypted status, and version
 4. Never exposes actual secret values
 
 **Output:**
 ```
-🔍 Listing secrets in workspace acme-corp/production...
+🔍 Listing secrets in project acme-corp/production...
 
 Key        Value        Version
 API_KEY    [encrypted]  1
@@ -493,27 +493,27 @@ JWT_SECRET [encrypted]  2
 
 ### `initiat secret delete <secret-key> [options]`
 
-Delete a secret from the specified workspace.
+Delete a secret from the specified project.
 
 **Arguments:**
 - `secret-key`: The key/name for the secret (required)
 
 **Options:**
 - `--force, -f`: Skip confirmation prompt
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
 # Delete secret with confirmation
-initiat secret delete API_KEY --workspace-path acme-corp/production
+initiat secret delete API_KEY --project-path acme-corp/production
 
 # Delete secret with short flags
 initiat secret delete API_KEY -W acme-corp/production
 
 # Force delete without confirmation
-initiat secret delete OLD_API_KEY --workspace production --force
+initiat secret delete OLD_API_KEY --project production --force
 ```
 
 **What it does:**
@@ -523,8 +523,8 @@ initiat secret delete OLD_API_KEY --workspace production --force
 
 **Output:**
 ```
-⚠️  Are you sure you want to delete secret 'API_KEY' from workspace acme-corp/production? (y/N): y
-🗑️  Deleting secret 'API_KEY' from workspace acme-corp/production...
+⚠️  Are you sure you want to delete secret 'API_KEY' from project acme-corp/production? (y/N): y
+🗑️  Deleting secret 'API_KEY' from project acme-corp/production...
 ✅ Secret 'API_KEY' deleted successfully!
 ```
 
@@ -538,14 +538,14 @@ Export a secret value to a file. Creates directories if needed and handles overw
 **Options:**
 - `--output, -o`: Output file path (required)
 - `--force, -f`: Overwrite existing key without confirmation
-- `--workspace-path, -W`: Full workspace path (org/workspace) or alias
-- `--workspace, -w`: Workspace name (uses default org or --org)
-- `--org`: Organization slug (used with --workspace)
+- `--project-path, -W`: Full project path (org/project) or alias
+- `--project, -w`: Project name (uses default org or --org)
+- `--org`: Organization slug (used with --project)
 
 **Examples:**
 ```bash
 # Export secret to a file
-initiat secret export API_KEY --output .env --workspace-path acme-corp/production
+initiat secret export API_KEY --output .env --project-path acme-corp/production
 
 # Export to deep directory (creates folders)
 initiat secret export API_KEY --output config/secrets.env -W acme-corp/production
@@ -563,7 +563,7 @@ initiat secret export API_KEY --output secrets.txt --force
 
 **Output:**
 ```
-🔍 Getting secret 'API_KEY' from workspace acme-corp/production...
+🔍 Getting secret 'API_KEY' from project acme-corp/production...
 🔓 Decrypting secret value...
 ⚠️  File 'secrets.env' is not in .gitignore. Add it? (y/N): y
 ✅ Added 'secrets.env' to .gitignore
@@ -572,7 +572,7 @@ initiat secret export API_KEY --output secrets.txt --force
 
 ## Configuration Management
 
-The Initiat CLI stores configuration in `~/.initiat/config.yaml` and provides commands to manage settings, workspace defaults, and aliases.
+The Initiat CLI stores configuration in `~/.initiat/config.yaml` and provides commands to manage settings, project defaults, and aliases.
 
 ### `initiat config set <key> <value>`
 
@@ -586,7 +586,7 @@ Set a configuration value using dot notation for nested keys.
 - `api.url`: API base URL
 - `api.timeout`: API timeout duration
 - `org`: Default organization slug
-- `workspace`: Default workspace slug
+- `project`: Default project slug
 - `service`: Service name for keyring
 
 **Examples:**
@@ -600,8 +600,8 @@ initiat config set api.timeout "60s"
 # Set default organization
 initiat config set org "my-company"
 
-# Set default workspace
-initiat config set workspace "production"
+# Set default project
+initiat config set project "production"
 
 # Set service name
 initiat config set service "my-custom-service"
@@ -627,15 +627,15 @@ initiat config get api.url
 # Get default organization
 initiat config get org
 
-# Get default workspace
-initiat config get workspace
+# Get default project
+initiat config get project
 ```
 
 **Output:**
 ```
 api.url: https://www.initiat.dev
 org: my-company
-workspace: production
+project: production
 ```
 
 ### `initiat config show`
@@ -655,9 +655,9 @@ Current configuration:
   api.timeout: 30s
   service: initiat-cli
   org: my-company
-  workspace: production
+  project: production
 
-Workspace aliases:
+Project aliases:
   prod: acme-corp/production
   staging: acme-corp/staging
 ```
@@ -696,8 +696,8 @@ Reset all configuration values to their default settings.
 
 **What it does:**
 - Resets all API settings to defaults
-- Clears workspace defaults (org and workspace)
-- Removes all workspace aliases
+- Clears project defaults (org and project)
+- Removes all project aliases
 - Resets service name to default
 
 **Examples:**
@@ -717,13 +717,13 @@ initiat config reset
 - Clear description of what will be reset
 - Cancellation support if user doesn't confirm
 
-### `initiat config alias set <alias> <workspace-path>`
+### `initiat config alias set <alias> <project-path>`
 
-Set a workspace alias to a full workspace path.
+Set a project alias to a full project path.
 
 **Arguments:**
 - `alias`: Alias name (required)
-- `workspace-path`: Full workspace path in format 'org/workspace' (required)
+- `project-path`: Full project path in format 'org/project' (required)
 
 **Examples:**
 ```bash
@@ -744,7 +744,7 @@ initiat config alias set dev "acme-corp/development"
 
 ### `initiat config alias get <alias>`
 
-Get the workspace path for a specific alias.
+Get the project path for a specific alias.
 
 **Arguments:**
 - `alias`: Alias name to get (required)
@@ -762,7 +762,7 @@ prod: acme-corp/production
 
 ### `initiat config alias list`
 
-List all configured workspace aliases.
+List all configured project aliases.
 
 **Examples:**
 ```bash
@@ -772,7 +772,7 @@ initiat config alias list
 
 **Output:**
 ```
-Workspace aliases:
+Project aliases:
   prod: acme-corp/production
   staging: acme-corp/staging
   dev: acme-corp/development
@@ -780,7 +780,7 @@ Workspace aliases:
 
 ### `initiat config alias remove <alias>`
 
-Remove a workspace alias.
+Remove a project alias.
 
 **Arguments:**
 - `alias`: Alias name to remove (required)
@@ -810,7 +810,7 @@ Configuration can also be set via environment variables:
 - `INITIAT_API_TIMEOUT`: API timeout
 - `INITIAT_SERVICE_NAME`: Service name for keyring
 - `INITIAT_WORKSPACE_DEFAULT_ORG`: Default organization
-- `INITIAT_WORKSPACE_DEFAULT_WORKSPACE`: Default workspace
+- `INITIAT_WORKSPACE_DEFAULT_WORKSPACE`: Default project
 
 ### Configuration Precedence
 
@@ -838,7 +838,7 @@ The CLI provides clear error messages and suggestions for common issues:
 ### Authentication Errors
 ```
 ❌ Device not registered. Please run 'initiat device register <name>' first
-❌ Failed to get workspace key: workspace key not initialized
+❌ Failed to get project key: project key not initialized
 ```
 
 ### Network Errors
@@ -856,14 +856,14 @@ The CLI provides clear error messages and suggestions for common issues:
 ### Configuration Errors
 ```
 ❌ Failed to initialize config: permission denied
-❌ Invalid workspace path: expected 'org-slug/workspace-slug'
+❌ Invalid project path: expected 'org-slug/project-slug'
 ```
 
 ## Best Practices
 
-### Workspace Organization
-- Use descriptive workspace names: `acme-corp/production`, `acme-corp/staging`
-- Initialize workspace keys before storing secrets
+### Project Organization
+- Use descriptive project names: `acme-corp/production`, `acme-corp/staging`
+- Initialize project keys before storing secrets
 - Use consistent naming conventions for secret keys
 
 ### Secret Management
@@ -877,7 +877,7 @@ The CLI provides clear error messages and suggestions for common issues:
 - Approve device access promptly for team productivity
 
 ### Security Considerations
-- Never share device credentials or workspace keys
+- Never share device credentials or project keys
 - Use `--force` flag carefully with secret operations
 - Regularly audit device access and remove unused devices
 - Keep CLI updated to latest version for security patches

@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2025-10-05
 
 ### Added
-- **Interactive Workspace Selection**: When no workspace is specified, the CLI now intelligently prompts users to select from available workspaces
-  - Shows numbered list of available workspaces for easy selection
-  - Option to enter custom workspace path manually
-  - Graceful fallback when workspace fetching fails
+- **Interactive Project Selection**: When no project is specified, the CLI now intelligently prompts users to select from available projects
+  - Shows numbered list of available projects for easy selection
+  - Option to enter custom project path manually
+  - Graceful fallback when project fetching fails
   - Improved user experience with clear guidance and helpful error messages
 - **Secret Export Functionality**: New `initiat secret export` command to export secrets to files
   - Export secrets to `.env` files with proper formatting
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `initiat secret get <key>` - Now uses positional argument for secret key
   - `initiat secret delete <key>` - Now uses positional argument for secret key
   - `initiat secret set <key>` - Now uses positional argument for secret key
-  - `initiat workspace init <workspace-path>` - Now uses positional argument for workspace path
+  - `initiat project init <project-path>` - Now uses positional argument for project path
 - Updated all documentation to reflect new command structure
 - Improved command examples and help text
 
@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial CLI implementation
 - Authentication system with email/password login
 - Device registration and management
-- Workspace initialization and key management
+- Project initialization and key management
 - Secret management (set, get, list, delete)
 - Configuration management with YAML config files
 - Cross-platform support (macOS, Linux, Windows)
@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ed25519 signing keys for device authentication
 - X25519 encryption keys for secret encryption
 - Secure key storage using OS keychain/credential store
-- Workspace key wrapping for secret access control
+- Project key wrapping for secret access control
 
 [Unreleased]: https://github.com/InitiatDev/initiat-cli/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/InitiatDev/initiat-cli/releases/tag/v0.1.0

@@ -184,8 +184,8 @@ jobs:
             # Register this device
             initiat device register "My Computer"
 
-            # List available workspaces
-            initiat workspace list
+            # List available projects
+            initiat project list
             ```
 
             ## Documentation

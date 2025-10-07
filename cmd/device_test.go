@@ -96,21 +96,21 @@ func TestGenerateKeypairsUnique(t *testing.T) {
 	}
 }
 
-func createApproval(orgSlug, workspaceSlug string) types.DeviceApproval {
+func createApproval(orgSlug, projectSlug string) types.DeviceApproval {
 	approval := types.DeviceApproval{}
-	approval.WorkspaceMembership.Workspace.Slug = workspaceSlug
-	approval.WorkspaceMembership.Workspace.Organization.Slug = orgSlug
+	approval.ProjectMembership.Project.Slug = projectSlug
+	approval.ProjectMembership.Project.Organization.Slug = orgSlug
 	return approval
 }
 
-func TestBuildWorkspaceSlug(t *testing.T) {
+func TestBuildProjectSlug(t *testing.T) {
 	tests := []struct {
 		name     string
 		approval types.DeviceApproval
 		expected string
 	}{
 		{
-			name:     "normal organization and workspace",
+			name:     "normal organization and project",
 			approval: createApproval("acme-corp", "production"),
 			expected: "acme-corp/production",
 		},
@@ -123,9 +123,9 @@ func TestBuildWorkspaceSlug(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildWorkspaceSlug(tt.approval)
+			result := buildProjectSlug(tt.approval)
 			if result != tt.expected {
-				t.Errorf("buildWorkspaceSlug() = %v, want %v", result, tt.expected)
+				t.Errorf("buildProjectSlug() = %v, want %v", result, tt.expected)
 			}
 		})
 	}

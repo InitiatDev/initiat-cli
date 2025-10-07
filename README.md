@@ -27,20 +27,20 @@
 Transform how your team handles secrets with enterprise-grade security. Our zero-knowledge architecture ensures that even we can't decrypt your secrets - everything is encrypted client-side before transmission.
 
 ```bash
-# Set a secret for your team (with workspace selection)
+# Set a secret for your team (with project selection)
 initiat secret set API_KEY --value "sk-1234567890abcdef"
-# CLI will prompt: Select workspace (0 for custom): 1
+# CLI will prompt: Select project (0 for custom): 1
 
 # Get a secret (decrypted client-side)
 initiat secret get API_KEY
-# CLI will prompt: Select workspace (0 for custom): 1
+# CLI will prompt: Select project (0 for custom): 1
 
-# List all secrets in a workspace
+# List all secrets in a project
 initiat secret list
-# CLI will prompt: Select workspace (0 for custom): 1
+# CLI will prompt: Select project (0 for custom): 1
 
-# Or specify workspace explicitly
-initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+# Or specify project explicitly
+initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production
 ```
 
 - **Client-side encryption** with Ed25519/X25519 cryptography
@@ -50,7 +50,7 @@ initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-c
 
 **Team Management** 👥 *Production ready - Invite only*
 
-Streamline device and workspace management with granular control over who can access what. Every device must be approved, and every workspace can be configured with specific permissions.
+Streamline device and project management with granular control over who can access what. Every device must be approved, and every project can be configured with specific permissions.
 
 ```bash
 # Register a new device
@@ -62,46 +62,46 @@ initiat device approvals
 # Approve all pending devices
 initiat device approve --all
 
-# List available workspaces
-initiat workspace list
+# List available projects
+initiat project list
 
-# Initialize a new workspace
-initiat workspace init acme-corp/production
+# Initialize a new project
+initiat project init acme-corp/production
 ```
 
 - **Device registration** and approval workflows
-- **Workspace-based organization** for teams and projects
+- **Project-based organization** for teams and projects
 - **Role-based access control** with granular permissions
 - **Secure key storage** using OS keychain integration
 
-**Interactive Workspace Selection**
+**Interactive Project Selection**
 
-Never remember workspace names again. When you don't specify a workspace, the CLI intelligently prompts you to select from available workspaces.
+Never remember project names again. When you don't specify a project, the CLI intelligently prompts you to select from available projects.
 
 ```bash
-# No workspace specified - CLI will show interactive selection
+# No project specified - CLI will show interactive selection
 initiat secret list
 
 # Output:
-# ❓ Workspace context is required for this command.
-# 💡 You can specify workspace using:
-#    --workspace-path org/workspace
-#    --org org --workspace workspace
-#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set workspace <workspace>'
+# ❓ Project context is required for this command.
+# 💡 You can specify project using:
+#    --project-path org/project
+#    --org org --project project
+#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
 #
-# Available workspaces:
+# Available projects:
 #   1. Production Environment (acme-corp/production)
 #   2. Staging Environment (acme-corp/staging)
 #   3. Development Environment (acme-corp/dev)
-#   0. Enter custom workspace
+#   0. Enter custom project
 #
-# Select workspace (0 for custom): 
+# Select project (0 for custom): 
 ```
 
 **Benefits:**
-- **Faster Workflow**: No need to remember exact workspace names
-- **Discovery**: See all available workspaces at a glance
-- **Flexible**: Can still enter custom workspaces when needed
+- **Faster Workflow**: No need to remember exact project names
+- **Discovery**: See all available projects at a glance
+- **Flexible**: Can still enter custom projects when needed
 - **User-Friendly**: Clear guidance and helpful error messages
 
 ## What's Coming Next
@@ -153,9 +153,9 @@ Data-driven developer experience. Understand where your team is spending time an
 We use industry-standard cryptographic primitives to ensure your secrets are protected at the highest level. Every operation is designed with security-first principles.
 
 - **Ed25519 signatures** for device authentication
-- **X25519 key exchange** for workspace key wrapping
+- **X25519 key exchange** for project key wrapping
 - **XSalsa20Poly1305** for secret value encryption
-- **ChaCha20Poly1305** for workspace key encryption
+- **ChaCha20Poly1305** for project key encryption
 - **HKDF-SHA256** for key derivation
 
 **Zero-Knowledge Architecture**
@@ -163,7 +163,7 @@ We use industry-standard cryptographic primitives to ensure your secrets are pro
 Our zero-knowledge architecture means we can't see your secrets, even if we wanted to. Everything is encrypted client-side before it ever reaches our servers.
 
 - Client-side encryption before transmission
-- Server cannot decrypt secrets or workspace keys
+- Server cannot decrypt secrets or project keys
 - Private keys stored in OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 - Forward secrecy - compromising one device doesn't affect others
 
@@ -175,13 +175,13 @@ Manage your team's secrets with enterprise-grade security. Every secret is encry
 
 ```bash
 # Set a secret
-initiat secret set API_KEY --value "sk-1234567890abcdef" --workspace-path acme-corp/production
+initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production
 
 # Get a secret
-initiat secret get API_KEY --workspace-path acme-corp/production
+initiat secret get API_KEY --project-path acme-corp/production
 
 # List all secrets
-initiat secret list --workspace-path acme-corp/production
+initiat secret list --project-path acme-corp/production
 ```
 
 **Device Management**
@@ -199,20 +199,20 @@ initiat device approvals
 initiat device approve --all
 ```
 
-**Workspace Management**
+**Project Management**
 
-Organize your secrets by team and project. Each workspace can have its own access controls and permissions.
+Organize your secrets by team and project. Each project can have its own access controls and permissions.
 
 ```bash
-# List available workspaces
-initiat workspace list
+# List available projects
+initiat project list
 
-# Initialize a new workspace (with interactive selection)
-initiat workspace init
-# CLI will prompt: Select workspace (0 for custom): 1
+# Initialize a new project (with interactive selection)
+initiat project init
+# CLI will prompt: Select project (0 for custom): 1
 
-# Or specify workspace explicitly
-initiat workspace init acme-corp/production
+# Or specify project explicitly
+initiat project init acme-corp/production
 ```
 
 ## Getting Started
@@ -233,7 +233,7 @@ initiat workspace init acme-corp/production
    # Arch Linux
    sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
    ```
-4. **Set up workspaces** for your teams and projects
+4. **Set up projects** for your teams and projects
 5. **Configure device approval** workflows
 
 ### **For Teams**

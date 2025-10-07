@@ -10,14 +10,14 @@ import (
 )
 
 func TestEncryptSecretValue(t *testing.T) {
-	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
-	if _, err := rand.Read(workspaceKey); err != nil {
-		t.Fatalf("Failed to generate test workspace key: %v", err)
+	projectKey := make([]byte, crypto.ProjectKeySize)
+	if _, err := rand.Read(projectKey); err != nil {
+		t.Fatalf("Failed to generate test project key: %v", err)
 	}
 
 	testValue := "test-secret-value"
 
-	encryptedValue, nonce, err := encryptSecretValue(testValue, workspaceKey)
+	encryptedValue, nonce, err := encryptSecretValue(testValue, projectKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt secret value: %v", err)
 	}
@@ -36,19 +36,19 @@ func TestEncryptSecretValue(t *testing.T) {
 }
 
 func TestEncryptSecretValueDifferentNonces(t *testing.T) {
-	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
-	if _, err := rand.Read(workspaceKey); err != nil {
-		t.Fatalf("Failed to generate test workspace key: %v", err)
+	projectKey := make([]byte, crypto.ProjectKeySize)
+	if _, err := rand.Read(projectKey); err != nil {
+		t.Fatalf("Failed to generate test project key: %v", err)
 	}
 
 	testValue := "test-secret-value"
 
-	_, nonce1, err := encryptSecretValue(testValue, workspaceKey)
+	_, nonce1, err := encryptSecretValue(testValue, projectKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt secret value (first): %v", err)
 	}
 
-	_, nonce2, err := encryptSecretValue(testValue, workspaceKey)
+	_, nonce2, err := encryptSecretValue(testValue, projectKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt secret value (second): %v", err)
 	}
@@ -59,12 +59,12 @@ func TestEncryptSecretValueDifferentNonces(t *testing.T) {
 }
 
 func TestEncryptSecretValueEmptyValue(t *testing.T) {
-	workspaceKey := make([]byte, crypto.WorkspaceKeySize)
-	if _, err := rand.Read(workspaceKey); err != nil {
-		t.Fatalf("Failed to generate test workspace key: %v", err)
+	projectKey := make([]byte, crypto.ProjectKeySize)
+	if _, err := rand.Read(projectKey); err != nil {
+		t.Fatalf("Failed to generate test project key: %v", err)
 	}
 
-	encryptedValue, nonce, err := encryptSecretValue("", workspaceKey)
+	encryptedValue, nonce, err := encryptSecretValue("", projectKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt empty secret value: %v", err)
 	}

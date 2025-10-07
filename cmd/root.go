@@ -7,16 +7,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/InitiatDev/initiat-cli/internal/workspace"
+	"github.com/InitiatDev/initiat-cli/internal/project"
 )
 
 var (
-	cfgFile       string
-	apiURL        string
-	serviceName   string
-	workspacePath string
-	workspaceName string
-	org           string
+	cfgFile     string
+	apiURL      string
+	serviceName string
+	projectPath string
+	projectName string
+	org         string
 )
 
 var rootCmd = &cobra.Command{
@@ -50,18 +50,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&serviceName, "service-name", "initiat-cli",
 		"keyring service name for credential storage")
 
-	rootCmd.PersistentFlags().StringVarP(&workspacePath, "workspace-path", "W", "",
-		"full workspace path (org/workspace) or alias")
-	rootCmd.PersistentFlags().StringVarP(&workspaceName, "workspace", "w", "",
-		"workspace name (uses default org or --org)")
-	rootCmd.PersistentFlags().StringVar(&org, "org", "", "organization slug (used with --workspace)")
+	rootCmd.PersistentFlags().StringVarP(&projectPath, "project-path", "W", "",
+		"full project path (org/project) or alias")
+	rootCmd.PersistentFlags().StringVarP(&projectName, "project", "w", "",
+		"project name (uses default org or --org)")
+	rootCmd.PersistentFlags().StringVar(&org, "org", "", "organization slug (used with --project)")
 
-	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "workspace")
-	rootCmd.MarkFlagsMutuallyExclusive("workspace-path", "org")
+	rootCmd.MarkFlagsMutuallyExclusive("project-path", "project")
+	rootCmd.MarkFlagsMutuallyExclusive("project-path", "org")
 }
 
-func GetWorkspaceContext() (*config.WorkspaceContext, error) {
-	return workspace.GetWorkspaceContext(workspacePath, org, workspaceName)
+func GetProjectContext() (*config.ProjectContext, error) {
+	return project.GetProjectContext(projectPath, org, projectName)
 }
 
 func Execute() {

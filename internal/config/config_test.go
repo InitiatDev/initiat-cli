@@ -16,8 +16,8 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
 	assert.Equal(t, "30s", cfg.API.Timeout)
 	assert.Equal(t, "initiat-cli", cfg.ServiceName)
-	assert.Equal(t, "", cfg.Workspace.DefaultOrg)
-	assert.Equal(t, "", cfg.Workspace.DefaultWorkspace)
+	assert.Equal(t, "", cfg.Project.DefaultOrg)
+	assert.Equal(t, "", cfg.Project.DefaultProject)
 	assert.NotNil(t, cfg.Aliases)
 }
 
@@ -172,7 +172,7 @@ func TestAliasManagement(t *testing.T) {
 	assert.Equal(t, "", alias)
 }
 
-func TestWorkspaceContextResolution(t *testing.T) {
+func TestProjectContextResolution(t *testing.T) {
 	viper.Reset()
 
 	tmpDir := t.TempDir()
@@ -186,60 +186,60 @@ func TestWorkspaceContextResolution(t *testing.T) {
 
 	err = SetDefaultOrgSlug("default-org")
 	require.NoError(t, err)
-	err = SetDefaultWorkspaceSlug("default-workspace")
+	err = SetDefaultProjectSlug("default-project")
 	require.NoError(t, err)
 	err = SetAlias("prod", "acme-corp/production")
 	require.NoError(t, err)
 
 	tests := []struct {
-		name          string
-		workspacePath string
-		org           string
-		workspace     string
-		expectedOrg   string
-		expectedWS    string
-		expectError   bool
+		name        string
+		projectPath string
+		org         string
+		project     string
+		expectedOrg string
+		expectedWS  string
+		expectError bool
 	}{
 		{
-			name:          "explicit workspace path",
-			workspacePath: "acme-corp/production",
-			expectedOrg:   "acme-corp",
-			expectedWS:    "production",
+			name:        "explicit project path",
+			projectPath: "acme-corp/production",
+			expectedOrg: "acme-corp",
+			expectedWS:  "production",
 		},
 		{
-			name:          "workspace path via alias",
-			workspacePath: "prod",
-			expectedOrg:   "acme-corp",
-			expectedWS:    "production",
+			name:        "project path via alias",
+			projectPath: "prod",
+			expectedOrg: "acme-corp",
+			expectedWS:  "production",
 		},
 		{
-			name:        "explicit org and workspace",
+			name:        "explicit org and project",
 			org:         "test-org",
-			workspace:   "test-workspace",
+			project:     "test-project",
 			expectedOrg: "test-org",
-			expectedWS:  "test-workspace",
+			expectedWS:  "test-project",
 		},
 		{
-			name:        "default org with explicit workspace",
-			workspace:   "staging",
+			name:        "default org with explicit project",
+			project:     "staging",
 			expectedOrg: "default-org",
 			expectedWS:  "staging",
 		},
 		{
 			name:        "full defaults",
 			expectedOrg: "default-org",
-			expectedWS:  "default-workspace",
+			expectedWS:  "default-project",
 		},
 		{
-			name:          "invalid workspace path format",
-			workspacePath: "invalid-format",
-			expectError:   true,
+			name:        "invalid project path format",
+			projectPath: "invalid-format",
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, err := ResolveWorkspaceContext(tt.workspacePath, tt.org, tt.workspace)
+			ctx, err := ResolveProjectContext(tt.projectPath, tt.org, tt.project)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -248,14 +248,14 @@ func TestWorkspaceContextResolution(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, ctx)
 				assert.Equal(t, tt.expectedOrg, ctx.OrgSlug)
-				assert.Equal(t, tt.expectedWS, ctx.WorkspaceSlug)
+				assert.Equal(t, tt.expectedWS, ctx.ProjectSlug)
 				assert.Equal(t, fmt.Sprintf("%s/%s", tt.expectedOrg, tt.expectedWS), ctx.String())
 			}
 		})
 	}
 }
 
-func TestWorkspaceContextResolution_ErrorCases(t *testing.T) {
+func TestProjectContextResolution_ErrorCases(t *testing.T) {
 	viper.Reset()
 
 	tmpDir := t.TempDir()
@@ -267,15 +267,15 @@ func TestWorkspaceContextResolution_ErrorCases(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	ctx, err := ResolveWorkspaceContext("", "", "test-workspace")
+	ctx, err := ResolveProjectContext("", "", "test-project")
 	assert.Error(t, err)
 	assert.Nil(t, ctx)
 	assert.Contains(t, err.Error(), "no default organization configured")
 
-	ctx, err = ResolveWorkspaceContext("", "", "")
+	ctx, err = ResolveProjectContext("", "", "")
 	assert.Error(t, err)
 	assert.Nil(t, ctx)
-	assert.Contains(t, err.Error(), "no workspace context available")
+	assert.Contains(t, err.Error(), "no project context available")
 }
 
 func TestResetToDefaults(t *testing.T) {
@@ -295,9 +295,9 @@ func TestResetToDefaults(t *testing.T) {
 	require.NoError(t, err)
 	err = Set("api.timeout", "60s")
 	require.NoError(t, err)
-	err = Set("workspace.default_org", "test-org")
+	err = Set("project.default_org", "test-org")
 	require.NoError(t, err)
-	err = Set("workspace.default_workspace", "test-workspace")
+	err = Set("project.default_project", "test-project")
 	require.NoError(t, err)
 	err = SetAlias("prod", "acme-corp/production")
 	require.NoError(t, err)
@@ -306,8 +306,8 @@ func TestResetToDefaults(t *testing.T) {
 	cfg := Get()
 	assert.Equal(t, "http://localhost:8080", cfg.API.BaseURL)
 	assert.Equal(t, "60s", cfg.API.Timeout)
-	assert.Equal(t, "test-org", cfg.Workspace.DefaultOrg)
-	assert.Equal(t, "test-workspace", cfg.Workspace.DefaultWorkspace)
+	assert.Equal(t, "test-org", cfg.Project.DefaultOrg)
+	assert.Equal(t, "test-project", cfg.Project.DefaultProject)
 	assert.Equal(t, "acme-corp/production", GetAlias("prod"))
 
 	// Reset to defaults
@@ -319,8 +319,8 @@ func TestResetToDefaults(t *testing.T) {
 	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
 	assert.Equal(t, "30s", cfg.API.Timeout)
 	assert.Equal(t, "initiat-cli", cfg.ServiceName)
-	assert.Equal(t, "", cfg.Workspace.DefaultOrg)
-	assert.Equal(t, "", cfg.Workspace.DefaultWorkspace)
+	assert.Equal(t, "", cfg.Project.DefaultOrg)
+	assert.Equal(t, "", cfg.Project.DefaultProject)
 	assert.Equal(t, "", GetAlias("prod"))
 	assert.Empty(t, ListAliases())
 }

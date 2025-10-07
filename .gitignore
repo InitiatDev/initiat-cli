@@ -47,7 +47,7 @@ Godeps/
 *.bak
 *.local
 
-# Go workspace files
+# Go project files
 go.work
 go.work.sum
 

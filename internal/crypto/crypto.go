@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	WorkspaceKeySize     = 32 // 256 bits for XSalsa20Poly1305 (NaCl secretbox)
+	ProjectKeySize       = 32 // 256 bits for XSalsa20Poly1305 (NaCl secretbox)
 	X25519PrivateKeySize = 32 // X25519 private key size
 	SecretboxNonceSize   = 24 // XSalsa20Poly1305 nonce size (NaCl secretbox)
 	UserTokenSize        = 32 // User authentication token size
@@ -91,10 +91,22 @@ func Decode(encoded string) ([]byte, error) {
 	return base64.RawStdEncoding.DecodeString(encoded)
 }
 
-// WrapWorkspaceKey wraps a workspace key with a device public key
-func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, error) {
-	if len(workspaceKey) != WorkspaceKeySize {
-		return "", fmt.Errorf("invalid workspace key size: %d", len(workspaceKey))
+// deriveEncryptionKey derives an encryption key from a shared secret using HKDF
+// Note: Using "workspace" for backwards compatibility with existing encrypted data
+// Changing this salt would break decryption of existing project keys
+func deriveEncryptionKey(sharedSecret []byte) ([]byte, error) {
+	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
+	encryptionKey := make([]byte, ProjectKeySize)
+	if _, err := hkdf.Read(encryptionKey); err != nil {
+		return nil, fmt.Errorf("failed to derive encryption key: %w", err)
+	}
+	return encryptionKey, nil
+}
+
+// WrapProjectKey wraps a project key with a device public key
+func WrapProjectKey(projectKey []byte, devicePublicKey []byte) (string, error) {
+	if len(projectKey) != ProjectKeySize {
+		return "", fmt.Errorf("invalid project key size: %d", len(projectKey))
 	}
 
 	if len(devicePublicKey) != X25519PrivateKeySize {
@@ -116,10 +128,9 @@ func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, erro
 		return "", fmt.Errorf("failed to compute shared secret: %w", err)
 	}
 
-	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
-	encryptionKey := make([]byte, WorkspaceKeySize)
-	if _, err := hkdf.Read(encryptionKey); err != nil {
-		return "", fmt.Errorf("failed to derive encryption key: %w", err)
+	encryptionKey, err := deriveEncryptionKey(sharedSecret)
+	if err != nil {
+		return "", err
 	}
 
 	cipher, err := chacha20poly1305.New(encryptionKey)
@@ -133,7 +144,7 @@ func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, erro
 		return "", fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	ciphertext := cipher.Seal(nil, nonce, workspaceKey, nil) // #nosec G407 - nonce is randomly generated above
+	ciphertext := cipher.Seal(nil, nonce, projectKey, nil) // #nosec G407 - nonce is randomly generated above
 
 	wrapped := make([]byte, 0, 32+12+len(ciphertext))
 	wrapped = append(wrapped, ephemeralPublic...)
@@ -143,8 +154,8 @@ func WrapWorkspaceKey(workspaceKey []byte, devicePublicKey []byte) (string, erro
 	return Encode(wrapped), nil
 }
 
-// UnwrapWorkspaceKey unwraps a workspace key with a device private key
-func UnwrapWorkspaceKey(wrappedKey string, devicePrivateKey []byte) ([]byte, error) {
+// UnwrapProjectKey unwraps a project key with a device private key
+func UnwrapProjectKey(wrappedKey string, devicePrivateKey []byte) ([]byte, error) {
 	if len(devicePrivateKey) != X25519PrivateKeySize {
 		return nil, fmt.Errorf("invalid device private key size: %d", len(devicePrivateKey))
 	}
@@ -167,10 +178,9 @@ func UnwrapWorkspaceKey(wrappedKey string, devicePrivateKey []byte) ([]byte, err
 		return nil, fmt.Errorf("failed to compute shared secret: %w", err)
 	}
 
-	hkdf := hkdf.New(sha256.New, sharedSecret, []byte("initiat.wrap"), []byte("workspace"))
-	encryptionKey := make([]byte, WorkspaceKeySize)
-	if _, err := hkdf.Read(encryptionKey); err != nil {
-		return nil, fmt.Errorf("failed to derive encryption key: %w", err)
+	encryptionKey, err := deriveEncryptionKey(sharedSecret)
+	if err != nil {
+		return nil, err
 	}
 
 	cipher, err := chacha20poly1305.New(encryptionKey)
@@ -178,24 +188,24 @@ func UnwrapWorkspaceKey(wrappedKey string, devicePrivateKey []byte) ([]byte, err
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
-	workspaceKey, err := cipher.Open(nil, nonce, ciphertext, nil)
+	projectKey, err := cipher.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt workspace key: %w", err)
+		return nil, fmt.Errorf("failed to decrypt project key: %w", err)
 	}
 
-	if len(workspaceKey) != WorkspaceKeySize {
-		return nil, fmt.Errorf("invalid workspace key size after unwrap: %d", len(workspaceKey))
+	if len(projectKey) != ProjectKeySize {
+		return nil, fmt.Errorf("invalid project key size after unwrap: %d", len(projectKey))
 	}
 
-	return workspaceKey, nil
+	return projectKey, nil
 }
 
 // EncryptSecretValue encrypts a secret value using ChaCha20Poly1305
-func EncryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, error) {
-	if len(workspaceKey) != WorkspaceKeySize {
+func EncryptSecretValue(value string, projectKey []byte) ([]byte, []byte, error) {
+	if len(projectKey) != ProjectKeySize {
 		return nil, nil, fmt.Errorf(
-			"invalid workspace key size: %d bytes, expected %d bytes",
-			len(workspaceKey), WorkspaceKeySize)
+			"invalid project key size: %d bytes, expected %d bytes",
+			len(projectKey), ProjectKeySize)
 	}
 
 	var nonce [24]byte
@@ -204,7 +214,7 @@ func EncryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, erro
 	}
 
 	var key [32]byte
-	copy(key[:], workspaceKey)
+	copy(key[:], projectKey)
 
 	ciphertext := secretbox.Seal(nil, []byte(value), &nonce, &key)
 
@@ -212,11 +222,11 @@ func EncryptSecretValue(value string, workspaceKey []byte) ([]byte, []byte, erro
 }
 
 // DecryptSecretValue decrypts a secret value using ChaCha20Poly1305
-func DecryptSecretValue(ciphertext []byte, nonce []byte, workspaceKey []byte) (string, error) {
-	if len(workspaceKey) != WorkspaceKeySize {
+func DecryptSecretValue(ciphertext []byte, nonce []byte, projectKey []byte) (string, error) {
+	if len(projectKey) != ProjectKeySize {
 		return "", fmt.Errorf(
-			"invalid workspace key size: %d bytes, expected %d bytes",
-			len(workspaceKey), WorkspaceKeySize)
+			"invalid project key size: %d bytes, expected %d bytes",
+			len(projectKey), ProjectKeySize)
 	}
 
 	if len(nonce) != SecretboxNonceSize {
@@ -226,7 +236,7 @@ func DecryptSecretValue(ciphertext []byte, nonce []byte, workspaceKey []byte) (s
 	}
 
 	var key [32]byte
-	copy(key[:], workspaceKey)
+	copy(key[:], projectKey)
 
 	var nonceArray [24]byte
 	copy(nonceArray[:], nonce)

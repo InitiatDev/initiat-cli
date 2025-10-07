@@ -19,33 +19,33 @@ func TestDeviceRoutes(t *testing.T) {
 	assert.Equal(t, "/api/v1/devices", Devices)
 }
 
-func TestWorkspaceRoutes(t *testing.T) {
-	assert.Equal(t, "/api/v1/workspaces", Workspaces)
+func TestProjectRoutes(t *testing.T) {
+	assert.Equal(t, "/api/v1/projects", Projects)
 }
 
-func TestWorkspaceRoutes_InitializeKey(t *testing.T) {
-	route := Workspace.InitializeKey("acme-corp", "production")
-	assert.Equal(t, "/api/v1/workspaces/acme-corp/production/initialize", route)
+func TestProjectRoutes_InitializeKey(t *testing.T) {
+	route := Project.InitializeKey("acme-corp", "production")
+	assert.Equal(t, "/api/v1/projects/acme-corp/production/initialize", route)
 }
 
-func TestWorkspaceRoutes_GetBySlug(t *testing.T) {
-	route := Workspace.GetBySlug("acme-corp", "staging")
-	assert.Equal(t, "/api/v1/workspaces/acme-corp/staging", route)
+func TestProjectRoutes_GetBySlug(t *testing.T) {
+	route := Project.GetBySlug("acme-corp", "staging")
+	assert.Equal(t, "/api/v1/projects/acme-corp/staging", route)
 }
 
-func TestWorkspaceRoutes_Secrets(t *testing.T) {
-	route := Workspace.Secrets("my-org", "development")
-	assert.Equal(t, "/api/v1/workspaces/my-org/development/secrets", route)
+func TestProjectRoutes_Secrets(t *testing.T) {
+	route := Project.Secrets("my-org", "development")
+	assert.Equal(t, "/api/v1/projects/my-org/development/secrets", route)
 }
 
-func TestWorkspaceRoutes_SecretByKey(t *testing.T) {
-	route := Workspace.SecretByKey("acme-corp", "production", "API_KEY")
-	assert.Equal(t, "/api/v1/workspaces/acme-corp/production/secrets/API_KEY", route)
+func TestProjectRoutes_SecretByKey(t *testing.T) {
+	route := Project.SecretByKey("acme-corp", "production", "API_KEY")
+	assert.Equal(t, "/api/v1/projects/acme-corp/production/secrets/API_KEY", route)
 }
 
-func TestWorkspaceRoutes_InviteDevice(t *testing.T) {
-	route := Workspace.InviteDevice("my-org", "staging")
-	assert.Equal(t, "/api/v1/workspaces/my-org/staging/invite-device", route)
+func TestProjectRoutes_InviteDevice(t *testing.T) {
+	route := Project.InviteDevice("my-org", "staging")
+	assert.Equal(t, "/api/v1/projects/my-org/staging/invite-device", route)
 }
 
 func TestDeviceRoutes_GetByID(t *testing.T) {
@@ -68,7 +68,7 @@ func TestHTTPMethods(t *testing.T) {
 
 func TestPredefinedRoutes(t *testing.T) {
 	assert.Equal(t, Route{Method: POST, Path: "/api/v1/auth/login"}, LoginRoute)
-	assert.Equal(t, Route{Method: GET, Path: "/api/v1/workspaces"}, ListWorkspacesRoute)
+	assert.Equal(t, Route{Method: GET, Path: "/api/v1/projects"}, ListProjectsRoute)
 	assert.Equal(t, Route{Method: POST, Path: "/api/v1/devices"}, RegisterDeviceRoute)
 	assert.Equal(t, Route{Method: GET, Path: "/api/v1/devices"}, ListDevicesRoute)
 }
@@ -89,10 +89,10 @@ func TestBuildURL(t *testing.T) {
 			expected: "https://www.initiat.dev/api/v1/auth/login",
 		},
 		{
-			name:     "workspaces route",
+			name:     "projects route",
 			baseURL:  baseURL,
-			path:     Workspaces,
-			expected: "https://www.initiat.dev/api/v1/workspaces",
+			path:     Projects,
+			expected: "https://www.initiat.dev/api/v1/projects",
 		},
 		{
 			name:     "localhost development",
@@ -101,10 +101,10 @@ func TestBuildURL(t *testing.T) {
 			expected: "http://localhost:4000/api/v1/auth/login",
 		},
 		{
-			name:     "workspace initialize key",
+			name:     "project initialize key",
 			baseURL:  baseURL,
-			path:     Workspace.InitializeKey("acme-corp", "production"),
-			expected: "https://www.initiat.dev/api/v1/workspaces/acme-corp/production/initialize",
+			path:     Project.InitializeKey("acme-corp", "production"),
+			expected: "https://www.initiat.dev/api/v1/projects/acme-corp/production/initialize",
 		},
 	}
 
@@ -126,20 +126,20 @@ func TestRouteStruct(t *testing.T) {
 	assert.Equal(t, "/api/v1/auth/login", route.Path)
 }
 
-func TestWorkspaceRoutesWithDifferentSlugs(t *testing.T) {
+func TestProjectRoutesWithDifferentSlugs(t *testing.T) {
 	testCases := []struct {
-		orgSlug       string
-		workspaceSlug string
-		expected      string
+		orgSlug     string
+		projectSlug string
+		expected    string
 	}{
-		{"acme", "prod", "/api/v1/workspaces/acme/prod/initialize"},
-		{"my-company", "staging-env", "/api/v1/workspaces/my-company/staging-env/initialize"},
-		{"org123", "workspace456", "/api/v1/workspaces/org123/workspace456/initialize"},
+		{"acme", "prod", "/api/v1/projects/acme/prod/initialize"},
+		{"my-company", "staging-env", "/api/v1/projects/my-company/staging-env/initialize"},
+		{"org123", "project456", "/api/v1/projects/org123/project456/initialize"},
 	}
 
 	for _, tc := range testCases {
-		t.Run("workspace_"+tc.orgSlug+"_"+tc.workspaceSlug, func(t *testing.T) {
-			route := Workspace.InitializeKey(tc.orgSlug, tc.workspaceSlug)
+		t.Run("project_"+tc.orgSlug+"_"+tc.projectSlug, func(t *testing.T) {
+			route := Project.InitializeKey(tc.orgSlug, tc.projectSlug)
 			assert.Equal(t, tc.expected, route)
 		})
 	}

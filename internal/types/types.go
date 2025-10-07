@@ -34,7 +34,7 @@ type DeviceRegistrationResponse struct {
 	} `json:"device"`
 }
 
-type Workspace struct {
+type Project struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	Slug           string `json:"slug"`
@@ -50,30 +50,30 @@ type Workspace struct {
 	} `json:"organization"`
 }
 
-type ListWorkspacesResponse struct {
-	Workspaces []Workspace `json:"workspaces"`
+type ListProjectsResponse struct {
+	Projects []Project `json:"projects"`
 }
 
-type InitializeWorkspaceKeyRequest struct {
-	WrappedWorkspaceKey string `json:"wrapped_workspace_key"`
+type InitializeProjectKeyRequest struct {
+	WrappedProjectKey string `json:"wrapped_project_key"`
 }
 
-type InitializeWorkspaceKeyResponse struct {
-	Success   bool      `json:"success"`
-	Message   string    `json:"message"`
-	Workspace Workspace `json:"workspace"`
+type InitializeProjectKeyResponse struct {
+	Success bool    `json:"success"`
+	Message string  `json:"message"`
+	Project Project `json:"project"`
 }
 
-type GetWorkspaceKeyResponse struct {
-	WrappedWorkspaceKey string `json:"wrapped_workspace_key"`
-	KeyVersion          int    `json:"key_version"`
+type GetProjectKeyResponse struct {
+	WrappedProjectKey string `json:"wrapped_project_key"`
+	KeyVersion        int    `json:"key_version"`
 }
 
 type Secret struct {
 	ID              int    `json:"id"`
 	Key             string `json:"key"`
 	Version         int    `json:"version"`
-	WorkspaceID     int    `json:"workspace_id"`
+	ProjectID       int    `json:"project_id"`
 	CreatedByDevice struct {
 		ID       int    `json:"id"`
 		DeviceID string `json:"device_id"`
@@ -138,7 +138,7 @@ type DeviceApproval struct {
 		PublicKeyEd25519 string `json:"public_key_ed25519"`
 		PublicKeyX25519  string `json:"public_key_x25519"`
 	} `json:"device"`
-	WorkspaceMembership struct {
+	ProjectMembership struct {
 		ID     int    `json:"id"`
 		Role   string `json:"role"`
 		Status string `json:"status"`
@@ -148,7 +148,7 @@ type DeviceApproval struct {
 			Name    string `json:"name"`
 			Surname string `json:"surname"`
 		} `json:"user"`
-		Workspace struct {
+		Project struct {
 			ID           int    `json:"id"`
 			Name         string `json:"name"`
 			Slug         string `json:"slug"`
@@ -157,8 +157,8 @@ type DeviceApproval struct {
 				Name string `json:"name"`
 				Slug string `json:"slug"`
 			} `json:"organization"`
-		} `json:"workspace"`
-	} `json:"workspace_membership"`
+		} `json:"project"`
+	} `json:"project_membership"`
 	ApprovedByUser *struct {
 		ID      int    `json:"id"`
 		Email   string `json:"email"`
@@ -176,7 +176,7 @@ type GetDeviceApprovalResponse struct {
 }
 
 type ApproveDeviceRequest struct {
-	WrappedWorkspaceKey string `json:"wrapped_workspace_key"`
+	WrappedProjectKey string `json:"wrapped_project_key"`
 }
 
 type ApproveDeviceResponse struct {

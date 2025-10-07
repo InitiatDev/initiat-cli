@@ -11,37 +11,37 @@ const (
 const (
 	AuthLogin       = APIBasePath + "/auth/login"
 	Devices         = APIBasePath + "/devices"
-	Workspaces      = APIBasePath + "/workspaces"
+	Projects        = APIBasePath + "/projects"
 	DeviceApprovals = APIBasePath + "/device-approvals"
 )
 
-type WorkspaceRoutes struct{}
+type ProjectRoutes struct{}
 
-func (w WorkspaceRoutes) InitializeKey(orgSlug, workspaceSlug string) string {
-	return fmt.Sprintf("%s/%s/%s/initialize", Workspaces, orgSlug, workspaceSlug)
+func (w ProjectRoutes) InitializeKey(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/initialize", Projects, orgSlug, projectSlug)
 }
 
-func (w WorkspaceRoutes) GetBySlug(orgSlug, workspaceSlug string) string {
-	return fmt.Sprintf("%s/%s/%s", Workspaces, orgSlug, workspaceSlug)
+func (w ProjectRoutes) GetBySlug(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s", Projects, orgSlug, projectSlug)
 }
 
-func (w WorkspaceRoutes) Secrets(orgSlug, workspaceSlug string) string {
-	return fmt.Sprintf("%s/%s/%s/secrets", Workspaces, orgSlug, workspaceSlug)
+func (w ProjectRoutes) Secrets(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/secrets", Projects, orgSlug, projectSlug)
 }
 
-func (w WorkspaceRoutes) SecretByKey(orgSlug, workspaceSlug, secretKey string) string {
-	return fmt.Sprintf("%s/%s/%s/secrets/%s", Workspaces, orgSlug, workspaceSlug, secretKey)
+func (w ProjectRoutes) SecretByKey(orgSlug, projectSlug, secretKey string) string {
+	return fmt.Sprintf("%s/%s/%s/secrets/%s", Projects, orgSlug, projectSlug, secretKey)
 }
 
-func (w WorkspaceRoutes) InviteDevice(orgSlug, workspaceSlug string) string {
-	return fmt.Sprintf("%s/%s/%s/invite-device", Workspaces, orgSlug, workspaceSlug)
+func (w ProjectRoutes) InviteDevice(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/invite-device", Projects, orgSlug, projectSlug)
 }
 
-func (w WorkspaceRoutes) GetWorkspaceKey(orgSlug, workspaceSlug string) string {
-	return fmt.Sprintf("%s/%s/%s/workspace_key", Workspaces, orgSlug, workspaceSlug)
+func (w ProjectRoutes) GetProjectKey(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/project_key", Projects, orgSlug, projectSlug)
 }
 
-var Workspace = WorkspaceRoutes{}
+var Project = ProjectRoutes{}
 
 type DeviceRoutes struct{}
 
@@ -94,9 +94,9 @@ var (
 		Path:   AuthLogin,
 	}
 
-	ListWorkspacesRoute = Route{
+	ListProjectsRoute = Route{
 		Method: GET,
-		Path:   Workspaces,
+		Path:   Projects,
 	}
 
 	RegisterDeviceRoute = Route{
