@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-07
+
+### Changed
+- **BREAKING**: Renamed "workspace" terminology to "project" throughout the CLI
+  - All commands now use "project" instead of "workspace" for consistency
+  - `initiat workspace` commands are now `initiat project` commands
+  - Updated all documentation, help text, and examples
+  - Maintained backwards compatibility for existing encrypted data
+- **Enhanced Error Handling**: Improved error messages for API communication issues
+  - Better debugging information when API endpoints return non-JSON responses
+  - More descriptive error messages for authentication and device registration issues
+
+### Added
+- **Configuration Management**: New `initiat config reset` command
+  - Reset configuration to default values
+  - Clear all stored settings and return to initial state
+  - Useful for troubleshooting configuration issues
+
 ## [0.3.0] - 2025-10-05
 
 ### Added
