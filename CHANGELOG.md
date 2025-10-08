@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-10-08
+
+### Added
+- **Local Configuration Support**: New `.initiat` file for project-specific overrides
+  - Create `.initiat` files in project directories to override global config
+  - Supports organization and project context overrides
+  - Automatic detection and priority handling (command flags > local config > global config)
+  - Enhanced project context resolution with local config support
+- **Guided Project Setup**: New `initiat project setup` command
+  - Interactive project setup with smart defaults
+  - Prompts for organization (uses default if configured)
+  - Auto-detects project name from current directory
+  - Creates `.initiat` file with project context
+  - Handles remote project existence and key initialization
+  - Comprehensive error handling and user guidance
+- **Enhanced Project Management**: Improved project initialization workflow
+  - Better separation of concerns between command logic and business logic
+  - Comprehensive test coverage for project setup functionality
+  - Refactored code structure for better maintainability
+
+### Changed
+- **Configuration Priority**: Updated configuration resolution order
+  - Command-line flags take highest priority
+  - Local `.initiat` file takes second priority
+  - Global config defaults take third priority
+  - Environment variables take lowest priority
+- **Project Context Resolution**: Enhanced to support local configuration
+  - Improved error messages mentioning `.initiat` file option
+  - Better fallback handling when project context is missing
+
 ## [0.4.1] - 2025-10-07
 
 ### Changed

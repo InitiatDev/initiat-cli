@@ -2,8 +2,8 @@
 # Unified documentation structure with flexible content types
 
 metadata:
-  version: "1.0.0"
-  last_updated: "2024-01-15T10:30:00Z"
+  version: "0.5.0"
+  last_updated: "2025-10-08T19:00:00Z"
   author: "Initiat Team"
   description: "Complete CLI documentation for Initiat"
 
@@ -309,11 +309,11 @@ commands:
         required: false
     options:
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -349,6 +349,45 @@ commands:
       difficulty: "beginner"
       estimated_time: "1 minute"
 
+  project.setup:
+    id: "project.setup"
+    name: "setup"
+    category: "project"
+    description: "Set up a new project by creating a .initiat file and initializing the project"
+    usage: "initiat project setup"
+    arguments: []
+    options: []
+    examples:
+      - description: "Set up a new project"
+        command: "initiat project setup"
+    workflow_steps:
+      - "Creates a .initiat file in the current directory"
+      - "Prompts for organization (uses default if set)"
+      - "Asks for project name (defaults to current folder name)"
+      - "Sets the values in the .initiat file"
+      - "Checks if project exists remotely"
+      - "Initializes project key if project exists"
+      - "Provides guidance if project doesn't exist"
+    output: |
+      🚀 Setting up a new project...
+
+      🏢 Organization (default: my-company): 
+      📦 Project name (default: my-project): 
+      ✅ Created .initiat file with org: my-company, project: my-project
+      🔐 Project key initialized successfully!
+
+      🎉 Project setup complete!
+      📍 Project: my-company/my-project
+      📁 Local config: .initiat file created
+
+      Next steps:
+        • Add secrets: initiat secret set API_KEY --value your-secret
+        • List secrets: initiat secret list
+        • Invite team members: initiat project invite-device
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "2 minutes"
+
   secret.set:
     id: "secret.set"
     name: "set"
@@ -373,11 +412,11 @@ commands:
         description: "Overwrite existing secret without confirmation"
         required: false
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -429,11 +468,11 @@ commands:
         description: "Copy KEY=VALUE format to clipboard"
         required: false
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -479,11 +518,11 @@ commands:
     arguments: []
     options:
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -528,11 +567,11 @@ commands:
         description: "Skip confirmation prompt"
         required: false
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -576,11 +615,11 @@ commands:
         description: "Overwrite existing key without confirmation"
         required: false
       - name: "project-path"
-        short: "W"
+        short: "P"
         description: "Full project path (org/project) or alias"
         required: false
       - name: "project"
-        short: "w"
+        short: "p"
         description: "Project name (uses default org or --org)"
         required: false
       - name: "org"
@@ -1105,6 +1144,52 @@ guides:
       tags: ["configuration", "setup", "productivity"]
       order: 5
 
+  local_configuration:
+    id: "local_configuration"
+    title: "Local Configuration with .initiat Files"
+    type: "guide"
+    description: "Use .initiat files for project-specific configuration overrides"
+    difficulty: "beginner"
+    estimated_time: "5 minutes"
+    prerequisites: ["basic_understanding_of_initiat_cli"]
+    steps:
+      - step: 1
+        title: "Navigate to Project Directory"
+        command: "cd /path/to/your/project"
+        description: "Go to your project directory"
+        explanation: "Local configuration files are read from the current directory"
+      - step: 2
+        title: "Create .initiat File"
+        command: "initiat project setup"
+        description: "Use the guided setup to create .initiat file"
+        explanation: "This creates a .initiat file with your project context"
+      - step: 3
+        title: "Verify Local Configuration"
+        command: "cat .initiat"
+        description: "Check the contents of your .initiat file"
+        explanation: "The file should contain org and project settings"
+      - step: 4
+        title: "Test Local Configuration"
+        command: "initiat secret list"
+        description: "Test that local configuration is working"
+        explanation: "Commands should now use the local project context automatically"
+      - step: 5
+        title: "Override with Flags (Optional)"
+        command: "initiat secret list --project-path other-org/other-project"
+        description: "Override local config with command flags when needed"
+        explanation: "Command-line flags always take precedence over local configuration"
+    success_criteria:
+      - ".initiat file is created in project directory"
+      - "Commands use local project context automatically"
+      - "Can override local config with command flags when needed"
+    next_steps:
+      - "Share .initiat files with team members"
+      - "Add .initiat to version control (if appropriate)"
+      - "Set up local config for multiple projects"
+    metadata:
+      tags: ["local-config", "project-setup", "productivity"]
+      order: 6
+
   troubleshooting:
     id: "troubleshooting"
     title: "Troubleshooting"
@@ -1182,11 +1267,11 @@ reference:
           default: "initiat-cli"
           environment_variable: null
         - name: "project-path"
-          short: "W"
+          short: "P"
           description: "Full project path (org/project) or alias"
           environment_variable: null
         - name: "project"
-          short: "w"
+          short: "p"
           description: "Project name (uses default org or --org)"
           environment_variable: null
         - name: "org"
@@ -1202,7 +1287,13 @@ reference:
     description: "Different ways to specify project context in commands"
     content:
       methods:
-        - method: "Interactive Selection (New!)"
+        - method: "Local Configuration (.initiat file) (New!)"
+          command: "initiat secret list"
+          use_case: "When you have a .initiat file in your project directory"
+          output: |
+            # Commands automatically use local project context
+            # No prompts needed when .initiat file exists
+        - method: "Interactive Selection"
           command: "initiat secret list"
           use_case: "When you want to select from available projects interactively"
           output: |
@@ -1210,6 +1301,7 @@ reference:
             💡 You can specify project using:
                --project-path org/project
                --org org --project project
+               Create a .initiat file with org and project
                Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
             
             Available projects:
@@ -1234,6 +1326,14 @@ reference:
         - method: "Mixed short flags"
           command: "initiat secret list --org acme-corp -p production"
           use_case: "Combining short flags for org and project"
+      configuration_priority:
+        title: "Configuration Priority"
+        description: "Order of precedence for project context resolution"
+        order:
+          - "Command-line flags (highest priority)"
+          - "Local .initiat file"
+          - "Global configuration defaults"
+          - "Environment variables (lowest priority)"
     metadata:
       order: 2
 
