@@ -19,6 +19,7 @@ func GetProjectContext(projectPath, org, project string) (*config.ProjectContext
 	fmt.Println("💡 You can specify project using:")
 	fmt.Println("   --project-path org/project")
 	fmt.Println("   --org org --project project")
+	fmt.Println("   Create a .initiat file with org and project")
 	fmt.Println("   Or configure defaults with 'initiat config set org <org>' and " +
 		"'initiat config set project <project>'")
 	fmt.Println()

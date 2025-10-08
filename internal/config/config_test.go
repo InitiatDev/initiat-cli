@@ -290,7 +290,6 @@ func TestResetToDefaults(t *testing.T) {
 	err := InitConfig()
 	require.NoError(t, err)
 
-	// Set some custom values
 	err = Set("api.base_url", "http://localhost:8080")
 	require.NoError(t, err)
 	err = Set("api.timeout", "60s")
@@ -302,7 +301,6 @@ func TestResetToDefaults(t *testing.T) {
 	err = SetAlias("prod", "acme-corp/production")
 	require.NoError(t, err)
 
-	// Verify custom values are set
 	cfg := Get()
 	assert.Equal(t, "http://localhost:8080", cfg.API.BaseURL)
 	assert.Equal(t, "60s", cfg.API.Timeout)
@@ -310,11 +308,9 @@ func TestResetToDefaults(t *testing.T) {
 	assert.Equal(t, "test-project", cfg.Project.DefaultProject)
 	assert.Equal(t, "acme-corp/production", GetAlias("prod"))
 
-	// Reset to defaults
 	err = ResetToDefaults()
 	require.NoError(t, err)
 
-	// Verify all values are reset to defaults
 	cfg = Get()
 	assert.Equal(t, "https://www.initiat.dev", cfg.API.BaseURL)
 	assert.Equal(t, "30s", cfg.API.Timeout)
@@ -323,4 +319,210 @@ func TestResetToDefaults(t *testing.T) {
 	assert.Equal(t, "", cfg.Project.DefaultProject)
 	assert.Equal(t, "", GetAlias("prod"))
 	assert.Empty(t, ListAliases())
+}
+
+func TestFindLocalConfig_NoFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	localConfig, err := FindLocalConfig()
+	require.NoError(t, err)
+	assert.Nil(t, localConfig)
+}
+
+func TestFindLocalConfig_WithFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	initiatContent := `org: test-org
+project: test-project`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	localConfig, err := FindLocalConfig()
+	require.NoError(t, err)
+	require.NotNil(t, localConfig)
+	assert.Equal(t, "test-org", localConfig.Org)
+	assert.Equal(t, "test-project", localConfig.Project)
+}
+
+func TestFindLocalConfig_WithComments(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	initiatContent := `# This is a comment
+org: test-org
+
+# Another comment
+project: test-project
+# End comment`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	localConfig, err := FindLocalConfig()
+	require.NoError(t, err)
+	require.NotNil(t, localConfig)
+	assert.Equal(t, "test-org", localConfig.Org)
+	assert.Equal(t, "test-project", localConfig.Project)
+}
+
+func TestResolveProjectContext_WithLocalConfig(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	testDir := filepath.Join(tmpDir, "test-with-local-config")
+	err = os.MkdirAll(testDir, 0755)
+	require.NoError(t, err)
+
+	err = os.Chdir(testDir)
+	require.NoError(t, err)
+
+	err = InitConfig()
+	require.NoError(t, err)
+
+	initiatContent := `org: local-org
+project: local-project`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	ctx, err := ResolveProjectContext("", "", "")
+	require.NoError(t, err)
+	require.NotNil(t, ctx)
+	assert.Equal(t, "local-org", ctx.OrgSlug)
+	assert.Equal(t, "local-project", ctx.ProjectSlug)
+}
+
+func TestResolveProjectContext_LocalConfigPriority(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	testDir := filepath.Join(tmpDir, "test-local-config")
+	err = os.MkdirAll(testDir, 0755)
+	require.NoError(t, err)
+
+	err = os.Chdir(testDir)
+	require.NoError(t, err)
+
+	err = InitConfig()
+	require.NoError(t, err)
+
+	err = SetDefaultOrgSlug("global-org")
+	require.NoError(t, err)
+	err = SetDefaultProjectSlug("global-project")
+	require.NoError(t, err)
+
+	initiatContent := `org: local-org
+project: local-project`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	ctx, err := ResolveProjectContext("", "", "")
+	require.NoError(t, err)
+	require.NotNil(t, ctx)
+	assert.Equal(t, "local-org", ctx.OrgSlug)
+	assert.Equal(t, "local-project", ctx.ProjectSlug)
+}
+
+func TestResolveProjectContext_FlagsOverrideLocalConfig(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	testDir := filepath.Join(tmpDir, "test-flags-override")
+	err = os.MkdirAll(testDir, 0755)
+	require.NoError(t, err)
+
+	err = os.Chdir(testDir)
+	require.NoError(t, err)
+
+	err = InitConfig()
+	require.NoError(t, err)
+
+	initiatContent := `org: local-org
+project: local-project`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	ctx, err := ResolveProjectContext("", "flag-org", "flag-project")
+	require.NoError(t, err)
+	require.NotNil(t, ctx)
+	assert.Equal(t, "flag-org", ctx.OrgSlug)
+	assert.Equal(t, "flag-project", ctx.ProjectSlug)
+}
+
+func TestResolveProjectContext_IncompleteLocalConfig(t *testing.T) {
+	viper.Reset()
+
+	tmpDir := t.TempDir()
+
+	originalHome := os.Getenv("HOME")
+	_ = os.Setenv("HOME", tmpDir)
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
+
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(originalWd) }()
+
+	testDir := filepath.Join(tmpDir, "test-incomplete-config")
+	err = os.MkdirAll(testDir, 0755)
+	require.NoError(t, err)
+
+	err = os.Chdir(testDir)
+	require.NoError(t, err)
+
+	err = InitConfig()
+	require.NoError(t, err)
+
+	initiatContent := `org: local-org`
+	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	require.NoError(t, err)
+
+	ctx, err := ResolveProjectContext("", "", "")
+	require.Error(t, err)
+	assert.Nil(t, ctx)
+	assert.Contains(t, err.Error(), "no project context available")
 }

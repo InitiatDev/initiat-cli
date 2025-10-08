@@ -257,8 +257,6 @@ func (w ProjectContext) String() string {
 	return fmt.Sprintf("%s/%s", w.OrgSlug, w.ProjectSlug)
 }
 
-// ResolveProjectContext resolves project context based on priority:
-// 1. projectPath (full path or alias) 2. org + project 3. default org + project 4. full defaults
 func ResolveProjectContext(projectPath, org, project string) (*ProjectContext, error) {
 	if projectPath != "" {
 		if aliasPath := GetAlias(projectPath); aliasPath != "" {
@@ -296,6 +294,15 @@ func ResolveProjectContext(projectPath, org, project string) (*ProjectContext, e
 		}, nil
 	}
 
+	if localConfig, err := FindLocalConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read local config: %w", err)
+	} else if localConfig != nil && localConfig.Org != "" && localConfig.Project != "" {
+		return &ProjectContext{
+			OrgSlug:     localConfig.Org,
+			ProjectSlug: localConfig.Project,
+		}, nil
+	}
+
 	defaultOrg := GetDefaultOrgSlug()
 	defaultProject := GetDefaultProjectSlug()
 
@@ -309,13 +316,15 @@ func ResolveProjectContext(projectPath, org, project string) (*ProjectContext, e
 	switch {
 	case defaultOrg == "" && defaultProject == "":
 		return nil, fmt.Errorf("no project context available. Specify --project-path, --org and --project, " +
-			"or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'")
+			"create a .initiat file, or configure defaults with " +
+			"'initiat config set org <org>' and 'initiat config set project <project>'")
 	case defaultOrg == "":
 		return nil, fmt.Errorf("no organization context available. Specify --project-path, --org, " +
-			"or configure default with 'initiat config set org <org>'")
+			"create a .initiat file, or configure default with 'initiat config set org <org>'")
 	default:
 		return nil, fmt.Errorf("no project context available. Specify --project-path, --project, " +
-			"or configure default with 'initiat config set project <project>'")
+			"create a .initiat file, or configure default with " +
+			"'initiat config set project <project>'")
 	}
 }
 
@@ -370,6 +379,38 @@ func GetAllConfigKeys() []string {
 		keys[i] = key.Simplified
 	}
 	return keys
+}
+
+type LocalConfig struct {
+	Org     string `yaml:"org"`
+	Project string `yaml:"project"`
+}
+
+func FindLocalConfig() (*LocalConfig, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	localConfigPath := filepath.Join(wd, ".initiat")
+	if _, err := os.Stat(localConfigPath); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	localViper := viper.New()
+	localViper.SetConfigFile(localConfigPath)
+	localViper.SetConfigType("yaml")
+
+	if err := localViper.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read local config file: %w", err)
+	}
+
+	var localConfig LocalConfig
+	if err := localViper.Unmarshal(&localConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse local config file: %w", err)
+	}
+
+	return &localConfig, nil
 }
 
 func ResetToDefaults() error {
