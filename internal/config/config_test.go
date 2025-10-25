@@ -346,9 +346,14 @@ func TestFindLocalConfig_WithFile(t *testing.T) {
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
-	initiatContent := `org: test-org
+	initiatDir := filepath.Join(tmpDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `org: test-org
 project: test-project`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	localConfig, err := FindLocalConfig()
@@ -368,13 +373,18 @@ func TestFindLocalConfig_WithComments(t *testing.T) {
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
-	initiatContent := `# This is a comment
+	initiatDir := filepath.Join(tmpDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `# This is a comment
 org: test-org
 
 # Another comment
 project: test-project
 # End comment`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	localConfig, err := FindLocalConfig()
@@ -407,9 +417,14 @@ func TestResolveProjectContext_WithLocalConfig(t *testing.T) {
 	err = InitConfig()
 	require.NoError(t, err)
 
-	initiatContent := `org: local-org
+	initiatDir := filepath.Join(testDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `org: local-org
 project: local-project`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	ctx, err := ResolveProjectContext("", "", "")
@@ -447,9 +462,14 @@ func TestResolveProjectContext_LocalConfigPriority(t *testing.T) {
 	err = SetDefaultProjectSlug("global-project")
 	require.NoError(t, err)
 
-	initiatContent := `org: local-org
+	initiatDir := filepath.Join(testDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `org: local-org
 project: local-project`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	ctx, err := ResolveProjectContext("", "", "")
@@ -482,9 +502,14 @@ func TestResolveProjectContext_FlagsOverrideLocalConfig(t *testing.T) {
 	err = InitConfig()
 	require.NoError(t, err)
 
-	initiatContent := `org: local-org
+	initiatDir := filepath.Join(testDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `org: local-org
 project: local-project`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	ctx, err := ResolveProjectContext("", "flag-org", "flag-project")
@@ -517,8 +542,13 @@ func TestResolveProjectContext_IncompleteLocalConfig(t *testing.T) {
 	err = InitConfig()
 	require.NoError(t, err)
 
-	initiatContent := `org: local-org`
-	err = os.WriteFile(".initiat", []byte(initiatContent), 0600)
+	initiatDir := filepath.Join(testDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
+	require.NoError(t, err)
+
+	configContent := `org: local-org`
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	ctx, err := ResolveProjectContext("", "", "")

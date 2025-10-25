@@ -136,12 +136,18 @@ func CreateInitiatFile(orgSlug, projectSlug string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	initiatPath := filepath.Join(wd, ".initiat")
+	const initiatDirMode = 0755
+	initiatDir := filepath.Join(wd, ".initiat")
+	if err := os.MkdirAll(initiatDir, initiatDirMode); err != nil {
+		return fmt.Errorf("failed to create .initiat directory: %w", err)
+	}
+
+	configPath := filepath.Join(initiatDir, "config.yml")
 	content := fmt.Sprintf("org: %s\nproject: %s\n", orgSlug, projectSlug)
 
-	const initiatFileMode = 0644
-	// #nosec G306 - .initiat file contains only org and project names, not sensitive data
-	return os.WriteFile(initiatPath, []byte(content), initiatFileMode)
+	const configFileMode = 0644
+	// #nosec G306 - config.yml file contains only org and project names, not sensitive data
+	return os.WriteFile(configPath, []byte(content), configFileMode)
 }
 
 func CheckInitiatFileExists() (bool, error) {
@@ -150,13 +156,14 @@ func CheckInitiatFileExists() (bool, error) {
 		return false, fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	initiatPath := filepath.Join(wd, ".initiat")
-	_, err = os.Stat(initiatPath)
+	initiatDir := filepath.Join(wd, ".initiat")
+	configPath := filepath.Join(initiatDir, "config.yml")
+	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("failed to check .initiat file: %w", err)
+		return false, fmt.Errorf("failed to check .initiat/config.yml file: %w", err)
 	}
 	return true, nil
 }

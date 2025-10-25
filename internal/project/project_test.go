@@ -189,14 +189,15 @@ func TestCreateInitiatFile(t *testing.T) {
 		t.Fatalf("Failed to create .initiat file: %v", err)
 	}
 
-	initiatPath := filepath.Join(tempDir, ".initiat")
-	if _, err := os.Stat(initiatPath); os.IsNotExist(err) {
-		t.Error("Expected .initiat file to be created")
+	initiatDir := filepath.Join(tempDir, ".initiat")
+	configPath := filepath.Join(initiatDir, "config.yml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("Expected .initiat/config.yml file to be created")
 	}
 
-	content, err := os.ReadFile(initiatPath)
+	content, err := os.ReadFile(configPath)
 	if err != nil {
-		t.Fatalf("Failed to read .initiat file: %v", err)
+		t.Fatalf("Failed to read .initiat/config.yml file: %v", err)
 	}
 
 	expectedContent := "org: test-org\nproject: test-project\n"
@@ -213,24 +214,30 @@ func TestCheckInitiatFileExists(t *testing.T) {
 
 	exists, err := CheckInitiatFileExists()
 	if err != nil {
-		t.Fatalf("Failed to check .initiat file: %v", err)
+		t.Fatalf("Failed to check .initiat/config.yml file: %v", err)
 	}
 	if exists {
-		t.Error("Expected .initiat file not to exist")
+		t.Error("Expected .initiat/config.yml file not to exist")
 	}
 
-	initiatPath := filepath.Join(tempDir, ".initiat")
-	err = os.WriteFile(initiatPath, []byte("org: test-org\nproject: test-project\n"), 0644)
+	initiatDir := filepath.Join(tempDir, ".initiat")
+	err = os.MkdirAll(initiatDir, 0755)
 	if err != nil {
-		t.Fatalf("Failed to create .initiat file: %v", err)
+		t.Fatalf("Failed to create .initiat directory: %v", err)
+	}
+
+	configPath := filepath.Join(initiatDir, "config.yml")
+	err = os.WriteFile(configPath, []byte("org: test-org\nproject: test-project\n"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .initiat/config.yml file: %v", err)
 	}
 
 	exists, err = CheckInitiatFileExists()
 	if err != nil {
-		t.Fatalf("Failed to check .initiat file: %v", err)
+		t.Fatalf("Failed to check .initiat/config.yml file: %v", err)
 	}
 	if !exists {
-		t.Error("Expected .initiat file to exist")
+		t.Error("Expected .initiat/config.yml file to exist")
 	}
 }
 

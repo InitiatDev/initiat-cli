@@ -392,7 +392,9 @@ func FindLocalConfig() (*LocalConfig, error) {
 		return nil, fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	localConfigPath := filepath.Join(wd, ".initiat")
+	localConfigDir := filepath.Join(wd, ".initiat")
+	localConfigPath := filepath.Join(localConfigDir, "config.yml")
+
 	if _, err := os.Stat(localConfigPath); os.IsNotExist(err) {
 		return nil, nil
 	}
