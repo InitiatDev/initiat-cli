@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-10-26
+
+### Added
+- **Environment Management System**: New `initiat env` command suite for local environment management
+  - `initiat env init` - Initialize environment management in current project
+  - `initiat env list` - List available environments with sync status
+  - `initiat env switch <env>` - Switch active environment
+  - `initiat env current` - Show currently active environment
+  - `initiat env sync` - Sync secrets from remote to local environment
+- **Local Environment Storage**: Secure local environment management
+  - Environment-specific secret storage in `.initiat/environments/`
+  - Active environment tracking with symlinks (Unix) or files (Windows)
+  - Automatic `.gitignore` management for environment files
+- **Direnv Integration**: Automatic environment loading with direnv
+  - `initiat env init` generates `.envrc` files for automatic environment loading
+  - Cross-platform direnv detection and installation guidance
+  - Automatic environment variable loading when entering project directories
+
 ## [0.5.2] - 2025-10-26
 
 ### Fixed

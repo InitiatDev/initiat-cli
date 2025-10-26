@@ -2,8 +2,8 @@
 # Unified documentation structure with flexible content types
 
 metadata:
-  version: "0.5.0"
-  last_updated: "2025-10-08T19:00:00Z"
+  version: "0.6.0"
+  last_updated: "2025-10-26T19:00:00Z"
   author: "Initiat Team"
   description: "Complete CLI documentation for Initiat"
 
@@ -387,6 +387,162 @@ commands:
     metadata:
       difficulty: "beginner"
       estimated_time: "2 minutes"
+
+  env.init:
+    id: "env.init"
+    name: "init"
+    category: "env"
+    description: "Initialize environment management in the current project directory"
+    usage: "initiat env init"
+    arguments: []
+    options: []
+    examples:
+      - description: "Initialize environment management"
+        command: "initiat env init"
+    workflow_steps:
+      - "Creates .initiat directory structure for local environment management"
+      - "Sets up environment-specific secret storage"
+      - "Configures .gitignore to exclude environment files"
+      - "Generates .envrc file for automatic environment loading with direnv"
+    output: |
+      🔧 Initializing environment management...
+      📁 Creating .initiat directory structure...
+      🔒 Setting up secure environment storage...
+      📝 Configuring .gitignore for environment files...
+      ✅ Environment management initialized successfully!
+
+      💡 Next steps:
+        • Switch to an environment: initiat env switch <env>
+        • List available environments: initiat env list
+        • Sync secrets: initiat env sync
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
+
+  env.list:
+    id: "env.list"
+    name: "list"
+    category: "env"
+    description: "List all available environments with their sync status and last updated information"
+    usage: "initiat env list"
+    arguments: []
+    options: []
+    examples:
+      - description: "List all environments"
+        command: "initiat env list"
+    workflow_steps:
+      - "Shows all environments available in the project"
+      - "Displays sync status (whether secrets have been synced)"
+      - "Shows last sync time for each environment"
+      - "Indicates which environment is currently active"
+    output: |
+      🌍 Available Environments
+
+      Name        Status    Last Synced    Active
+      production  synced    2h ago         ✅
+      staging     synced    1d ago         
+      development synced    3h ago         
+
+      💡 Switch environments with: initiat env switch <env>
+      💡 Sync secrets with: initiat env sync
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  env.switch:
+    id: "env.switch"
+    name: "switch"
+    category: "env"
+    description: "Switch to a specific environment and update the active environment tracking"
+    usage: "initiat env switch <environment>"
+    arguments:
+      - name: "environment"
+        description: "Name of the environment to switch to"
+        required: true
+    options: []
+    examples:
+      - description: "Switch to production environment"
+        command: "initiat env switch production"
+      - description: "Switch to staging environment"
+        command: "initiat env switch staging"
+      - description: "Switch to development environment"
+        command: "initiat env switch development"
+    workflow_steps:
+      - "Updates the active environment tracking"
+      - "Creates environment-specific directory if needed"
+      - "Updates symlinks (Unix) or files (Windows) for environment tracking"
+      - "Shows confirmation of the switch"
+    output: |
+      🔄 Switching to environment 'production'...
+      ✅ Switched to environment 'production'
+
+      💡 Current environment: production
+      💡 Sync secrets with: initiat env sync
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  env.current:
+    id: "env.current"
+    name: "current"
+    category: "env"
+    description: "Show the currently active environment"
+    usage: "initiat env current"
+    arguments: []
+    options: []
+    examples:
+      - description: "Show current environment"
+        command: "initiat env current"
+    workflow_steps:
+      - "Displays the name of the currently active environment"
+      - "Shows when the environment was last switched"
+      - "Provides helpful next steps"
+    output: |
+      🌍 Current Environment: production
+      📅 Last switched: 2 hours ago
+
+      💡 Available commands:
+        • Switch environment: initiat env switch <env>
+        • List environments: initiat env list
+        • Sync secrets: initiat env sync
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+
+  env.sync:
+    id: "env.sync"
+    name: "sync"
+    category: "env"
+    description: "Sync secrets from the remote project to the local environment"
+    usage: "initiat env sync"
+    arguments: []
+    options: []
+    examples:
+      - description: "Sync secrets to current environment"
+        command: "initiat env sync"
+    workflow_steps:
+      - "Fetches all secrets from the remote project"
+      - "Stores them securely in the local environment directory"
+      - "Updates sync timestamps"
+      - "Shows summary of synced secrets"
+    output: |
+      🔄 Syncing secrets to environment 'production'...
+      📡 Fetching secrets from remote project...
+      🔒 Storing secrets securely in local environment...
+      ✅ Synced 5 secrets to environment 'production'
+
+      Synced secrets:
+        • API_KEY
+        • DB_PASSWORD
+        • JWT_SECRET
+        • REDIS_URL
+        • SMTP_PASSWORD
+
+      💡 Environment is now up to date
+      💡 Use 'initiat env current' to verify active environment
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1 minute"
 
   secret.set:
     id: "secret.set"
@@ -1189,6 +1345,58 @@ guides:
     metadata:
       tags: ["local-config", "project-setup", "productivity"]
       order: 6
+
+  environment_management:
+    id: "environment_management"
+    title: "Environment Management"
+    type: "workflow"
+    description: "Set up and manage local development environments with Initiat"
+    difficulty: "intermediate"
+    estimated_time: "15 minutes"
+    prerequisites: ["project_initialized", "secrets_available"]
+    steps:
+      - step: 1
+        title: "Initialize Environment Management"
+        command: "initiat env init"
+        description: "Set up environment management in your project"
+        explanation: "Creates the .initiat directory structure and configures gitignore"
+      - step: 2
+        title: "List Available Environments"
+        command: "initiat env list"
+        description: "See what environments are available"
+        explanation: "Shows all environments and their sync status"
+      - step: 3
+        title: "Switch to Development Environment"
+        command: "initiat env switch development"
+        description: "Switch to the development environment"
+        explanation: "Sets the active environment to development"
+      - step: 4
+        title: "Sync Development Secrets"
+        command: "initiat env sync"
+        description: "Sync secrets from remote to local development environment"
+        explanation: "Downloads and stores development secrets locally"
+      - step: 5
+        title: "Verify Environment Setup"
+        command: "initiat env current"
+        description: "Confirm the current environment"
+        explanation: "Shows which environment is currently active"
+      - step: 6
+        title: "Test Secret Access"
+        command: "initiat secret list"
+        description: "Verify secrets are accessible in the environment"
+        explanation: "Confirms that environment-specific secrets are available"
+    success_criteria:
+      - "Environment management is initialized"
+      - "Can switch between environments"
+      - "Secrets are synced to local environments"
+      - "Direnv integration is working (if installed)"
+    next_steps:
+      - "Set up direnv for automatic environment loading"
+      - "Configure CI/CD to use environment-specific secrets"
+      - "Train team on environment management workflow"
+    metadata:
+      tags: ["environment-management", "local-development", "direnv"]
+      order: 7
 
   troubleshooting:
     id: "troubleshooting"

@@ -8,6 +8,7 @@ This document provides comprehensive documentation for all Initiat CLI commands,
 - [Authentication Commands](#authentication-commands)
 - [Device Management](#device-management)
 - [Project Management](#project-management)
+- [Environment Management](#environment-management)
 - [Secret Management](#secret-management)
 - [Configuration Management](#configuration-management)
 - [Version Information](#version-information)
@@ -351,6 +352,206 @@ Next steps:
   • List secrets: initiat secret list
   • Invite devices: initiat project invite-device
 ```
+
+## Environment Management
+
+The Initiat CLI provides local environment management to help developers work with different environments (development, staging, production) locally while keeping secrets secure and organized.
+
+### `initiat env init`
+
+Initialize environment management in the current project directory.
+
+**What it does:**
+- Creates `.initiat` directory structure for local environment management
+- Sets up environment-specific secret storage
+- Configures `.gitignore` to exclude environment files
+- Generates `.envrc` file for automatic environment loading with direnv
+
+**Examples:**
+```bash
+# Initialize environment management
+initiat env init
+```
+
+**Output:**
+```
+🔧 Initializing environment management...
+📁 Creating .initiat directory structure...
+🔒 Setting up secure environment storage...
+📝 Configuring .gitignore for environment files...
+✅ Environment management initialized successfully!
+
+💡 Next steps:
+  • Switch to an environment: initiat env switch <env>
+  • List available environments: initiat env list
+  • Sync secrets: initiat env sync
+```
+
+### `initiat env list`
+
+List all available environments with their sync status and last updated information.
+
+**What it does:**
+- Shows all environments available in the project
+- Displays sync status (whether secrets have been synced)
+- Shows last sync time for each environment
+- Indicates which environment is currently active
+
+**Examples:**
+```bash
+# List all environments
+initiat env list
+```
+
+**Output:**
+```
+🌍 Available Environments
+
+Name        Status    Last Synced    Active
+production  synced    2h ago         ✅
+staging     synced    1d ago         
+development synced    3h ago         
+
+💡 Switch environments with: initiat env switch <env>
+💡 Sync secrets with: initiat env sync
+```
+
+### `initiat env switch <environment>`
+
+Switch to a specific environment and update the active environment tracking.
+
+**Arguments:**
+- `environment`: Name of the environment to switch to (required)
+
+**What it does:**
+- Updates the active environment tracking
+- Creates environment-specific directory if needed
+- Updates symlinks (Unix) or files (Windows) for environment tracking
+- Shows confirmation of the switch
+
+**Examples:**
+```bash
+# Switch to production environment
+initiat env switch production
+
+# Switch to staging environment
+initiat env switch staging
+
+# Switch to development environment
+initiat env switch development
+```
+
+**Output:**
+```
+🔄 Switching to environment 'production'...
+✅ Switched to environment 'production'
+
+💡 Current environment: production
+💡 Sync secrets with: initiat env sync
+```
+
+### `initiat env current`
+
+Show the currently active environment.
+
+**What it does:**
+- Displays the name of the currently active environment
+- Shows when the environment was last switched
+- Provides helpful next steps
+
+**Examples:**
+```bash
+# Show current environment
+initiat env current
+```
+
+**Output:**
+```
+🌍 Current Environment: production
+📅 Last switched: 2 hours ago
+
+💡 Available commands:
+  • Switch environment: initiat env switch <env>
+  • List environments: initiat env list
+  • Sync secrets: initiat env sync
+```
+
+### `initiat env sync`
+
+Sync secrets from the remote project to the local environment.
+
+**What it does:**
+- Fetches all secrets from the remote project
+- Stores them securely in the local environment directory
+- Updates sync timestamps
+- Shows summary of synced secrets
+
+**Examples:**
+```bash
+# Sync secrets to current environment
+initiat env sync
+```
+
+**Output:**
+```
+🔄 Syncing secrets to environment 'production'...
+📡 Fetching secrets from remote project...
+🔒 Storing secrets securely in local environment...
+✅ Synced 5 secrets to environment 'production'
+
+Synced secrets:
+  • API_KEY
+  • DB_PASSWORD
+  • JWT_SECRET
+  • REDIS_URL
+  • SMTP_PASSWORD
+
+💡 Environment is now up to date
+💡 Use 'initiat env current' to verify active environment
+```
+
+### Environment Directory Structure
+
+The CLI creates the following directory structure for environment management:
+
+```
+.initiat/
+├── environments/
+│   ├── production/
+│   │   └── secrets.env
+│   ├── staging/
+│   │   └── secrets.env
+│   └── development/
+│       └── secrets.env
+└── active
+```
+
+### Direnv Integration
+
+The CLI automatically generates `.envrc` files for seamless integration with direnv:
+
+**Generated `.envrc` content:**
+```bash
+# Generated by initiat env init
+# This file loads environment variables from the active environment
+
+if [ -f .initiat/environments/*/secrets.env ]; then
+  dotenv .initiat/environments/*/secrets.env
+fi
+```
+
+**Benefits:**
+- Automatic environment variable loading when entering the project directory
+- Cross-platform compatibility (Unix and Windows)
+- Secure local storage of environment-specific secrets
+- Integration with existing development workflows
+
+### Security Features
+
+- **Secure Storage**: All environment files use 600 permissions (owner read/write only)
+- **Git Integration**: Automatic `.gitignore` management to prevent accidental commits
+- **Path Validation**: Protection against directory traversal vulnerabilities
+- **Cross-Platform**: Symlink support on Unix, file-based tracking on Windows
 
 ## Secret Management
 
