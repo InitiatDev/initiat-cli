@@ -186,3 +186,21 @@ type ApproveDeviceResponse struct {
 type RejectDeviceResponse struct {
 	DeviceApproval DeviceApproval `json:"device_approval"`
 }
+
+type Environment struct {
+	ID           int      `json:"id"`
+	Name         string   `json:"name"`
+	Slug         string   `json:"slug"`
+	Description  string   `json:"description"`
+	ProjectID    int      `json:"project_id"`
+	SecretsCount int      `json:"secrets_count"`
+	Secrets      []Secret `json:"secrets"`
+}
+
+type ListEnvironmentsResponse struct {
+	Environments []Environment `json:"environments"`
+}
+
+type GetEnvironmentResponse struct {
+	Environment Environment `json:"environment"`
+}

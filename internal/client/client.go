@@ -330,3 +330,33 @@ func (c *Client) RejectDevice(approvalID string) (*types.DeviceApproval, error) 
 
 	return &rejectResp.DeviceApproval, nil
 }
+
+func (c *Client) ListEnvironments(orgSlug, projectSlug string) ([]types.Environment, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.Environments(orgSlug, projectSlug))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var envsResp types.ListEnvironmentsResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &envsResp); err != nil {
+		return nil, fmt.Errorf("list environments failed: %w", err)
+	}
+
+	return envsResp.Environments, nil
+}
+
+func (c *Client) GetEnvironment(orgSlug, projectSlug, envSlug string) (*types.Environment, error) {
+	url := routes.BuildURL(c.baseURL, routes.Project.EnvironmentBySlug(orgSlug, projectSlug, envSlug))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.GET, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var envResp types.GetEnvironmentResponse
+	if err := httputil.HandleGetResponse(statusCode, body, &envResp); err != nil {
+		return nil, fmt.Errorf("get environment failed: %w", err)
+	}
+
+	return &envResp.Environment, nil
+}

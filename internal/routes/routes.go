@@ -41,6 +41,14 @@ func (w ProjectRoutes) GetProjectKey(orgSlug, projectSlug string) string {
 	return fmt.Sprintf("%s/%s/%s/project_key", Projects, orgSlug, projectSlug)
 }
 
+func (w ProjectRoutes) Environments(orgSlug, projectSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/environments", Projects, orgSlug, projectSlug)
+}
+
+func (w ProjectRoutes) EnvironmentBySlug(orgSlug, projectSlug, envSlug string) string {
+	return fmt.Sprintf("%s/%s/%s/environments/%s", Projects, orgSlug, projectSlug, envSlug)
+}
+
 var Project = ProjectRoutes{}
 
 type DeviceRoutes struct{}
