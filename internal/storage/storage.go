@@ -45,7 +45,8 @@ func New() *Storage {
 	if cfg.ServiceName != "" && cfg.ServiceName != DefaultServiceName {
 		serviceName = cfg.ServiceName
 	} else {
-		serviceName = generateServiceNameFromURL(cfg.API.BaseURL)
+		apiURL := config.GetAPIBaseURL()
+		serviceName = generateServiceNameFromURL(apiURL)
 	}
 
 	return &Storage{

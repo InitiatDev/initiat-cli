@@ -166,8 +166,7 @@ func performDeviceRegistration(
 	fmt.Println("📡 Registering device with server...")
 	apiClient := client.New()
 
-	cfg := config.Get()
-	fmt.Printf("🔍 Debug: API URL: %s\n", cfg.API.BaseURL)
+	fmt.Printf("🔍 Debug: API URL: %s\n", config.GetAPIBaseURL())
 
 	token, err := storage.GetToken()
 	if err != nil {
