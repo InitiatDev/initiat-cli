@@ -72,14 +72,14 @@ func TestGetLastSyncTime(t *testing.T) {
 		t.Fatalf("CreateInitiatDir failed: %v", err)
 	}
 
-	before := time.Now()
+	before := time.Now().Add(-time.Second)
 
 	err = WriteSecrets("dev", "API_KEY=secret123")
 	if err != nil {
 		t.Fatalf("WriteSecrets failed: %v", err)
 	}
 
-	after := time.Now()
+	after := time.Now().Add(time.Second)
 
 	syncTime, err := GetLastSyncTime("dev")
 	if err != nil {
