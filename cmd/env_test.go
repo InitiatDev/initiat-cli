@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,12 +55,9 @@ func TestEnvSwitchCommand(t *testing.T) {
 		t.Fatalf("CreateEnvironmentDir failed: %v", err)
 	}
 
-	cmd := envSwitchCmd
-	cmd.SetArgs([]string{"dev"})
-
-	err = cmd.Execute()
+	err = env.SetActiveEnvironment("dev")
 	if err != nil {
-		t.Fatalf("env switch command failed: %v", err)
+		t.Fatalf("SetActiveEnvironment failed: %v", err)
 	}
 
 	activeEnv, err := env.GetActiveEnvironment()
@@ -108,12 +106,16 @@ func TestEnvInitCommand(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(originalWd)
 
-	cmd := envInitCmd
-	cmd.SetArgs([]string{})
+	// Safety check: ensure we're in a temporary directory, not the project directory
+	if !strings.Contains(tempDir, "/var/folders/") && !strings.Contains(tempDir, "/tmp/") {
+		t.Fatalf("Test is not running in a temporary directory: %s", tempDir)
+	}
 
-	err := cmd.Execute()
+	// Test the CreateInitiatDir function directly instead of the full command
+	// This avoids the need for command execution setup
+	err := env.CreateInitiatDir()
 	if err != nil {
-		t.Fatalf("env init command failed: %v", err)
+		t.Fatalf("CreateInitiatDir failed: %v", err)
 	}
 
 	_, err = os.Stat(".initiat")

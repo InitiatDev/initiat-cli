@@ -97,8 +97,9 @@ func GetEnvironmentSecrets(envSlug string) ([]types.Secret, error) {
 			continue
 		}
 
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
+		const expectedParts = 2
+		parts := strings.SplitN(line, "=", expectedParts)
+		if len(parts) != expectedParts {
 			continue
 		}
 

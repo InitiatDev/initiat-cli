@@ -235,16 +235,18 @@ func formatTimeAgo(t time.Time) string {
 	now := time.Now()
 	duration := now.Sub(t)
 
-	if duration < time.Minute {
+	switch {
+	case duration < time.Minute:
 		return "just now"
-	} else if duration < time.Hour {
+	case duration < time.Hour:
 		minutes := int(duration.Minutes())
 		return fmt.Sprintf("%dm ago", minutes)
-	} else if duration < 24*time.Hour {
+	case duration < 24*time.Hour:
 		hours := int(duration.Hours())
 		return fmt.Sprintf("%dh ago", hours)
-	} else {
-		days := int(duration.Hours() / 24)
+	default:
+		const hoursPerDay = 24
+		days := int(duration.Hours() / hoursPerDay)
 		return fmt.Sprintf("%dd ago", days)
 	}
 }

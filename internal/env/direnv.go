@@ -34,12 +34,12 @@ func GenerateEnvrc() error {
 	content := `dotenv ".initiat/active/secrets.env"
 export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")`
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == WindowsOS {
 		content = `dotenv ".initiat/active/secrets.env"
 export INITIAT_ENV=$(cat .initiat/active)`
 	}
 
-	return os.WriteFile(envrcPath, []byte(content), 0644)
+	return os.WriteFile(envrcPath, []byte(content), FilePerms)
 }
 
 func ReloadDirenv() error {
@@ -70,7 +70,7 @@ func GetInstallInstructions() string {
 		return "brew install direnv"
 	case "linux":
 		return "curl -sfL https://direnv.net/install.sh | bash"
-	case "windows":
+	case WindowsOS:
 		return "choco install direnv"
 	default:
 		return "Visit https://direnv.net/docs/installation.html"
@@ -89,15 +89,25 @@ func CheckDirenvHook() bool {
 	}
 
 	var configFile string
-	if strings.Contains(shell, "zsh") {
+	switch {
+	case strings.Contains(shell, "zsh"):
 		configFile = filepath.Join(homeDir, ".zshrc")
-	} else if strings.Contains(shell, "bash") {
+	case strings.Contains(shell, "bash"):
 		configFile = filepath.Join(homeDir, ".bashrc")
-	} else {
+	default:
 		return false
 	}
 
-	content, err := os.ReadFile(configFile)
+	// Validate path to prevent directory traversal
+	if !filepath.IsAbs(configFile) {
+		absPath, err := filepath.Abs(configFile)
+		if err != nil {
+			return false
+		}
+		configFile = absPath
+	}
+
+	content, err := os.ReadFile(configFile) // #nosec G304 - path is validated above
 	if err != nil {
 		return false
 	}

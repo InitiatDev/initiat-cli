@@ -7,9 +7,12 @@ import (
 	"strings"
 )
 
-const gitignoreEntry = `# Initiat
+const (
+	gitignoreEntry = `# Initiat
 .initiat/environments/*/secrets.env
 .initiat/active`
+	GitignorePerms = 0644
+)
 
 func EnsureGitignore() error {
 	gitignorePath := ".gitignore"
@@ -26,17 +29,21 @@ func EnsureGitignore() error {
 		return nil
 	}
 
-	file, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, GitignorePerms)
 	if err != nil {
 		return fmt.Errorf("failed to open .gitignore: %w", err)
 	}
 	defer file.Close()
 
 	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
-		file.WriteString("\n")
+		if _, err := file.WriteString("\n"); err != nil {
+			return fmt.Errorf("failed to write to .gitignore: %w", err)
+		}
 	}
 
-	file.WriteString("\n" + gitignoreEntry + "\n")
+	if _, err := file.WriteString("\n" + gitignoreEntry + "\n"); err != nil {
+		return fmt.Errorf("failed to write to .gitignore: %w", err)
+	}
 	return nil
 }
 

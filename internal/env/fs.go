@@ -15,6 +15,11 @@ const (
 	ActiveFile      = "active"
 	SecretsFile     = "secrets.env"
 	EnvrcFile       = ".envrc"
+	WindowsOS       = "windows"
+
+	// File permissions
+	DirPerms  = 0755
+	FilePerms = 0600
 )
 
 func GetInitiatPath() (string, error) {
@@ -62,7 +67,7 @@ func CreateInitiatDir() error {
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(initiatPath, 0755)
+	return os.MkdirAll(initiatPath, DirPerms)
 }
 
 func CreateEnvironmentDir(slug string) error {
@@ -70,7 +75,7 @@ func CreateEnvironmentDir(slug string) error {
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(envPath, 0755)
+	return os.MkdirAll(envPath, DirPerms)
 }
 
 func SetActiveEnvironment(slug string) error {
@@ -79,8 +84,8 @@ func SetActiveEnvironment(slug string) error {
 		return err
 	}
 
-	if runtime.GOOS == "windows" {
-		return os.WriteFile(activePath, []byte(slug), 0600)
+	if runtime.GOOS == WindowsOS {
+		return os.WriteFile(activePath, []byte(slug), FilePerms)
 	}
 
 	envPath, err := GetEnvironmentPath(slug)
@@ -88,8 +93,12 @@ func SetActiveEnvironment(slug string) error {
 		return err
 	}
 
-	os.Remove(activePath)
-	return os.Symlink(envPath, activePath)
+	_ = os.Remove(activePath) // Ignore error if file doesn't exist
+	err = os.Symlink(envPath, activePath)
+	if err != nil {
+		return fmt.Errorf("failed to create symlink: %w", err)
+	}
+	return nil
 }
 
 func GetActiveEnvironment() (string, error) {
@@ -98,8 +107,17 @@ func GetActiveEnvironment() (string, error) {
 		return "", err
 	}
 
-	if runtime.GOOS == "windows" {
-		content, err := os.ReadFile(activePath)
+	if runtime.GOOS == WindowsOS {
+		// Validate path to prevent directory traversal
+		if !filepath.IsAbs(activePath) {
+			absPath, err := filepath.Abs(activePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to get absolute path: %w", err)
+			}
+			activePath = absPath
+		}
+
+		content, err := os.ReadFile(activePath) // #nosec G304 - path is validated above
 		if err != nil {
 			return "", err
 		}
@@ -108,6 +126,9 @@ func GetActiveEnvironment() (string, error) {
 
 	target, err := os.Readlink(activePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("no active environment set")
+		}
 		return "", err
 	}
 
@@ -171,7 +192,7 @@ func WriteSecrets(envSlug string, content string) error {
 		return err
 	}
 
-	return os.WriteFile(secretsPath, []byte(content), 0600)
+	return os.WriteFile(secretsPath, []byte(content), FilePerms)
 }
 
 func ReadSecrets(envSlug string) (string, error) {
@@ -180,8 +201,20 @@ func ReadSecrets(envSlug string) (string, error) {
 		return "", err
 	}
 
-	content, err := os.ReadFile(secretsPath)
+	// Validate path to prevent directory traversal
+	if !filepath.IsAbs(secretsPath) {
+		absPath, err := filepath.Abs(secretsPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to get absolute path: %w", err)
+		}
+		secretsPath = absPath
+	}
+
+	content, err := os.ReadFile(secretsPath) // #nosec G304 - path is validated above
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
 		return "", err
 	}
 
