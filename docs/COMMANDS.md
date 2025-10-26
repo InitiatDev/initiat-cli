@@ -510,6 +510,34 @@ Synced secrets:
 💡 Use 'initiat env current' to verify active environment
 ```
 
+### `initiat env unset`
+
+Clear the currently active environment and reload direnv.
+
+**What it does:**
+- Checks if environment management is initialized
+- Verifies there's an active environment to unset
+- Removes the active environment tracking (symlink or file)
+- Runs direnv reload to clear environment variables
+- Shows confirmation of the unset operation
+
+**Examples:**
+```bash
+# Clear the active environment
+initiat env unset
+```
+
+**Output:**
+```
+🔄 Unsetting active environment...
+🧹 Clearing environment tracking...
+🔄 Running direnv reload...
+✅ Environment unset successfully!
+
+💡 No environment is currently active
+💡 Switch to an environment with: initiat env switch <env>
+```
+
 ### Environment Directory Structure
 
 The CLI creates the following directory structure for environment management:

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-10-26
+
+### Added
+- **Environment Unset Command**: New `initiat env unset` command to clear active environment
+  - Clears currently active environment and reloads direnv
+  - Cross-platform support (removes symlinks on Unix, clears file content on Windows)
+  - Automatic direnv reload after unsetting environment
+  - Graceful handling when no environment is currently set
+
+### Enhanced
+- **Environment Initialization**: Improved `initiat env init` command with enhanced setup
+  - Automatic direnv hook setup with shell type detection (zsh/bash)
+  - Interactive shell configuration with user prompts
+  - Automatic `.envrc` file creation and `direnv allow` execution
+  - Enhanced init completion verification (checks both directory and gitignore setup)
+- **Environment Sync Validation**: Added init completion check to `initiat env sync`
+  - Prevents sync operations before proper environment initialization
+  - Clear error messages guiding users to run `initiat env init` first
+- **Gitignore Management**: Updated to ignore entire environments folder
+  - Changed from `.initiat/environments/*/secrets.env` to `.initiat/environments/`
+  - More comprehensive environment file protection
+
+### Changed
+- **Error Message Formatting**: Standardized error message capitalization throughout CLI
+  - All error messages now use lowercase formatting for consistency
+  - Improved readability and adherence to Go error message conventions
+
 ## [0.6.0] - 2025-10-26
 
 ### Added

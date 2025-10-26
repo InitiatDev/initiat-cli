@@ -2,8 +2,8 @@
 # Unified documentation structure with flexible content types
 
 metadata:
-  version: "0.6.0"
-  last_updated: "2025-10-26T19:00:00Z"
+  version: "0.6.1"
+  last_updated: "2025-10-26T20:00:00Z"
   author: "Initiat Team"
   description: "Complete CLI documentation for Initiat"
 
@@ -543,6 +543,35 @@ commands:
     metadata:
       difficulty: "beginner"
       estimated_time: "1 minute"
+
+  env.unset:
+    id: "env.unset"
+    name: "unset"
+    category: "env"
+    description: "Clear the currently active environment and reload direnv"
+    usage: "initiat env unset"
+    arguments: []
+    options: []
+    examples:
+      - description: "Clear the active environment"
+        command: "initiat env unset"
+    workflow_steps:
+      - "Checks if environment management is initialized"
+      - "Verifies there's an active environment to unset"
+      - "Removes the active environment tracking (symlink or file)"
+      - "Runs direnv reload to clear environment variables"
+      - "Shows confirmation of the unset operation"
+    output: |
+      🔄 Unsetting active environment...
+      🧹 Clearing environment tracking...
+      🔄 Running direnv reload...
+      ✅ Environment unset successfully!
+
+      💡 No environment is currently active
+      💡 Switch to an environment with: initiat env switch <env>
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
 
   secret.set:
     id: "secret.set"
@@ -1385,11 +1414,17 @@ guides:
         command: "initiat secret list"
         description: "Verify secrets are accessible in the environment"
         explanation: "Confirms that environment-specific secrets are available"
+      - step: 7
+        title: "Clear Environment (Optional)"
+        command: "initiat env unset"
+        description: "Clear the active environment when done"
+        explanation: "Removes environment tracking and clears environment variables"
     success_criteria:
       - "Environment management is initialized"
       - "Can switch between environments"
       - "Secrets are synced to local environments"
       - "Direnv integration is working (if installed)"
+      - "Can clear environments when needed"
     next_steps:
       - "Set up direnv for automatic environment loading"
       - "Configure CI/CD to use environment-specific secrets"
