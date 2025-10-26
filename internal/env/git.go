@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/InitiatDev/initiat-cli/internal/git"
 )
 
 const (
@@ -14,18 +16,20 @@ const (
 	GitignorePerms = 0644
 )
 
+var gitHandler = git.NewHandler()
+
 func EnsureGitignore() error {
 	gitignorePath := ".gitignore"
 
-	content, err := os.ReadFile(gitignorePath)
+	content, err := gitHandler.ReadFile(gitignorePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("failed to read .gitignore: %w", err)
 		}
-		content = []byte{}
+		content = ""
 	}
 
-	if strings.Contains(string(content), "# Initiat") {
+	if strings.Contains(content, "# Initiat") {
 		return nil
 	}
 
@@ -35,7 +39,7 @@ func EnsureGitignore() error {
 	}
 	defer file.Close()
 
-	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
+	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 		if _, err := file.WriteString("\n"); err != nil {
 			return fmt.Errorf("failed to write to .gitignore: %w", err)
 		}
@@ -50,7 +54,7 @@ func EnsureGitignore() error {
 func CheckGitignore() (bool, error) {
 	gitignorePath := ".gitignore"
 
-	content, err := os.ReadFile(gitignorePath)
+	content, err := gitHandler.ReadFile(gitignorePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -58,7 +62,7 @@ func CheckGitignore() (bool, error) {
 		return false, fmt.Errorf("failed to read .gitignore: %w", err)
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == ".initiat/environments/*/secrets.env" || line == ".initiat/active" {
@@ -70,8 +74,7 @@ func CheckGitignore() (bool, error) {
 }
 
 func IsGitRepository() bool {
-	_, err := os.Stat(".git")
-	return err == nil
+	return gitHandler.IsGitRepository(".")
 }
 
 func GetGitignoreStatus() (string, error) {

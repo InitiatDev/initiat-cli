@@ -39,7 +39,7 @@ export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .in
 export INITIAT_ENV=$(cat .initiat/active)`
 	}
 
-	return os.WriteFile(envrcPath, []byte(content), FilePerms)
+	return fileHandler.WriteFile(envrcPath, content)
 }
 
 func ReloadDirenv() error {

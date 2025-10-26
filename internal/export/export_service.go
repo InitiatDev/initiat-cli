@@ -2,20 +2,22 @@ package export
 
 import (
 	"fmt"
-	"path/filepath"
+
+	"github.com/InitiatDev/initiat-cli/internal/file"
+	"github.com/InitiatDev/initiat-cli/internal/git"
 )
 
 type ExportService struct {
-	fileHandler   *FileHandler
-	gitHandler    *GitHandler
+	fileHandler   *file.Handler
+	gitHandler    *git.Handler
 	promptHandler *PromptHandler
 	forceOverride bool
 }
 
 func NewExportService(forceOverride bool) *ExportService {
 	return &ExportService{
-		fileHandler:   NewFileHandler(),
-		gitHandler:    NewGitHandler(),
+		fileHandler:   file.NewHandler(),
+		gitHandler:    git.NewHandler(),
 		promptHandler: NewPromptHandler(),
 		forceOverride: forceOverride,
 	}
@@ -84,7 +86,7 @@ func (e *ExportService) handleGitIgnore(filePath string) error {
 	}
 
 	if !e.gitHandler.IsFileIgnored(gitignoreContent, filePath, gitRoot) {
-		relativePath, err := filepath.Rel(gitRoot, filePath)
+		relativePath, err := e.fileHandler.GetRelativePath(gitRoot, filePath)
 		if err != nil {
 			return fmt.Errorf("❌ Failed to get relative path: %w", err)
 		}

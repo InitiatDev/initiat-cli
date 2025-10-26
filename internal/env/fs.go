@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/InitiatDev/initiat-cli/internal/file"
 )
 
 const (
@@ -16,18 +18,12 @@ const (
 	SecretsFile     = "secrets.env"
 	EnvrcFile       = ".envrc"
 	WindowsOS       = "windows"
-
-	// File permissions
-	DirPerms  = 0755
-	FilePerms = 0600
 )
 
+var fileHandler = file.NewHandler()
+
 func GetInitiatPath() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get working directory: %w", err)
-	}
-	return filepath.Join(wd, InitiatDir), nil
+	return fileHandler.GetProjectPath(InitiatDir)
 }
 
 func GetEnvironmentsPath() (string, error) {
@@ -35,7 +31,7 @@ func GetEnvironmentsPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(initiatPath, EnvironmentsDir), nil
+	return fileHandler.GetSubPath(initiatPath, EnvironmentsDir)
 }
 
 func GetActivePath() (string, error) {
@@ -43,7 +39,7 @@ func GetActivePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(initiatPath, ActiveFile), nil
+	return fileHandler.GetFilePath(initiatPath, ActiveFile)
 }
 
 func GetEnvironmentPath(slug string) (string, error) {
@@ -51,7 +47,7 @@ func GetEnvironmentPath(slug string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(envsPath, slug), nil
+	return fileHandler.GetSubPath(envsPath, slug)
 }
 
 func GetSecretsPath(envSlug string) (string, error) {
@@ -59,7 +55,7 @@ func GetSecretsPath(envSlug string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(envPath, SecretsFile), nil
+	return fileHandler.GetFilePath(envPath, SecretsFile)
 }
 
 func CreateInitiatDir() error {
@@ -67,7 +63,7 @@ func CreateInitiatDir() error {
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(initiatPath, DirPerms)
+	return fileHandler.CreateDirectory(initiatPath)
 }
 
 func CreateEnvironmentDir(slug string) error {
@@ -75,7 +71,7 @@ func CreateEnvironmentDir(slug string) error {
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(envPath, DirPerms)
+	return fileHandler.CreateDirectory(envPath)
 }
 
 func SetActiveEnvironment(slug string) error {
@@ -85,7 +81,7 @@ func SetActiveEnvironment(slug string) error {
 	}
 
 	if runtime.GOOS == WindowsOS {
-		return os.WriteFile(activePath, []byte(slug), FilePerms)
+		return fileHandler.WriteFile(activePath, slug)
 	}
 
 	envPath, err := GetEnvironmentPath(slug)
@@ -93,8 +89,7 @@ func SetActiveEnvironment(slug string) error {
 		return err
 	}
 
-	_ = os.Remove(activePath) // Ignore error if file doesn't exist
-	err = os.Symlink(envPath, activePath)
+	err = fileHandler.CreateSymlink(envPath, activePath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %w", err)
 	}
@@ -108,23 +103,14 @@ func GetActiveEnvironment() (string, error) {
 	}
 
 	if runtime.GOOS == WindowsOS {
-		// Validate path to prevent directory traversal
-		if !filepath.IsAbs(activePath) {
-			absPath, err := filepath.Abs(activePath)
-			if err != nil {
-				return "", fmt.Errorf("failed to get absolute path: %w", err)
-			}
-			activePath = absPath
-		}
-
-		content, err := os.ReadFile(activePath) // #nosec G304 - path is validated above
+		content, err := fileHandler.ReadFile(activePath)
 		if err != nil {
 			return "", err
 		}
-		return strings.TrimSpace(string(content)), nil
+		return strings.TrimSpace(content), nil
 	}
 
-	target, err := os.Readlink(activePath)
+	target, err := fileHandler.ReadSymlink(activePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", fmt.Errorf("no active environment set")
@@ -156,7 +142,8 @@ func ListLocalEnvironments() ([]EnvironmentInfo, error) {
 		}
 
 		envSlug := entry.Name()
-		secretsPath := filepath.Join(envsPath, envSlug, SecretsFile)
+		envPath := fileHandler.JoinPaths(envsPath, envSlug)
+		secretsPath, _ := fileHandler.GetFilePath(envPath, SecretsFile)
 
 		var info os.FileInfo
 		hasSecrets := false
@@ -192,7 +179,7 @@ func WriteSecrets(envSlug string, content string) error {
 		return err
 	}
 
-	return os.WriteFile(secretsPath, []byte(content), FilePerms)
+	return fileHandler.WriteFile(secretsPath, content)
 }
 
 func ReadSecrets(envSlug string) (string, error) {
@@ -201,16 +188,7 @@ func ReadSecrets(envSlug string) (string, error) {
 		return "", err
 	}
 
-	// Validate path to prevent directory traversal
-	if !filepath.IsAbs(secretsPath) {
-		absPath, err := filepath.Abs(secretsPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to get absolute path: %w", err)
-		}
-		secretsPath = absPath
-	}
-
-	content, err := os.ReadFile(secretsPath) // #nosec G304 - path is validated above
+	content, err := fileHandler.ReadFile(secretsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -218,7 +196,7 @@ func ReadSecrets(envSlug string) (string, error) {
 		return "", err
 	}
 
-	return string(content), nil
+	return content, nil
 }
 
 func LocalEnvironmentExists(slug string) bool {
