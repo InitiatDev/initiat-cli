@@ -25,10 +25,8 @@ type Client struct {
 }
 
 func New() *Client {
-	cfg := config.Get()
-
 	return &Client{
-		baseURL: cfg.API.BaseURL,
+		baseURL: config.GetAPIBaseURL(),
 		httpClient: &http.Client{
 			Timeout: defaultTimeoutSeconds * time.Second,
 		},

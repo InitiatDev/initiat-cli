@@ -188,6 +188,12 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 			key, strings.Join(config.GetAllConfigKeys(), ", "))
 	}
 
+	// Special handling for API URL to respect build tags
+	if key == "api.url" {
+		fmt.Printf("%s: %s\n", key, config.GetAPIBaseURL())
+		return nil
+	}
+
 	actualKey := config.MapSimplifiedKey(key)
 	value := viper.Get(actualKey)
 
@@ -204,7 +210,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	cfg := config.Get()
 
 	fmt.Println("Current configuration:")
-	fmt.Printf("  api.url: %s\n", cfg.API.BaseURL)
+	fmt.Printf("  api.url: %s\n", config.GetAPIBaseURL())
 	fmt.Printf("  api.timeout: %s\n", cfg.API.Timeout)
 	fmt.Printf("  service: %s\n", cfg.ServiceName)
 

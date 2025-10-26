@@ -14,8 +14,6 @@ const (
 	projectPathPartsExpected = 2
 )
 
-var defaultAPIBaseURL = "https://www.initiat.dev"
-
 type ConfigKey struct {
 	Simplified string
 	Actual     string
@@ -143,11 +141,6 @@ func GetDefaultOrgSlug() string {
 func GetDefaultProjectSlug() string {
 	cfg := Get()
 	return cfg.Project.DefaultProject
-}
-
-func GetAPIBaseURL() string {
-	cfg := Get()
-	return cfg.API.BaseURL
 }
 
 func GetAPITimeout() string {
