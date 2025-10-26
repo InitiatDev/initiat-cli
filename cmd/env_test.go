@@ -100,6 +100,89 @@ func TestEnvCurrentCommand(t *testing.T) {
 	}
 }
 
+func TestEnvUnsetCommand(t *testing.T) {
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	os.Chdir(tempDir)
+	defer os.Chdir(originalWd)
+
+	err := env.CreateInitiatDir()
+	if err != nil {
+		t.Fatalf("CreateInitiatDir failed: %v", err)
+	}
+
+	// Create .git directory and configure gitignore to make init complete
+	err = os.Mkdir(".git", 0755)
+	if err != nil {
+		t.Fatalf("Failed to create .git directory: %v", err)
+	}
+
+	err = env.EnsureGitignore()
+	if err != nil {
+		t.Fatalf("EnsureGitignore failed: %v", err)
+	}
+
+	err = env.CreateEnvironmentDir("dev")
+	if err != nil {
+		t.Fatalf("CreateEnvironmentDir failed: %v", err)
+	}
+
+	err = env.SetActiveEnvironment("dev")
+	if err != nil {
+		t.Fatalf("SetActiveEnvironment failed: %v", err)
+	}
+
+	// Verify environment is set
+	activeEnv, err := env.GetActiveEnvironment()
+	if err != nil {
+		t.Fatalf("GetActiveEnvironment failed: %v", err)
+	}
+	if activeEnv != "dev" {
+		t.Errorf("Expected active environment 'dev', got '%s'", activeEnv)
+	}
+
+	// Test the UnsetActiveEnvironment function directly
+	err = env.UnsetActiveEnvironment()
+	if err != nil {
+		t.Fatalf("UnsetActiveEnvironment failed: %v", err)
+	}
+
+	// Verify environment is unset
+	_, err = env.GetActiveEnvironment()
+	if err == nil {
+		t.Error("Expected GetActiveEnvironment to fail after unsetting")
+	}
+}
+
+func TestEnvUnsetCommandNoActiveEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	os.Chdir(tempDir)
+	defer os.Chdir(originalWd)
+
+	err := env.CreateInitiatDir()
+	if err != nil {
+		t.Fatalf("CreateInitiatDir failed: %v", err)
+	}
+
+	// Create .git directory and configure gitignore to make init complete
+	err = os.Mkdir(".git", 0755)
+	if err != nil {
+		t.Fatalf("Failed to create .git directory: %v", err)
+	}
+
+	err = env.EnsureGitignore()
+	if err != nil {
+		t.Fatalf("EnsureGitignore failed: %v", err)
+	}
+
+	// Test the UnsetActiveEnvironment function directly when no environment is set
+	err = env.UnsetActiveEnvironment()
+	if err != nil {
+		t.Fatalf("UnsetActiveEnvironment should not fail when no environment is set: %v", err)
+	}
+}
+
 func TestEnvInitCommand(t *testing.T) {
 	tempDir := t.TempDir()
 	originalWd, _ := os.Getwd()

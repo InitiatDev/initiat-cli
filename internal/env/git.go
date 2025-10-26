@@ -11,7 +11,7 @@ import (
 
 const (
 	gitignoreEntry = `# Initiat
-.initiat/environments/*/secrets.env
+.initiat/environments/
 .initiat/active`
 	GitignorePerms = 0644
 )
@@ -65,7 +65,7 @@ func CheckGitignore() (bool, error) {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == ".initiat/environments/*/secrets.env" || line == ".initiat/active" {
+		if line == ".initiat/environments/" || line == ".initiat/active" {
 			return true, nil
 		}
 	}

@@ -142,13 +142,13 @@ func checkExistingDevice(storage *storage.Storage) error {
 }
 
 func generateKeypairs() (ed25519.PublicKey, ed25519.PrivateKey, []byte, []byte, error) {
-	fmt.Println("🔑 Generating Ed25519 signing keypair...")
+	fmt.Println("Generating Ed25519 signing keypair...")
 	signingPublicKey, signingPrivateKey, err := generateEd25519Keypair()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to generate signing keypair: %w", err)
 	}
 
-	fmt.Println("🔒 Generating X25519 encryption keypair...")
+	fmt.Println("Generating X25519 encryption keypair...")
 	encryptionPublicKey, encryptionPrivateKey, err := generateX25519Keypair()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to generate encryption keypair: %w", err)
@@ -163,23 +163,23 @@ func performDeviceRegistration(
 	encryptionPublicKey []byte,
 	storage *storage.Storage,
 ) (*types.DeviceRegistrationResponse, error) {
-	fmt.Println("📡 Registering device with server...")
+	fmt.Println("Registering device with server...")
 	apiClient := client.New()
 
-	fmt.Printf("🔍 Debug: API URL: %s\n", config.GetAPIBaseURL())
+	fmt.Printf("Debug: API URL: %s\n", config.GetAPIBaseURL())
 
 	token, err := storage.GetToken()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authentication token: %w", err)
 	}
 
-	fmt.Printf("🔍 Debug: Using API client with token length: %d\n", len(token))
-	fmt.Printf("🔍 Debug: Ed25519 public key size: %d bytes\n", len(signingPublicKey))
-	fmt.Printf("🔍 Debug: X25519 public key size: %d bytes\n", len(encryptionPublicKey))
+	fmt.Printf("Debug: Using API client with token length: %d\n", len(token))
+	fmt.Printf("Debug: Ed25519 public key size: %d bytes\n", len(signingPublicKey))
+	fmt.Printf("Debug: X25519 public key size: %d bytes\n", len(encryptionPublicKey))
 
 	deviceResp, err := apiClient.RegisterDevice(token, deviceName, signingPublicKey, encryptionPublicKey)
 	if err != nil {
-		fmt.Printf("🔍 Debug: Registration error details: %v\n", err)
+		fmt.Printf("Debug: Registration error details: %v\n", err)
 		return nil, fmt.Errorf("❌ Device registration failed: %w", err)
 	}
 
@@ -192,7 +192,7 @@ func storeDeviceCredentials(
 	encryptionPrivateKey []byte,
 	deviceID string,
 ) error {
-	fmt.Println("🔐 Storing keys securely in system keychain...")
+	fmt.Println("Storing keys securely in system keychain...")
 
 	if err := storage.StoreSigningPrivateKey(signingPrivateKey); err != nil {
 		return fmt.Errorf("failed to store signing private key: %w", err)
@@ -225,7 +225,7 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("🔑 Registering device: %s\n", name)
+	fmt.Printf("Registering device: %s\n", name)
 
 	signingPublicKey, signingPrivateKey, encryptionPublicKey, encryptionPrivateKey, err := generateKeypairs()
 	if err != nil {
@@ -249,8 +249,8 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Device Name: %s\n", deviceResp.Device.Name)
 	fmt.Printf("Created: %s\n", deviceResp.Device.CreatedAt)
 	fmt.Println()
-	fmt.Println("🔐 Keys stored securely in system keychain")
-	fmt.Println("💡 Next: Initialize project keys with 'initiat project list'")
+	fmt.Println("Keys stored securely in system keychain")
+	fmt.Println("Next: Initialize project keys with 'initiat project list'")
 
 	return nil
 }
@@ -259,11 +259,11 @@ func runUnregisterDevice(cmd *cobra.Command, args []string) error {
 	storage := storage.New()
 
 	if !storage.HasDeviceID() && !storage.HasSigningPrivateKey() && !storage.HasEncryptionPrivateKey() {
-		fmt.Println("ℹ️  No device credentials found in local storage")
+		fmt.Println("No device credentials found in local storage")
 		return nil
 	}
 
-	fmt.Println("🔐 Clearing local device credentials...")
+	fmt.Println("Clearing local device credentials...")
 
 	err := storage.ClearDeviceCredentials()
 	if err != nil {
@@ -272,7 +272,7 @@ func runUnregisterDevice(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("✅ Device credentials cleared successfully!")
 	fmt.Println()
-	fmt.Println("💡 You can now register a new device with 'initiat device register <name>'")
+	fmt.Println("You can now register a new device with 'initiat device register <name>'")
 
 	return nil
 }
@@ -281,11 +281,11 @@ func runClearToken(cmd *cobra.Command, args []string) error {
 	storage := storage.New()
 
 	if !storage.HasToken() {
-		fmt.Println("ℹ️  No authentication token found in local storage")
+		fmt.Println("No authentication token found in local storage")
 		return nil
 	}
 
-	fmt.Println("🔐 Clearing authentication token...")
+	fmt.Println("Clearing authentication token...")
 
 	err := storage.DeleteToken()
 	if err != nil {
@@ -293,7 +293,7 @@ func runClearToken(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("✅ Authentication token cleared successfully!")
-	fmt.Println("💡 You will need to authenticate again for device registration")
+	fmt.Println("You will need to authenticate again for device registration")
 
 	return nil
 }
@@ -307,11 +307,11 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(approvals) == 0 {
-		fmt.Println("📋 No pending device approvals found")
+		fmt.Println("No pending device approvals found")
 		return nil
 	}
 
-	fmt.Printf("📋 Pending Device Approvals (%d)\n\n", len(approvals))
+	fmt.Printf("Pending Device Approvals (%d)\n\n", len(approvals))
 
 	t := table.New()
 	t.SetHeaders("ID", "User", "Device", "Project", "Requested")
@@ -339,8 +339,8 @@ func runListApprovals(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("💡 Use 'initiat device approve --all' to approve all pending devices")
-	fmt.Println("💡 Use 'initiat device approve --id <id>' to approve a specific device")
+	fmt.Println("Use 'initiat device approve --all' to approve all pending devices")
+	fmt.Println("Use 'initiat device approve --id <id>' to approve a specific device")
 
 	return nil
 }
@@ -395,7 +395,7 @@ func runShowApproval(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to get device approval: %w", err)
 	}
 
-	fmt.Println("📋 Device Approval Details")
+	fmt.Println("Device Approval Details")
 	fmt.Println()
 	fmt.Printf("User: %s %s (%s)\n",
 		approval.ProjectMembership.User.Name,
@@ -418,7 +418,7 @@ func runShowApproval(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("🔑 Device Public Keys:")
+	fmt.Println("Device Public Keys:")
 	fmt.Printf("  Ed25519: %s... (for signing)\n", truncateString(approval.Device.PublicKeyEd25519, maxKeyDisplayLength))
 	fmt.Printf("  X25519: %s... (for encryption)\n", truncateString(approval.Device.PublicKeyX25519, maxKeyDisplayLength))
 
@@ -433,11 +433,11 @@ func runApproveAllDevices(apiClient *client.Client) error {
 
 	pendingApprovals := filterPendingApprovals(approvals)
 	if len(pendingApprovals) == 0 {
-		fmt.Println("📋 No pending device approvals found")
+		fmt.Println("No pending device approvals found")
 		return nil
 	}
 
-	fmt.Printf("🔐 Approving all pending devices...\n\n")
+	fmt.Printf("Approving all pending devices...\n\n")
 	fmt.Printf("Found %d pending approvals:\n", len(pendingApprovals))
 
 	projectKeys := collectProjectKeys(pendingApprovals)
@@ -536,7 +536,7 @@ func runApproveSingleDevice(apiClient *client.Client, approvalID string) error {
 
 	projectSlug := buildProjectSlug(*approval)
 
-	fmt.Printf("🔐 Approving device for %s...\n", approval.Device.Name)
+	fmt.Printf("Approving device for %s...\n", approval.Device.Name)
 
 	projectKey, err := getProjectKeyForApproval(projectSlug)
 	if err != nil {
@@ -578,7 +578,7 @@ func runRejectAllDevices(apiClient *client.Client) error {
 	}
 
 	if len(pendingApprovals) == 0 {
-		fmt.Println("📋 No pending device approvals found")
+		fmt.Println("No pending device approvals found")
 		return nil
 	}
 

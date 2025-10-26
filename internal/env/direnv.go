@@ -29,14 +29,21 @@ func GetDirenvVersion() (string, error) {
 }
 
 func GenerateEnvrc() error {
-	envrcPath := EnvrcFile
+	return GenerateEnvrcToPath(EnvrcFile)
+}
 
-	content := `dotenv ".initiat/active/secrets.env"
+const (
+	envrcContentUnix = `dotenv ".initiat/active/secrets.env"
 export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")`
+	envrcContentWindows = `dotenv ".initiat/active/secrets.env"
+export INITIAT_ENV=$(cat .initiat/active)`
+)
+
+func GenerateEnvrcToPath(envrcPath string) error {
+	content := envrcContentUnix
 
 	if runtime.GOOS == WindowsOS {
-		content = `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(cat .initiat/active)`
+		content = envrcContentWindows
 	}
 
 	return fileHandler.WriteFile(envrcPath, content)
@@ -113,4 +120,74 @@ func CheckDirenvHook() bool {
 	}
 
 	return strings.Contains(string(content), "direnv")
+}
+
+func PromptForShellType() (string, error) {
+	fmt.Println("Which shell are you using?")
+	fmt.Println("1) zsh")
+	fmt.Println("2) bash")
+	fmt.Print("Enter your choice (1 or 2): ")
+
+	var input string
+	_, err := fmt.Scanln(&input)
+	if err != nil {
+		return "", err
+	}
+
+	switch input {
+	case "1":
+		return "zsh", nil
+	case "2":
+		return "bash", nil
+	default:
+		return "", fmt.Errorf("invalid choice: %s", input)
+	}
+}
+
+func WriteDirenvHookToShellConfig(shellType string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	var configFile string
+	var hookCommand string
+
+	switch shellType {
+	case "zsh":
+		configFile = filepath.Join(homeDir, ".zshrc")
+		hookCommand = `eval "$(direnv hook zsh)"`
+	case "bash":
+		configFile = filepath.Join(homeDir, ".bashrc")
+		hookCommand = `eval "$(direnv hook bash)"`
+	default:
+		return fmt.Errorf("unsupported shell type: %s", shellType)
+	}
+
+	content, err := fileHandler.ReadFile(configFile)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read %s: %w", configFile, err)
+	}
+
+	if os.IsNotExist(err) {
+		content = ""
+	}
+
+	if strings.Contains(content, "direnv hook") {
+		return nil
+	}
+
+	var newContent string
+	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+		newContent = content + "\n" + hookCommand + "\n"
+	} else {
+		newContent = content + hookCommand + "\n"
+	}
+
+	err = fileHandler.WriteFile(configFile, newContent)
+	if err != nil {
+		return fmt.Errorf("failed to write to %s: %w", configFile, err)
+	}
+
+	return nil
 }

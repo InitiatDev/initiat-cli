@@ -26,8 +26,8 @@ func TestEnsureGitignore(t *testing.T) {
 		t.Error("Expected Initiat entry in .gitignore")
 	}
 
-	if !strings.Contains(string(content), ".initiat/environments/*/secrets.env") {
-		t.Error("Expected secrets.env pattern in .gitignore")
+	if !strings.Contains(string(content), ".initiat/environments/") {
+		t.Error("Expected environments folder pattern in .gitignore")
 	}
 
 	if !strings.Contains(string(content), ".initiat/active") {

@@ -25,7 +25,7 @@ func NewExportService(forceOverride bool) *ExportService {
 
 func (e *ExportService) ExportSecret(key, value, filePath string) error {
 	if err := e.fileHandler.EnsureDirectory(filePath); err != nil {
-		return fmt.Errorf("❌ Failed to create directory: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	if err := e.handleFileExport(key, value, filePath); err != nil {
@@ -47,7 +47,7 @@ func (e *ExportService) handleFileExport(key, value, filePath string) error {
 	if e.fileHandler.FileExists(filePath) {
 		content, err = e.fileHandler.ReadFile(filePath)
 		if err != nil {
-			return fmt.Errorf("❌ Failed to read existing file: %w", err)
+			return fmt.Errorf("failed to read existing file: %w", err)
 		}
 	}
 
@@ -55,7 +55,7 @@ func (e *ExportService) handleFileExport(key, value, filePath string) error {
 
 	if keyExists {
 		if !e.forceOverride && !e.promptHandler.ConfirmOverwrite(key) {
-			fmt.Println("❌ Export cancelled.")
+			fmt.Println("Export cancelled.")
 			return nil
 		}
 		content = e.fileHandler.UpdateKeyInContent(content, key, value, keyIndex)
@@ -64,7 +64,7 @@ func (e *ExportService) handleFileExport(key, value, filePath string) error {
 	}
 
 	if err := e.fileHandler.WriteFile(filePath, content); err != nil {
-		return fmt.Errorf("❌ Failed to write file: %w", err)
+		return fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func (e *ExportService) handleGitIgnore(filePath string) error {
 
 	gitignoreContent, err := e.gitHandler.ReadGitignore(gitRoot)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to read .gitignore: %w", err)
+		return fmt.Errorf("failed to read .gitignore: %w", err)
 	}
 
 	if gitignoreContent == "" {
@@ -88,12 +88,12 @@ func (e *ExportService) handleGitIgnore(filePath string) error {
 	if !e.gitHandler.IsFileIgnored(gitignoreContent, filePath, gitRoot) {
 		relativePath, err := e.fileHandler.GetRelativePath(gitRoot, filePath)
 		if err != nil {
-			return fmt.Errorf("❌ Failed to get relative path: %w", err)
+			return fmt.Errorf("failed to get relative path: %w", err)
 		}
 
 		if e.promptHandler.ConfirmGitignore(relativePath) {
 			if err := e.gitHandler.AddToGitignore(gitRoot, filePath); err != nil {
-				return fmt.Errorf("❌ Failed to update .gitignore: %w", err)
+				return fmt.Errorf("failed to update .gitignore: %w", err)
 			}
 			fmt.Printf("✅ Added '%s' to .gitignore\n", relativePath)
 		}

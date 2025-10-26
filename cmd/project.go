@@ -68,7 +68,7 @@ func init() {
 }
 
 func runProjectList(cmd *cobra.Command, args []string) error {
-	fmt.Println("🔍 Fetching projects...")
+	fmt.Println("Fetching projects...")
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -117,7 +117,7 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	}
 
 	if hasUninitialized {
-		fmt.Println("\n💡 Initialize keys for projects marked \"No\" using:")
+		fmt.Println("\nInitialize keys for projects marked \"No\" using:")
 		fmt.Println("   initiat project init <org-slug/project-slug>")
 	}
 
@@ -138,7 +138,7 @@ func runProjectInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔐 Initializing project key for \"%s\"...\n", projectCtx.String())
+	fmt.Printf("Initializing project key for \"%s\"...\n", projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -160,14 +160,14 @@ func runProjectInit(cmd *cobra.Command, args []string) error {
 
 func checkProjectInitStatus(project *types.Project) bool {
 	if project.KeyInitialized {
-		fmt.Println("ℹ️ Project key already initialized on server")
+		fmt.Println("Project key already initialized on server")
 		return false
 	}
 	return true
 }
 
 func runProjectSetup(cmd *cobra.Command, args []string) error {
-	fmt.Println("🚀 Setting up a new project...")
+	fmt.Println("Setting up a new project...")
 	fmt.Println()
 
 	exists, err := project.CheckInitiatFileExists()
@@ -177,12 +177,12 @@ func runProjectSetup(cmd *cobra.Command, args []string) error {
 
 	if exists {
 		fmt.Println("⚠️  A .initiat file already exists in this directory.")
-		fmt.Print("❓ Do you want to overwrite it? (y/N): ")
+		fmt.Print("Do you want to overwrite it? (y/N): ")
 		var response string
 		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(strings.TrimSpace(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("❌ Setup cancelled")
+			fmt.Println("Setup cancelled")
 			return nil
 		}
 	}
@@ -215,25 +215,25 @@ func runProjectSetup(cmd *cobra.Command, args []string) error {
 
 	if result.Success {
 		if result.KeyInitialized {
-			fmt.Println("🔐 Project key initialized successfully!")
+			fmt.Println("Project key initialized successfully!")
 		} else {
 			fmt.Printf("❌ %s\n", result.Message)
 			fmt.Println()
-			fmt.Println("💡 To create a new project:")
+			fmt.Println("To create a new project:")
 			fmt.Println("   1. Visit https://www.initiat.dev")
 			fmt.Println("   2. Create the project in your organization")
 			fmt.Println("   3. Run this setup command again")
 			fmt.Println()
 			fmt.Println("✅ Local .initiat file has been created.")
-			fmt.Println("🔄 Run 'initiat project setup' again after creating the project remotely.")
+			fmt.Println("Run 'initiat project setup' again after creating the project remotely.")
 			return nil
 		}
 	}
 
 	fmt.Println()
-	fmt.Println("🎉 Project setup complete!")
-	fmt.Printf("📍 Project: %s/%s\n", orgSlug, projectSlug)
-	fmt.Println("📁 Local config: .initiat file created")
+	fmt.Println("Project setup complete!")
+	fmt.Printf("Project: %s/%s\n", orgSlug, projectSlug)
+	fmt.Println("Local config: .initiat file created")
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Println("  • Add secrets: initiat secret set API_KEY --value your-secret")

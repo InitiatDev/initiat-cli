@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	InitiatDir      = ".initiat"
-	EnvironmentsDir = "environments"
-	ActiveFile      = "active"
-	SecretsFile     = "secrets.env"
-	EnvrcFile       = ".envrc"
-	WindowsOS       = "windows"
+	InitiatDir          = ".initiat"
+	EnvironmentsDir     = "environments"
+	ActiveFile          = "active"
+	SecretsFile         = "secrets.env"
+	EnvrcFile           = ".envrc"
+	WindowsOS           = "windows"
+	GitignoreConfigured = "configured"
 )
 
 var fileHandler = file.NewHandler()
@@ -92,6 +93,25 @@ func SetActiveEnvironment(slug string) error {
 	err = fileHandler.CreateSymlink(envPath, activePath)
 	if err != nil {
 		return fmt.Errorf("failed to create symlink: %w", err)
+	}
+	return nil
+}
+
+func UnsetActiveEnvironment() error {
+	activePath, err := GetActivePath()
+	if err != nil {
+		return err
+	}
+
+	if runtime.GOOS == WindowsOS {
+		// On Windows, write empty string to clear the active environment
+		return fileHandler.WriteFile(activePath, "")
+	}
+
+	// On Unix-like systems, remove the symlink
+	err = fileHandler.RemoveFile(activePath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove active environment symlink: %w", err)
 	}
 	return nil
 }
@@ -206,4 +226,23 @@ func LocalEnvironmentExists(slug string) bool {
 	}
 	_, err = os.Stat(envPath)
 	return err == nil
+}
+
+func IsInitCompleted() bool {
+	initiatPath, err := GetInitiatPath()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(initiatPath)
+	if err != nil {
+		return false
+	}
+
+	// Check if gitignore is properly configured
+	gitStatus, err := GetGitignoreStatus()
+	if err != nil {
+		return false
+	}
+
+	return gitStatus == GitignoreConfigured
 }

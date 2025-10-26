@@ -49,7 +49,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("✅ Login successful! Registration token expires in 15 minutes.")
-	fmt.Println("💡 Next: Register this device with 'initiat device register <name>'")
+	fmt.Println("Next: Register this device with 'initiat device register <name>'")
 
 	return nil
 }

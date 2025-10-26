@@ -329,8 +329,8 @@ func EnsureConfigFileExists() error {
 
 	configFile := filepath.Join(home, ".initiat", "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		fmt.Printf("📁 Config file not found at %s\n", configFile)
-		fmt.Print("❓ Create configuration file? (y/N): ")
+		fmt.Printf("Config file not found at %s\n", configFile)
+		fmt.Print("Create configuration file? (y/N): ")
 
 		var response string
 		_, _ = fmt.Scanln(&response)

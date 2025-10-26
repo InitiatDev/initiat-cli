@@ -110,11 +110,11 @@ var envSwitchCmd = &cobra.Command{
 				fmt.Printf("⚠️  direnv reload failed: %v\n", err)
 				fmt.Printf("   Run 'direnv allow' to enable the environment\n")
 			} else {
-				fmt.Printf("✔ switched to \"%s\"\n", envSlug)
+				fmt.Printf("Switched to \"%s\"\n", envSlug)
 			}
 		} else {
 			fmt.Printf("⚠️  direnv not installed. Install with: %s\n", env.GetInstallInstructions())
-			fmt.Printf("✔ switched to \"%s\" (run 'direnv allow' after installing direnv)\n", envSlug)
+			fmt.Printf("Switched to \"%s\" (run 'direnv allow' after installing direnv)\n", envSlug)
 		}
 
 		return nil
@@ -126,6 +126,10 @@ var envSyncCmd = &cobra.Command{
 	Short: "Sync secrets from cloud",
 	Long:  `Sync secrets from Initiat Cloud to local environment(s).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !env.IsInitCompleted() {
+			return fmt.Errorf("initiat environment not initialized. Run 'initiat env init' first")
+		}
+
 		projectCtx, err := GetProjectContext()
 		if err != nil {
 			return fmt.Errorf("failed to get project context: %w", err)
@@ -145,14 +149,14 @@ var envSyncCmd = &cobra.Command{
 				return fmt.Errorf("failed to sync environment %s: %w", envSlug, err)
 			}
 
-			fmt.Printf("✔ synced environment '%s'\n", envSlug)
+			fmt.Printf("Synced environment '%s'\n", envSlug)
 		} else {
 			err = env.SyncAllEnvironments(projectCtx.OrgSlug, projectCtx.ProjectSlug)
 			if err != nil {
 				return fmt.Errorf("failed to sync environments: %w", err)
 			}
 
-			fmt.Printf("✔ synced all environments\n")
+			fmt.Printf("Synced all environments\n")
 		}
 
 		return nil
@@ -175,6 +179,49 @@ var envCurrentCmd = &cobra.Command{
 	},
 }
 
+var envUnsetCmd = &cobra.Command{
+	Use:   "unset",
+	Short: "Unset the active environment",
+	Long:  `Clear the currently active environment and reload direnv.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if !env.IsInitCompleted() {
+			return fmt.Errorf("initiat environment not initialized. Run 'initiat env init' first")
+		}
+
+		// Check if there's an active environment to unset
+		activeEnv, err := env.GetActiveEnvironment()
+		if err != nil {
+			fmt.Println("No active environment to unset")
+			return nil
+		}
+
+		err = env.UnsetActiveEnvironment()
+		if err != nil {
+			return fmt.Errorf("failed to unset active environment: %w", err)
+		}
+
+		fmt.Printf("Unset active environment: %s\n", activeEnv)
+
+		if env.CheckDirenvInstalled() {
+			fmt.Println("→ refreshing .envrc")
+			fmt.Println("→ direnv reload")
+
+			err = env.ReloadDirenv()
+			if err != nil {
+				fmt.Printf("⚠️  direnv reload failed: %v\n", err)
+				fmt.Printf("   Run 'direnv allow' to enable the environment\n")
+			} else {
+				fmt.Println("Environment unset successfully")
+			}
+		} else {
+			fmt.Printf("⚠️  direnv not installed. Install with: %s\n", env.GetInstallInstructions())
+			fmt.Println("Environment unset (run 'direnv allow' after installing direnv)")
+		}
+
+		return nil
+	},
+}
+
 var envInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize environment setup",
@@ -185,7 +232,7 @@ var envInitCmd = &cobra.Command{
 			return fmt.Errorf("failed to create .initiat directory: %w", err)
 		}
 
-		fmt.Println("✔ Created .initiat directory")
+		fmt.Println("Created .initiat directory")
 
 		gitStatus, err := env.GetGitignoreStatus()
 		if err != nil {
@@ -199,10 +246,10 @@ var envInitCmd = &cobra.Command{
 				if err != nil {
 					fmt.Printf("⚠️  Failed to update .gitignore: %v\n", err)
 				} else {
-					fmt.Println("✔ Updated .gitignore")
+					fmt.Println("Updated .gitignore")
 				}
 			case "configured":
-				fmt.Println("✔ .gitignore already configured")
+				fmt.Println(".gitignore already configured")
 			}
 		}
 
@@ -217,14 +264,44 @@ var envInitCmd = &cobra.Command{
 			return nil
 		}
 
-		fmt.Printf("✔ direnv installed: %s\n", version)
+		fmt.Printf("direnv installed: %s\n", version)
 
 		if !env.CheckDirenvHook() {
 			fmt.Println("⚠️  direnv hook not found in shell configuration")
-			fmt.Println("   Add 'eval \"$(direnv hook zsh)\"' to your ~/.zshrc")
-			fmt.Println("   Or 'eval \"$(direnv hook bash)\"' to your ~/.bashrc")
+			fmt.Println("   Let me help you set it up...")
+
+			shellType, err := env.PromptForShellType()
+			if err != nil {
+				return fmt.Errorf("failed to get shell type: %w", err)
+			}
+
+			err = env.WriteDirenvHookToShellConfig(shellType)
+			if err != nil {
+				return fmt.Errorf("failed to write direnv hook to shell config: %w", err)
+			}
+
+			fmt.Printf("✅ Added direnv hook to ~/.%src\n", shellType)
+			fmt.Printf("   Please restart your shell or run 'source ~/.%src' to activate\n", shellType)
 		} else {
-			fmt.Println("✔ direnv hook configured")
+			fmt.Println("direnv hook configured")
+		}
+
+		err = env.GenerateEnvrc()
+		if err != nil {
+			return fmt.Errorf("failed to create .envrc file: %w", err)
+		}
+
+		fmt.Println("Created .envrc file")
+
+		if env.CheckDirenvInstalled() {
+			fmt.Println("Running 'direnv allow'...")
+			err = env.AllowDirenv()
+			if err != nil {
+				fmt.Printf("⚠️  direnv allow failed: %v\n", err)
+				fmt.Println("   You may need to run 'direnv allow' manually")
+			} else {
+				fmt.Println("✅ direnv allow completed")
+			}
 		}
 
 		return nil
@@ -256,6 +333,7 @@ func init() {
 	envCmd.AddCommand(envSwitchCmd)
 	envCmd.AddCommand(envSyncCmd)
 	envCmd.AddCommand(envCurrentCmd)
+	envCmd.AddCommand(envUnsetCmd)
 	envCmd.AddCommand(envInitCmd)
 
 	envSyncCmd.Flags().String("env", "", "Sync specific environment")

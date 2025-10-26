@@ -138,7 +138,7 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔐 Setting secret '%s' in project %s...\n", key, projectCtx.String())
+	fmt.Printf("Setting secret '%s' in project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -150,14 +150,14 @@ func runSecretSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to get project key: %w", err)
 	}
 
-	fmt.Println("🔒 Encrypting secret value...")
+	fmt.Println("Encrypting secret value...")
 
 	encryptedValue, nonce, err := encryptSecretValue(value, projectKey)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to encrypt secret: %w", err)
 	}
 
-	fmt.Println("📡 Uploading encrypted secret to server...")
+	fmt.Println("Uploading encrypted secret to server...")
 
 	c := client.New()
 	secret, err := c.SetSecret(
@@ -230,7 +230,7 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔍 Getting secret '%s' from project %s...\n", key, projectCtx.String())
+	fmt.Printf("Getting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -248,7 +248,7 @@ func runSecretGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to get secret: %w", err)
 	}
 
-	fmt.Println("🔓 Decrypting secret value...")
+	fmt.Println("Decrypting secret value...")
 
 	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, projectKey)
 	if err != nil {
@@ -291,11 +291,11 @@ func copySecretToClipboard(key, value string, copyToClip, copyKeyValue bool) err
 
 	if copyToClip {
 		clipboard.Write(clipboard.FmtText, []byte(value))
-		fmt.Println("📋 Secret value copied to clipboard")
+		fmt.Println("Secret value copied to clipboard")
 	} else if copyKeyValue {
 		keyValue := fmt.Sprintf("%s=%s", key, value)
 		clipboard.Write(clipboard.FmtText, []byte(keyValue))
-		fmt.Println("📋 KEY=VALUE format copied to clipboard")
+		fmt.Println("KEY=VALUE format copied to clipboard")
 	}
 
 	return nil
@@ -307,7 +307,7 @@ func runSecretList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("🔍 Listing secrets in project %s...\n", projectCtx.String())
+	fmt.Printf("Listing secrets in project %s...\n", projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -353,12 +353,12 @@ func runSecretDelete(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(strings.TrimSpace(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("❌ Deletion cancelled.")
+			fmt.Println("Deletion cancelled.")
 			return nil
 		}
 	}
 
-	fmt.Printf("🗑️  Deleting secret '%s' from project %s...\n", key, projectCtx.String())
+	fmt.Printf("Deleting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -398,7 +398,7 @@ func runSecretExport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("🔍 Getting secret '%s' from project %s...\n", key, projectCtx.String())
+	fmt.Printf("Getting secret '%s' from project %s...\n", key, projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
@@ -416,7 +416,7 @@ func runSecretExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ Failed to get secret: %w", err)
 	}
 
-	fmt.Println("🔓 Decrypting secret value...")
+	fmt.Println("Decrypting secret value...")
 
 	decryptedValue, err := decryptSecretValue(secretData.EncryptedValue, secretData.Nonce, projectKey)
 	if err != nil {

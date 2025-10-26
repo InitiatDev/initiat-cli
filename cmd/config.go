@@ -159,7 +159,7 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	value := args[1]
 
 	if !config.IsValidConfigKey(key) {
-		return fmt.Errorf("❌ Unknown configuration key: %s\nValid keys: %s",
+		return fmt.Errorf("unknown configuration key: %s\nValid keys: %s",
 			key, strings.Join(config.GetAllConfigKeys(), ", "))
 	}
 
@@ -169,11 +169,11 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 	actualKey := config.MapSimplifiedKey(key)
 	if err := config.Set(actualKey, value); err != nil {
-		return fmt.Errorf("❌ Failed to set configuration: %w", err)
+		return fmt.Errorf("failed to set configuration: %w", err)
 	}
 
 	if err := config.Save(); err != nil {
-		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
 	fmt.Printf("✅ Set %s = %s\n", key, value)
@@ -184,7 +184,7 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 
 	if !config.IsValidConfigKey(key) {
-		return fmt.Errorf("❌ Unknown configuration key: %s\nValid keys: %s",
+		return fmt.Errorf("unknown configuration key: %s\nValid keys: %s",
 			key, strings.Join(config.GetAllConfigKeys(), ", "))
 	}
 
@@ -252,11 +252,11 @@ func runConfigClear(cmd *cobra.Command, args []string) error {
 
 	actualKey := config.MapSimplifiedKey(key)
 	if err := config.Set(actualKey, ""); err != nil {
-		return fmt.Errorf("❌ Failed to clear configuration: %w", err)
+		return fmt.Errorf("failed to clear configuration: %w", err)
 	}
 
 	if err := config.Save(); err != nil {
-		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
 	fmt.Printf("✅ Cleared %s\n", key)
@@ -274,22 +274,22 @@ func runConfigClearAll() error {
 	response = strings.ToLower(strings.TrimSpace(response))
 
 	if response != "y" && response != yesResponse {
-		fmt.Println("❌ Clear all cancelled")
+		fmt.Println("Clear all cancelled")
 		return nil
 	}
 
 	for _, key := range config.ConfigKeys {
 		if err := config.Set(key.Actual, key.Default); err != nil {
-			return fmt.Errorf("❌ Failed to reset %s: %w", key.Simplified, err)
+			return fmt.Errorf("failed to reset %s: %w", key.Simplified, err)
 		}
 	}
 
 	if err := config.Set("aliases", make(map[string]string)); err != nil {
-		return fmt.Errorf("❌ Failed to reset aliases: %w", err)
+		return fmt.Errorf("failed to reset aliases: %w", err)
 	}
 
 	if err := config.Save(); err != nil {
-		return fmt.Errorf("❌ Failed to save configuration: %w", err)
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
 	fmt.Println("✅ All configuration cleared and reset to defaults")
@@ -301,12 +301,12 @@ func runConfigAliasSet(cmd *cobra.Command, args []string) error {
 	projectPath := args[1]
 
 	if !strings.Contains(projectPath, "/") {
-		return fmt.Errorf("❌ Project path must be in format 'org/project', got: %s", projectPath)
+		return fmt.Errorf("project path must be in format 'org/project', got: %s", projectPath)
 	}
 
 	parts := strings.Split(projectPath, "/")
 	if len(parts) != projectPathPartsExpected {
-		return fmt.Errorf("❌ Project path must be in format 'org/project', got: %s", projectPath)
+		return fmt.Errorf("project path must be in format 'org/project', got: %s", projectPath)
 	}
 
 	if err := config.EnsureConfigFileExists(); err != nil {
@@ -314,7 +314,7 @@ func runConfigAliasSet(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := config.SetAlias(alias, projectPath); err != nil {
-		return fmt.Errorf("❌ Failed to set alias: %w", err)
+		return fmt.Errorf("failed to set alias: %w", err)
 	}
 
 	fmt.Printf("✅ Set alias '%s' = %s\n", alias, projectPath)
@@ -326,7 +326,7 @@ func runConfigAliasGet(cmd *cobra.Command, args []string) error {
 	path := config.GetAlias(alias)
 
 	if path == "" {
-		fmt.Printf("❌ Alias '%s' not found\n", alias)
+		fmt.Printf("Alias '%s' not found\n", alias)
 		return nil
 	}
 
@@ -339,7 +339,7 @@ func runConfigAliasList(cmd *cobra.Command, args []string) error {
 
 	if len(aliases) == 0 {
 		fmt.Println("No project aliases configured")
-		fmt.Println("💡 Set an alias with: initiat config alias set <alias> <org/project>")
+		fmt.Println("Set an alias with: initiat config alias set <alias> <org/project>")
 		return nil
 	}
 
@@ -359,7 +359,7 @@ func runConfigAliasRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := config.RemoveAlias(alias); err != nil {
-		return fmt.Errorf("❌ Failed to remove alias: %w", err)
+		return fmt.Errorf("failed to remove alias: %w", err)
 	}
 
 	fmt.Printf("✅ Removed alias '%s'\n", alias)
@@ -373,12 +373,12 @@ func runConfigReset(cmd *cobra.Command, args []string) error {
 	response = strings.ToLower(strings.TrimSpace(response))
 
 	if response != "y" && response != yesResponse {
-		fmt.Println("❌ Reset cancelled")
+		fmt.Println("Reset cancelled")
 		return nil
 	}
 
 	if err := config.ResetToDefaults(); err != nil {
-		return fmt.Errorf("❌ Failed to reset configuration: %w", err)
+		return fmt.Errorf("failed to reset configuration: %w", err)
 	}
 
 	fmt.Println("✅ Configuration reset to defaults")
