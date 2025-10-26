@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-10-26
+
+### Fixed
+- **Build Tag Separation**: Fixed dev and production builds to use separate storage keys
+  - Dev builds (`make build-dev`) now use isolated storage from production builds
+  - Prevents accidental device unregistration when using dev builds
+  - Dev builds always point to localhost:4000 regardless of configuration
+  - Production builds continue to use configured API endpoints
+
+### Changed
+- **API URL Resolution**: Updated all components to use build-tag-aware API URL resolution
+  - Client, storage, and config commands now respect build tags
+  - Ensures consistent API endpoint usage across all components
+
 ## [0.5.1] - 2025-10-25
 
 ### Changed
