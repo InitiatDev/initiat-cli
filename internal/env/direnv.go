@@ -33,10 +33,14 @@ func GenerateEnvrc() error {
 }
 
 const (
-	envrcContentUnix = `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")`
-	envrcContentWindows = `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(cat .initiat/active)`
+	envrcContentUnix = `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+fi`
+	envrcContentWindows = `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(cat .initiat/active)
+fi`
 )
 
 func GenerateEnvrcToPath(envrcPath string) error {

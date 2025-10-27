@@ -47,12 +47,16 @@ func TestGenerateEnvrc(t *testing.T) {
 		t.Fatalf("Failed to read .envrc: %v", err)
 	}
 
-	expectedContent := `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")`
+	expectedContent := `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+fi`
 
 	if runtime.GOOS == "windows" {
-		expectedContent = `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(cat .initiat/active)`
+		expectedContent = `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(cat .initiat/active)
+fi`
 	}
 
 	if string(content) != expectedContent {
@@ -108,12 +112,16 @@ func TestGenerateEnvrcToPath(t *testing.T) {
 		t.Fatalf("Failed to read custom .envrc: %v", err)
 	}
 
-	expectedContent := `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")`
+	expectedContent := `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+fi`
 
 	if runtime.GOOS == "windows" {
-		expectedContent = `dotenv ".initiat/active/secrets.env"
-export INITIAT_ENV=$(cat .initiat/active)`
+		expectedContent = `if [ -e ".initiat/active" ]; then
+  dotenv ".initiat/active/secrets.env"
+  export INITIAT_ENV=$(cat .initiat/active)
+fi`
 	}
 
 	if string(content) != expectedContent {
