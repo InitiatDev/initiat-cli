@@ -14,6 +14,8 @@ require (
 	golang.org/x/crypto v0.42.0
 )
 
+require github.com/expr-lang/expr v1.17.6 // indirect
+
 require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
