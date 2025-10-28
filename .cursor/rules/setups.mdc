@@ -1,0 +1,490 @@
+---
+alwaysApply: false
+---
+Perfect. Here’s the **fully rewritten developer-facing documentation page** for
+`.initiat/setup.yml` — **version 1.1a**, the local-execution schema with separate, composable runtime steps (no `with_erlang` coupling).
+This version is complete and copy-paste ready for your repo at:
+
+```
+docs/setup-yaml.md
+```
+
+---
+
+# `.initiat/setup.yml` Reference — v1.1a (Local Execution)
+
+> Declarative specification for initializing a development environment using the Initiat CLI.
+> Designed for **local execution** — assumes you are already in the repository root and that a checked-in setup file exists at `.initiat/setup.yml`.
+
+---
+
+## 🧭 Table of Contents
+
+1. [Overview](#overview)
+2. [File Location](#file-location)
+3. [Top-Level Structure](#top-level-structure)
+4. [Phases](#phases)
+5. [Step Structure](#step-structure)
+6. [Conditions DSL](#conditions-dsl)
+7. [Actions](#actions)
+8. [Environment & Secrets](#environment--secrets)
+9. [Defaults & Overrides](#defaults--overrides)
+10. [Retries & Timeouts](#retries--timeouts)
+11. [Matrix Gating](#matrix-gating)
+12. [Validation Rules](#validation-rules)
+13. [Examples](#examples)
+14. [Anti-Patterns](#anti-patterns)
+15. [Versioning](#versioning)
+16. [CLI Behavior Summary](#cli-behavior-summary)
+
+---
+
+## Overview
+
+`.initiat/setup.yml` describes everything required to bring a repository from “nothing but Initiat installed” to a fully working local environment.
+
+It defines:
+
+* which tools/runtimes to install,
+* how to configure or seed services,
+* how to verify correctness,
+* and how to print helpful follow-up instructions.
+
+Execution is **idempotent**, **secure**, and **portable** across macOS, Linux, and Windows.
+
+---
+
+## File Location
+
+| Property     | Value                                |
+| ------------ | ------------------------------------ |
+| **Path**     | `.initiat/setup.yml`                 |
+| **Format**   | YAML 1.2                             |
+| **Encoding** | UTF-8                                |
+| **Executor** | `initiat setup run` (from repo root) |
+
+---
+
+## Top-Level Structure
+
+```yaml
+version: 1
+name: "My Project Setup"
+description: "Zero-to-ready dev environment"
+
+matrix:
+  os: [macos, linux, windows]
+  arch: [x86_64, arm64]
+
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+
+env:
+  PROJECT_NAME: "myproject"
+  secrets: [DATABASE_URL, OPENAI_API_KEY]
+
+bootstrap:
+  - ...steps...
+provision:
+  - ...steps...
+setup:
+  - ...steps...
+verify:
+  - ...steps...
+post:
+  - ...steps...
+```
+
+**Rules**
+
+* `version` is required.
+* Unknown top-level keys → error.
+* Empty or missing phases are skipped.
+
+---
+
+## Phases
+
+| Phase         | Purpose                                                                  |
+| ------------- | ------------------------------------------------------------------------ |
+| **bootstrap** | Guarantee base system prerequisites (package manager, Git, build tools). |
+| **provision** | Install language runtimes, databases, and system services.               |
+| **setup**     | Fetch or build project dependencies, run migrations, seed data.          |
+| **verify**    | Assert the environment works (commands, HTTP health checks).             |
+| **post**      | Print completion messages or next steps.                                 |
+
+Phases run sequentially in this order.
+
+---
+
+## Step Structure
+
+```yaml
+- name: "Install deps"
+  if: file_exists("mix.exs")
+  timeout: "10m"
+  cwd: "assets"
+  env:
+    NODE_ENV: development
+  env_from_secrets: [DATABASE_URL]
+  optional_secrets: false
+  continue_on_error: false
+  retries:
+    attempts: 3
+    backoff: "2s"
+  run: "mix deps.get"
+```
+
+| Field               | Type   | Description                                                |
+| ------------------- | ------ | ---------------------------------------------------------- |
+| `name`              | string | Display name in logs.                                      |
+| `if`                | string | Boolean condition (see [Conditions DSL](#conditions-dsl)). |
+| `timeout`           | string | Step timeout; overrides default.                           |
+| `cwd`               | string | Working directory for the command.                         |
+| `env`               | object | Static env vars.                                           |
+| `env_from_secrets`  | array  | Secrets to inject from Initiat.                            |
+| `optional_secrets`  | bool   | Don’t fail if secret missing.                              |
+| `continue_on_error` | bool   | Continue even if step fails.                               |
+| `retries`           | object | Retry policy.                                              |
+| *one action field*  | one-of | See [Actions](#actions).                                   |
+
+---
+
+## Conditions DSL
+
+Functions usable in the `if:` expression:
+
+| Function              | Meaning                 |                    |                     |
+| --------------------- | ----------------------- | ------------------ | ------------------- |
+| `os("macos"           | "linux"                 | "windows")`        | Match current OS    |
+| `arch("arm64"         | "x86_64")`              | Match architecture |                     |
+| `file_exists("path")` | Check file presence     |                    |                     |
+| `cmd_ok("command")`   | True if command exits 0 |                    |                     |
+| Logical ops           | `&&`, `                 |                    | `, `!`, parentheses |
+
+**Examples**
+
+```yaml
+if: os("macos") && file_exists("mix.exs")
+if: !cmd_ok("asdf --version")
+```
+
+---
+
+## Actions
+
+Each step defines **exactly one** of the following action fields.
+
+### 🧱 `run`
+
+Execute a shell command.
+
+```yaml
+run: "npm ci && npm run build"
+```
+
+* Uses `defaults.shell` (`auto`→bash/sh/powershell).
+* Inherits `env` + secrets.
+* Secret values are redacted in logs.
+
+---
+
+### 💬 `print`
+
+Log a message.
+
+```yaml
+print: "✅ Setup complete. Run mix phx.server"
+```
+
+---
+
+### 📦 `ensure_package_manager`
+
+Ensure the system has a working package manager.
+
+```yaml
+ensure_package_manager:
+  type: auto   # auto|brew|apt|choco
+```
+
+---
+
+### 🔧 `ensure_tool`
+
+Ensure a specific CLI tool exists and meets a version requirement.
+
+```yaml
+ensure_tool:
+  name: git
+  version: ">=2.34"
+  install:
+    brew:   { formula: git }
+    apt:    { packages: [git], update: true }
+    choco:  { packages: [git] }
+    fallback_url: "https://example.com/git.zip"
+    checksum: "sha256:abc123..."
+```
+
+---
+
+### ⚙️ `ensure_runtime`
+
+Install or activate a language runtime.
+Each runtime is independent — e.g., install **Erlang** and **Elixir** in separate steps.
+
+```yaml
+ensure_runtime:
+  name: elixir                  # node|python|go|elixir|erlang|java|rust|dotnet
+  version: "1.16.x"
+  manager:
+    asdf: true
+  fallback_installers:
+    - brew:  { formula: elixir }
+    - apt:   { packages: [elixir] }
+    - choco: { packages: [elixir] }
+```
+
+Sequential order expresses dependencies (e.g., Erlang → Elixir).
+
+---
+
+### 🗄️ `ensure_database`
+
+Install and/or start a database service.
+
+```yaml
+ensure_database:
+  engine: postgres              # postgres|mysql|sqlite
+  version: "15"
+  service_name: "postgres"
+  ensure_running: true
+  create_db: ["project_dev"]
+```
+
+---
+
+### 🧪 `assert_command`
+
+Require a command to exit successfully.
+
+```yaml
+assert_command: "mix --version"
+```
+
+---
+
+### 🌐 `assert_http`
+
+Poll an HTTP endpoint until the expected status code is returned.
+
+```yaml
+assert_http:
+  url: "http://localhost:4000/health"
+  expect_status: 200
+  retries:
+    attempts: 20
+    backoff: "1s"
+```
+
+---
+
+## Environment & Secrets
+
+### Global Environment
+
+```yaml
+env:
+  NODE_ENV: development
+  secrets: [DATABASE_URL, OPENAI_API_KEY]
+```
+
+### Secrets Workflow
+
+1. Declare secret names in `env.secrets`.
+2. Reference them in steps via `env_from_secrets`.
+3. The CLI fetches each from Initiat, decrypts locally, injects in-memory.
+4. Values never appear in logs or on disk.
+
+```yaml
+setup:
+  - run: mix ecto.setup
+    env_from_secrets: [DATABASE_URL]
+```
+
+---
+
+## Defaults & Overrides
+
+```yaml
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+```
+
+Can be overridden per-step.
+
+---
+
+## Retries & Timeouts
+
+```yaml
+retries:
+  attempts: 3
+  backoff: "2s"
+timeout: "10m"
+```
+
+* Retries for transient failures.
+* Timeout applies to the step’s process tree.
+
+---
+
+## Matrix Gating
+
+```yaml
+matrix:
+  os: [macos, linux]
+  arch: [arm64, x86_64]
+```
+
+Execution halts early if host doesn’t match.
+
+---
+
+## Validation Rules
+
+| Rule                | Enforcement                                       |
+| ------------------- | ------------------------------------------------- |
+| `version` = 1       | Required                                          |
+| Strict schema       | Unknown keys → error                              |
+| One action per step | Mandatory                                         |
+| Secrets declared    | Every `env_from_secrets` must be in `env.secrets` |
+| Fallback URL        | Must include `checksum`                           |
+| Path safety         | Steps can’t escape repo root                      |
+
+Validate with:
+
+```bash
+initiat setup validate
+```
+
+---
+
+## Examples
+
+### 🔹 Phoenix Project
+
+```yaml
+version: 1
+name: "Phoenix Local Setup"
+env: { secrets: [DATABASE_URL] }
+
+bootstrap:
+  - ensure_package_manager: { type: auto }
+  - ensure_tool:
+      name: git
+      version: ">=2.34"
+      install:
+        brew:  { formula: git }
+        apt:   { packages: [git], update: true }
+        choco: { packages: [git] }
+
+provision:
+  - name: "Erlang runtime"
+    ensure_runtime:
+      name: erlang
+      version: "26.x"
+      manager: { asdf: true }
+      fallback_installers:
+        - brew:  { formula: erlang }
+        - apt:   { packages: [erlang] }
+        - choco: { packages: [erlang] }
+
+  - name: "Elixir runtime"
+    ensure_runtime:
+      name: elixir
+      version: "1.16.x"
+      manager: { asdf: true }
+      fallback_installers:
+        - brew:  { formula: elixir }
+        - apt:   { packages: [elixir] }
+        - choco: { packages: [elixir] }
+
+  - ensure_database:
+      engine: postgres
+      version: "15"
+      service_name: "postgres"
+      ensure_running: true
+      create_db: ["app_dev"]
+
+setup:
+  - run: mix local.hex --force && mix local.rebar --force
+  - run: mix deps.get
+  - run: npm ci
+    if: file_exists("assets/package-lock.json")
+  - run: npm install
+    if: file_exists("assets/package.json") && !file_exists("assets/package-lock.json")
+  - run: mix ecto.setup
+    env_from_secrets: [DATABASE_URL]
+
+verify:
+  - assert_command: "mix --version"
+  - assert_http:
+      url: "http://localhost:4000/health"
+      expect_status: 200
+      retries: { attempts: 20, backoff: "1s" }
+
+post:
+  - print: "✅ Setup complete. Start: mix phx.server"
+```
+
+---
+
+## Anti-Patterns
+
+🚫 Hard-coding secret values.
+🚫 Writing `.env` files with secrets committed.
+🚫 Using `sudo` in arbitrary `run` commands.
+🚫 OS-specific logic without `if: os("…")`.
+🚫 Non-idempotent shell scripts.
+
+---
+
+## Versioning
+
+* **v1.1a** — current local-execution schema.
+* Breaking changes → bump major version.
+* Additive improvements → minor revision.
+
+---
+
+## CLI Behavior Summary
+
+| Command                           | Function                               |
+| --------------------------------- | -------------------------------------- |
+| `initiat setup validate`          | Validate YAML and schema correctness   |
+| `initiat setup run`               | Execute all phases sequentially        |
+| `initiat setup run --phase setup` | Run up to specified phase              |
+| `initiat secrets list`            | Show secrets available in this project |
+
+**Executor guarantees**
+
+* Idempotent `ensure_*` actions
+* Strict schema validation
+* Redacted secrets in logs
+* Early exit on first blocking failure
+* JSONL + human-readable output
+
+---
+
+Would you like me to follow up with a companion file
+`test/fixtures/setup_examples/README.md` + a few small `.yml` fixtures
+(`elixir_basic.yml`, `node_basic.yml`, `drift_test.yml`, etc.)
+to use as schema/CLI validation tests?
+

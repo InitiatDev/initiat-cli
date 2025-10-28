@@ -1,0 +1,95 @@
+version: 1
+name: "Phoenix Local Setup"
+description: "Zero-to-ready Phoenix development environment"
+
+matrix:
+  os: [macos, linux, windows]
+  arch: [x86_64, arm64]
+
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+
+env:
+  PROJECT_NAME: "myproject"
+  secrets: [DATABASE_URL]
+
+bootstrap:
+  - name: "Ensure package manager"
+    ensure_package_manager:
+      type: auto
+
+  - name: "Ensure git"
+    ensure_tool:
+      name: git
+      version: ">=2.34"
+      install:
+        brew: { formula: git }
+        apt: { packages: [git], update: true }
+        choco: { packages: [git] }
+
+provision:
+  - name: "Erlang runtime"
+    ensure_runtime:
+      name: erlang
+      version: "26.x"
+      manager: { asdf: true }
+      fallback_installers:
+        - brew: { formula: erlang }
+        - apt: { packages: [erlang] }
+        - choco: { packages: [erlang] }
+
+  - name: "Elixir runtime"
+    ensure_runtime:
+      name: elixir
+      version: "1.16.x"
+      manager: { asdf: true }
+      fallback_installers:
+        - brew: { formula: elixir }
+        - apt: { packages: [elixir] }
+        - choco: { packages: [elixir] }
+
+  - name: "PostgreSQL database"
+    ensure_database:
+      engine: postgres
+      version: "15"
+      service_name: "postgres"
+      ensure_running: true
+      create_db: ["app_dev"]
+
+setup:
+  - name: "Install hex and rebar"
+    run: mix local.hex --force && mix local.rebar --force
+
+  - name: "Install dependencies"
+    run: mix deps.get
+
+  - name: "Install Node.js dependencies"
+    run: npm ci
+    if: file_exists("assets/package-lock.json")
+
+  - name: "Install Node.js dependencies (no lockfile)"
+    run: npm install
+    if: file_exists("assets/package.json") && !file_exists("assets/package-lock.json")
+
+  - name: "Setup database"
+    run: mix ecto.setup
+    env_from_secrets: [DATABASE_URL]
+
+verify:
+  - name: "Check Elixir version"
+    assert_command: mix --version
+
+  - name: "Check application health"
+    assert_http:
+      url: "http://localhost:4000/health"
+      expect_status: 200
+      retries:
+        attempts: 20
+        backoff: "1s"
+
+post:
+  - name: "Success message"
+    print: "✅ Setup complete. Start with: mix phx.server"

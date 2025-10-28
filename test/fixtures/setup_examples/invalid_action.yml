@@ -1,0 +1,7 @@
+version: 1
+name: "Invalid Action"
+
+setup:
+  - name: "Multiple actions"
+    run: "echo hello"
+    print: "This should fail"
