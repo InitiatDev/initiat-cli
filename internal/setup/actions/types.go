@@ -18,6 +18,14 @@ const (
 	ActionTypeAssertHTTP           ActionType = "assert_http"
 )
 
+// OS constants
+const (
+	OSLinux   = "linux"
+	OSWindows = "windows"
+	OSMacOS   = "macos"
+	OSDarwin  = "darwin"
+)
+
 type Action interface {
 	Type() ActionType
 	Render(ctx *ActionContext) ([]Command, error)

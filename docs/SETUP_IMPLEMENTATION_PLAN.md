@@ -57,31 +57,31 @@ schemas/
 **Goal**: Validate parsed config against schema rules
 
 #### Step 2.1: JSON Schema Generation
-- [ ] Create `internal/setup/schema.go`
-- [ ] Implement `GenerateJSONSchema() ([]byte, error)`
-- [ ] Generate comprehensive JSON Schema v7 for setup.yml
-- [ ] Include:
+- [x] Create `internal/setup/schema.go`
+- [x] Implement `GenerateJSONSchema() ([]byte, error)`
+- [x] Generate comprehensive JSON Schema v7 for setup.yml
+- [x] Include:
   - All action types as oneOf schemas
   - Condition DSL patterns
   - OS/arch enum values
   - Runtime type enums
   - Database engine enums
   - Custom validation rules (duration format, path safety)
-- [ ] Write tests in `schema_test.go`:
+- [x] Write tests in `schema_test.go`:
   - Schema is valid JSON Schema v7
   - All action types are represented
   - Required fields are marked
   - Enum values are complete
 
 #### Step 2.2: Schema Validator
-- [ ] Create `internal/setup/validator.go`
-- [ ] Implement `Validate(*SetupConfig) error`
-- [ ] Use JSON Schema for basic validation
-- [ ] Additional Go-specific validation:
+- [x] Create `internal/setup/validator.go`
+- [x] Implement `Validate(*SetupConfig) error`
+- [x] Use JSON Schema for basic validation
+- [x] Additional Go-specific validation:
   - `env_from_secrets` references exist in `env.secrets`
   - Path safety (no escaping repo root)
   - Business logic rules
-- [ ] Write tests in `validator_test.go`:
+- [x] Write tests in `validator_test.go`:
   - Valid configs pass
   - Invalid version fails
   - Missing action fails
@@ -97,9 +97,9 @@ schemas/
 **Goal**: Evaluate OS/arch matching and condition DSL
 
 #### Step 3.1: Matrix Matching
-- [ ] Create `internal/setup/matrix.go`
-- [ ] Implement `MatchesMatrix(matrix Matrix, os, arch string) bool`
-- [ ] Write tests in `matrix_test.go`:
+- [x] Create `internal/setup/matrix.go`
+- [x] Implement `MatchesMatrix(matrix Matrix, os, arch string) bool`
+- [x] Write tests in `matrix_test.go`:
   - Empty matrix matches all
   - OS match
   - Arch match
@@ -107,12 +107,12 @@ schemas/
   - No match cases
 
 #### Step 3.2: Condition DSL Parser
-- [ ] Create `internal/setup/condition.go`
-- [ ] Implement condition evaluator:
+- [x] Create `internal/setup/condition.go`
+- [x] Implement condition evaluator:
   - `EvaluateCondition(expr string, ctx ConditionContext) (bool, error)`
   - Support: `os()`, `arch()`, `file_exists()`, `cmd_ok()`
   - Support: `&&`, `||`, `!`, parentheses
-- [ ] Write tests in `condition_test.go`:
+- [x] Write tests in `condition_test.go`:
   - Simple `os("macos")`
   - Combined `os("macos") && arch("arm64")`
   - File existence checks
@@ -129,24 +129,24 @@ schemas/
 **Goal**: Convert action definitions to executable command strings
 
 #### Step 4.1: Base Action Interface
-- [ ] Create `internal/setup/actions/types.go`
-- [ ] Define `Action` interface:
+- [x] Create `internal/setup/actions/types.go`
+- [x] Define `Action` interface:
   ```go
   type Action interface {
       Render(ctx RenderContext) ([]Command, error)
       Validate() error
   }
   ```
-- [ ] Define `Command` struct (shell command + metadata)
-- [ ] Define `RenderContext` (OS, arch, cwd, env vars)
+- [x] Define `Command` struct (shell command + metadata)
+- [x] Define `RenderContext` (OS, arch, cwd, env vars)
 
 #### Step 4.2: Simple Actions
-- [ ] Create `internal/setup/actions/simple.go`
-- [ ] Implement actions:
+- [x] Create `internal/setup/actions/simple.go`
+- [x] Implement actions:
   - `RunAction` (shell command)
   - `PrintAction` (echo/print)
   - `AssertCommandAction` (command that must succeed)
-- [ ] Write tests in `simple_test.go`:
+- [x] Write tests in `simple_test.go`:
   - Run renders correct shell command
   - Print renders OS-appropriate print command
   - Assert wraps command with exit code check
