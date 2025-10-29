@@ -12,7 +12,6 @@ func TestEnsureRuntimeAction_Validate(t *testing.T) {
 		runtimeName string
 		version     string
 		manager     *RuntimeManager
-		fallbacks   []RuntimeFallbackInstaller
 		expectError bool
 		errorMsg    string
 	}{
@@ -21,15 +20,6 @@ func TestEnsureRuntimeAction_Validate(t *testing.T) {
 			runtimeName: "node",
 			version:     "18.0.0",
 			manager:     &RuntimeManager{Asdf: true},
-			expectError: false,
-		},
-		{
-			name:        "valid python with brew fallback",
-			runtimeName: "python",
-			version:     "3.11",
-			fallbacks: []RuntimeFallbackInstaller{
-				{Brew: &BrewInstall{Formula: "python"}},
-			},
 			expectError: false,
 		},
 		{
@@ -54,7 +44,7 @@ func TestEnsureRuntimeAction_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			action := NewEnsureRuntimeAction(tt.runtimeName, tt.version, tt.manager, tt.fallbacks)
+			action := NewEnsureRuntimeAction(tt.runtimeName, tt.version, tt.manager)
 			err := action.Validate()
 
 			if tt.expectError {
@@ -77,7 +67,6 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 		runtimeName string
 		version     string
 		manager     *RuntimeManager
-		fallbacks   []RuntimeFallbackInstaller
 		os          string
 		expectError bool
 	}{
@@ -90,36 +79,6 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "python with brew on macOS",
-			runtimeName: "python",
-			version:     "3.11",
-			fallbacks: []RuntimeFallbackInstaller{
-				{Brew: &BrewInstall{Formula: "python"}},
-			},
-			os:          OSMacOS,
-			expectError: false,
-		},
-		{
-			name:        "go with apt on Linux",
-			runtimeName: "go",
-			version:     "1.21",
-			fallbacks: []RuntimeFallbackInstaller{
-				{Apt: &AptInstall{Packages: []string{"golang-go"}}},
-			},
-			os:          OSLinux,
-			expectError: false,
-		},
-		{
-			name:        "rust with choco on Windows",
-			runtimeName: "rust",
-			version:     "1.70",
-			fallbacks: []RuntimeFallbackInstaller{
-				{Choco: &ChocoInstall{Packages: []string{"rust"}}},
-			},
-			os:          OSWindows,
-			expectError: false,
-		},
-		{
 			name:        "empty runtime name",
 			runtimeName: "",
 			expectError: true,
@@ -128,7 +87,7 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			action := NewEnsureRuntimeAction(tt.runtimeName, tt.version, tt.manager, tt.fallbacks)
+			action := NewEnsureRuntimeAction(tt.runtimeName, tt.version, tt.manager)
 			ctx := &ActionContext{
 				OS:         tt.os,
 				Arch:       "x86_64",
@@ -162,7 +121,7 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 // TestEnsureRuntimeAction_GetChocoPackage removed - logic now handled by strategy pattern
 
 func TestEnsureRuntimeAction_StrategyBasedCommands(t *testing.T) {
-	action := NewEnsureRuntimeAction("node", "18.0.0", nil, nil)
+	action := NewEnsureRuntimeAction("node", "18.0.0", nil)
 	ctx := &ActionContext{
 		OS:         OSMacOS,
 		Arch:       "x86_64",

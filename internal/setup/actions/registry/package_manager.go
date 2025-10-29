@@ -34,3 +34,8 @@ func (r *PackageManagerRegistry) FindManager(os string) PackageManager {
 	}
 	return nil
 }
+
+// HasAvailableManagers checks if any package managers are available for the given OS
+func (r *PackageManagerRegistry) HasAvailableManagers(os string) bool {
+	return r.FindManager(os) != nil
+}

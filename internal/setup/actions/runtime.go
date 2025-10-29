@@ -9,41 +9,38 @@ import (
 
 type EnsureRuntimeAction struct {
 	*BaseAction
-	runtimeName        string
-	version            string
-	manager            *RuntimeManager
-	fallbackInstallers []RuntimeFallbackInstaller
-	pkgRegistry        *registry.PackageManagerRegistry
+	runtimeName string
+	version     string
+	manager     *RuntimeManager
+	pkgRegistry *registry.PackageManagerRegistry
 }
 
 type RuntimeManager struct {
 	Asdf bool `yaml:"asdf,omitempty" json:"asdf,omitempty"`
 }
 
-type RuntimeFallbackInstaller struct {
-	Brew  *BrewInstall  `yaml:"brew,omitempty" json:"brew,omitempty"`
-	Apt   *AptInstall   `yaml:"apt,omitempty" json:"apt,omitempty"`
-	Choco *ChocoInstall `yaml:"choco,omitempty" json:"choco,omitempty"`
-}
-
 func NewEnsureRuntimeAction(
 	runtimeName, version string,
 	manager *RuntimeManager,
-	fallbackInstallers []RuntimeFallbackInstaller,
 ) *EnsureRuntimeAction {
 	return &EnsureRuntimeAction{
-		BaseAction:         NewBaseAction(ActionTypeEnsureRuntime),
-		runtimeName:        runtimeName,
-		version:            version,
-		manager:            manager,
-		fallbackInstallers: fallbackInstallers,
-		pkgRegistry:        registry.NewPackageManagerRegistry(),
+		BaseAction:  NewBaseAction(ActionTypeEnsureRuntime),
+		runtimeName: runtimeName,
+		version:     version,
+		manager:     manager,
+		pkgRegistry: registry.NewPackageManagerRegistry(),
 	}
 }
 
 func (a *EnsureRuntimeAction) Render(ctx *ActionContext) ([]Command, error) {
 	if strings.TrimSpace(a.runtimeName) == "" {
 		return nil, NewActionError(ActionTypeEnsureRuntime, "runtime name cannot be empty", nil)
+	}
+
+	// Check if any package manager is available for this OS
+	if !a.pkgRegistry.HasAvailableManagers(ctx.OS) {
+		return nil, NewActionError(ActionTypeEnsureRuntime,
+			fmt.Sprintf("no package manager available for %s", ctx.OS), nil)
 	}
 
 	commands, err := a.getInstallCommands(ctx)
@@ -84,16 +81,8 @@ func (a *EnsureRuntimeAction) Validate() error {
 		)
 	}
 
-	// Validate that at least one install method is available
-	hasInstallMethod := a.manager != nil && a.manager.Asdf
-	for _, installer := range a.fallbackInstallers {
-		if installer.Brew != nil || installer.Apt != nil || installer.Choco != nil {
-			hasInstallMethod = true
-			break
-		}
-	}
-
-	if !hasInstallMethod {
+	// Validate that at least one install method is configured
+	if a.manager == nil {
 		return NewActionError(ActionTypeEnsureRuntime, "at least one install method must be specified", nil)
 	}
 
