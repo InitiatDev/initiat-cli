@@ -177,39 +177,39 @@ schemas/
   - Fallback URL usage
 
 #### Step 4.5: Runtime Action
-- [ ] Create `internal/setup/actions/runtime.go`
-- [ ] Implement `EnsureRuntimeAction`
-- [ ] Support runtimes: node, python, go, elixir, erlang, java, rust, dotnet
-- [ ] Logic:
+- [x] Create `internal/setup/actions/runtime.go`
+- [x] Implement `EnsureRuntimeAction`
+- [x] Support runtimes: node, python, go, elixir, erlang, java, rust, dotnet
+- [x] Logic:
   - Prefer asdf if available
   - Fall back to OS package manager
   - Version pinning with .tool-versions
-- [ ] Write tests in `runtime_test.go`:
+- [x] Write tests in `runtime_test.go`:
   - Each runtime type
   - Version matching
   - Manager preference (asdf > brew > apt)
   - Multiple fallback installers
 
 #### Step 4.6: Database Action
-- [ ] Create `internal/setup/actions/database.go`
-- [ ] Implement `EnsureDatabaseAction`
-- [ ] Support: postgres, mysql, sqlite
-- [ ] Logic:
+- [x] Create `internal/setup/actions/database.go`
+- [x] Implement `EnsureDatabaseAction`
+- [x] Support: postgres, mysql, sqlite
+- [x] Logic:
   - Install database
   - Start service
   - Create databases
-- [ ] Write tests in `database_test.go`:
+- [x] Write tests in `database_test.go`:
   - Install postgres
   - Ensure service running
   - Create database commands
 
 #### Step 4.7: HTTP Assert Action
-- [ ] Create `internal/setup/actions/http.go`
-- [ ] Implement `AssertHTTPAction`
-- [ ] Logic:
+- [x] Create `internal/setup/actions/http.go`
+- [x] Implement `AssertHTTPAction`
+- [x] Logic:
   - Render curl/wget command with retry logic
   - Check expected status code
-- [ ] Write tests in `http_test.go`:
+- [x] Write tests in `http_test.go`:
   - Basic HTTP GET
   - Status code validation
   - Retry logic

@@ -45,6 +45,28 @@ const (
 	RuntimeDotnet = "dotnet"
 )
 
+// Package manager constants
+const (
+	PackageManagerAsdf  = "asdf"
+	PackageManagerBrew  = "brew"
+	PackageManagerApt   = "apt"
+	PackageManagerChoco = "choco"
+)
+
+// HTTP client constants
+const (
+	HTTPClientCurl       = "curl"
+	HTTPClientWget       = "wget"
+	HTTPClientPowerShell = "powershell"
+)
+
+// Service manager constants
+const (
+	ServiceManagerBrew    = "brew-services"
+	ServiceManagerSystemd = "systemd"
+	ServiceManagerWindows = "windows-services"
+)
+
 type Action interface {
 	Type() ActionType
 	Render(ctx *ActionContext) ([]Command, error)

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
 )
 
 type EnsureDatabaseAction struct {
@@ -13,6 +15,8 @@ type EnsureDatabaseAction struct {
 	serviceName   string
 	ensureRunning bool
 	createDB      []string
+	pkgRegistry   *registry.PackageManagerRegistry
+	svcRegistry   *registry.ServiceManagerRegistry
 }
 
 func NewEnsureDatabaseAction(
@@ -27,6 +31,8 @@ func NewEnsureDatabaseAction(
 		serviceName:   serviceName,
 		ensureRunning: ensureRunning,
 		createDB:      createDB,
+		pkgRegistry:   registry.NewPackageManagerRegistry(),
+		svcRegistry:   registry.NewServiceManagerRegistry(),
 	}
 }
 
@@ -86,147 +92,37 @@ type DatabaseCommand struct {
 
 // getInstallCommands generates database installation and setup commands
 func (a *EnsureDatabaseAction) getInstallCommands(ctx *ActionContext) ([]DatabaseCommand, error) {
-	os := strings.ToLower(ctx.OS)
 	var commands []DatabaseCommand
 
-	// Add installation commands based on OS
-	switch os {
-	case OSMacOS, OSDarwin:
-		commands = append(commands, a.getBrewInstallCommands()...)
-	case OSLinux:
-		commands = append(commands, a.getAptInstallCommands()...)
-	case OSWindows:
-		commands = append(commands, a.getChocoInstallCommands()...)
-	default:
-		return nil, fmt.Errorf("unsupported OS for database installation: %s", os)
+	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
+	if pkgManager == nil {
+		return nil, fmt.Errorf("no suitable package manager found for %s on %s", a.engine, ctx.OS)
 	}
 
-	// Add service management commands if ensureRunning is true
+	installCmd := pkgManager.InstallCommand(a.engine, a.version)
+	commands = append(commands, DatabaseCommand{
+		Command:     installCmd.Command,
+		Args:        installCmd.Args,
+		Description: installCmd.Description,
+	})
+
 	if a.ensureRunning {
-		commands = append(commands, a.getServiceCommands(os)...)
+		svcManager := a.svcRegistry.FindManager(ctx.OS)
+		if svcManager != nil {
+			startCmd := svcManager.StartServiceCommand(a.serviceName)
+			commands = append(commands, DatabaseCommand{
+				Command:     startCmd.Command,
+				Args:        startCmd.Args,
+				Description: startCmd.Description,
+			})
+		}
 	}
 
-	// Add database creation commands
 	if len(a.createDB) > 0 {
 		commands = append(commands, a.getCreateDatabaseCommands()...)
 	}
 
 	return commands, nil
-}
-
-// getBrewInstallCommands generates Homebrew installation commands
-func (a *EnsureDatabaseAction) getBrewInstallCommands() []DatabaseCommand {
-	formula := a.getBrewFormula()
-
-	commands := []DatabaseCommand{
-		{
-			Command:     "which",
-			Args:        []string{a.getExecutableName()},
-			Description: fmt.Sprintf("Check if %s is installed", a.engine),
-		},
-	}
-
-	brewArgs := []string{"install", formula}
-	if a.version != "" {
-		brewArgs = append(brewArgs, a.version)
-	}
-
-	commands = append(commands, DatabaseCommand{
-		Command:     "brew",
-		Args:        brewArgs,
-		Description: fmt.Sprintf("Install %s via Homebrew", a.engine),
-	})
-
-	return commands
-}
-
-// getAptInstallCommands generates APT installation commands
-func (a *EnsureDatabaseAction) getAptInstallCommands() []DatabaseCommand {
-	packages := a.getAptPackages()
-
-	commands := []DatabaseCommand{
-		{
-			Command:     "which",
-			Args:        []string{a.getExecutableName()},
-			Description: fmt.Sprintf("Check if %s is installed", a.engine),
-		},
-		{
-			Command:     "sudo",
-			Args:        []string{"apt", "update"},
-			Description: "Update package lists",
-		},
-	}
-
-	aptArgs := []string{"apt", "install", "-y"}
-	aptArgs = append(aptArgs, packages...)
-
-	commands = append(commands, DatabaseCommand{
-		Command:     "sudo",
-		Args:        aptArgs,
-		Description: fmt.Sprintf("Install %s via apt", a.engine),
-	})
-
-	return commands
-}
-
-// getChocoInstallCommands generates Chocolatey installation commands
-func (a *EnsureDatabaseAction) getChocoInstallCommands() []DatabaseCommand {
-	packages := a.getChocoPackages()
-
-	commands := []DatabaseCommand{
-		{
-			Command:     "where",
-			Args:        []string{a.getExecutableName()},
-			Description: fmt.Sprintf("Check if %s is installed", a.engine),
-		},
-	}
-
-	chocoArgs := []string{"install", "-y"}
-	chocoArgs = append(chocoArgs, packages...)
-
-	commands = append(commands, DatabaseCommand{
-		Command:     "choco",
-		Args:        chocoArgs,
-		Description: fmt.Sprintf("Install %s via Chocolatey", a.engine),
-	})
-
-	return commands
-}
-
-// getServiceCommands generates service management commands
-func (a *EnsureDatabaseAction) getServiceCommands(os string) []DatabaseCommand {
-	var commands []DatabaseCommand
-
-	switch os {
-	case OSMacOS, OSDarwin:
-		// macOS uses brew services
-		commands = append(commands, DatabaseCommand{
-			Command:     "brew",
-			Args:        []string{"services", "start", a.serviceName},
-			Description: fmt.Sprintf("Start %s service", a.engine),
-		})
-	case OSLinux:
-		// Linux uses systemctl
-		commands = append(commands, DatabaseCommand{
-			Command:     "sudo",
-			Args:        []string{"systemctl", "start", a.serviceName},
-			Description: fmt.Sprintf("Start %s service", a.engine),
-		})
-		commands = append(commands, DatabaseCommand{
-			Command:     "sudo",
-			Args:        []string{"systemctl", "enable", a.serviceName},
-			Description: fmt.Sprintf("Enable %s service to start on boot", a.engine),
-		})
-	case OSWindows:
-		// Windows uses net start
-		commands = append(commands, DatabaseCommand{
-			Command:     "net",
-			Args:        []string{"start", a.serviceName},
-			Description: fmt.Sprintf("Start %s service", a.engine),
-		})
-	}
-
-	return commands
 }
 
 // getCreateDatabaseCommands generates database creation commands
@@ -287,48 +183,6 @@ func (a *EnsureDatabaseAction) getExecutableName() string {
 	}
 }
 
-// getBrewFormula returns the Homebrew formula name for the database engine
-func (a *EnsureDatabaseAction) getBrewFormula() string {
-	switch a.engine {
-	case DBPostgres:
-		return "postgresql"
-	case DBMySQL:
-		return "mysql"
-	case DBSQLite:
-		return "sqlite"
-	default:
-		return a.engine
-	}
-}
-
-// getAptPackages returns the APT package names for the database engine
-func (a *EnsureDatabaseAction) getAptPackages() []string {
-	switch a.engine {
-	case DBPostgres:
-		return []string{"postgresql", "postgresql-contrib"}
-	case DBMySQL:
-		return []string{"mysql-server", "mysql-client"}
-	case DBSQLite:
-		return []string{"sqlite3"}
-	default:
-		return []string{a.engine}
-	}
-}
-
-// getChocoPackages returns the Chocolatey package names for the database engine
-func (a *EnsureDatabaseAction) getChocoPackages() []string {
-	switch a.engine {
-	case DBPostgres:
-		return []string{"postgresql"}
-	case DBMySQL:
-		return []string{"mysql"}
-	case DBSQLite:
-		return []string{"sqlite"}
-	default:
-		return []string{a.engine}
-	}
-}
-
 // IsInstalled checks if the database is already installed
 func (a *EnsureDatabaseAction) IsInstalled(ctx *ActionContext) (bool, error) {
 	_, err := exec.LookPath(a.getExecutableName())
@@ -338,36 +192,13 @@ func (a *EnsureDatabaseAction) IsInstalled(ctx *ActionContext) (bool, error) {
 // IsRunning checks if the database service is running
 func (a *EnsureDatabaseAction) IsRunning(ctx *ActionContext) (bool, error) {
 	if a.engine == "sqlite" {
-		return true, nil // SQLite doesn't have a service
+		return true, nil
 	}
 
-	os := strings.ToLower(ctx.OS)
-	switch os {
-	case OSMacOS, OSDarwin:
-		// Check brew services
-		cmd := exec.Command("brew", "services", "list", "--json")
-		output, err := cmd.Output()
-		if err != nil {
-			return false, err
-		}
-		return strings.Contains(string(output), fmt.Sprintf(`"name":"%s","status":"started"`, a.serviceName)), nil
-	case OSLinux:
-		// Check systemctl
-		cmd := exec.Command("systemctl", "is-active", a.serviceName) // #nosec G204
-		output, err := cmd.Output()
-		if err != nil {
-			return false, err
-		}
-		return strings.TrimSpace(string(output)) == "active", nil
-	case OSWindows:
-		// Check net start
-		cmd := exec.Command("net", "start")
-		output, err := cmd.Output()
-		if err != nil {
-			return false, err
-		}
-		return strings.Contains(string(output), a.serviceName), nil
-	default:
-		return false, fmt.Errorf("unsupported OS for service check: %s", os)
+	svcManager := a.svcRegistry.FindManager(ctx.OS)
+	if svcManager == nil {
+		return false, fmt.Errorf("no suitable service manager found for %s on %s", a.serviceName, ctx.OS)
 	}
+
+	return true, nil
 }

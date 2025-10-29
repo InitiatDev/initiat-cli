@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
 )
 
 type EnsureToolAction struct {
@@ -11,6 +13,7 @@ type EnsureToolAction struct {
 	toolName      string
 	version       string
 	installConfig *ToolInstallConfig
+	pkgRegistry   *registry.PackageManagerRegistry
 }
 
 type ToolInstallConfig struct {
@@ -40,6 +43,7 @@ func NewEnsureToolAction(toolName, version string, installConfig *ToolInstallCon
 		toolName:      toolName,
 		version:       version,
 		installConfig: installConfig,
+		pkgRegistry:   registry.NewPackageManagerRegistry(),
 	}
 }
 
@@ -77,7 +81,6 @@ func (a *EnsureToolAction) Validate() error {
 		return NewActionError(ActionTypeEnsureTool, "install configuration is required", nil)
 	}
 
-	// Validate that at least one install method is specified
 	hasInstallMethod := a.installConfig.Brew != nil ||
 		a.installConfig.Apt != nil ||
 		a.installConfig.Choco != nil ||
@@ -98,30 +101,51 @@ type ToolCommand struct {
 
 // getInstallCommands determines the best install method for the current platform
 func (a *EnsureToolAction) getInstallCommands(ctx *ActionContext) ([]ToolCommand, error) {
-	os := strings.ToLower(ctx.OS)
-
-	// Try platform-specific package managers first
-	switch os {
-	case OSMacOS, OSDarwin:
-		if a.installConfig.Brew != nil {
-			return a.getBrewCommands()
+	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
+	if pkgManager != nil {
+		installCmd := pkgManager.InstallCommand(a.toolName, a.version)
+		commands := []ToolCommand{
+			{
+				Command:     installCmd.Command,
+				Args:        installCmd.Args,
+				Description: installCmd.Description,
+			},
 		}
-	case OSLinux:
-		if a.installConfig.Apt != nil {
-			return a.getAptCommands()
-		}
-	case OSWindows:
-		if a.installConfig.Choco != nil {
-			return a.getChocoCommands()
-		}
+		return commands, nil
 	}
 
-	// Fall back to direct download if available
 	if a.installConfig.FallbackURL != "" {
 		return a.getFallbackCommands(ctx)
 	}
 
-	return nil, fmt.Errorf("no suitable install method found for %s on %s", a.toolName, os)
+	return nil, fmt.Errorf("no suitable install method found for %s on %s", a.toolName, ctx.OS)
+}
+
+// getFallbackCommands generates fallback installation commands for direct download
+func (a *EnsureToolAction) getFallbackCommands(_ *ActionContext) ([]ToolCommand, error) {
+	if a.installConfig.FallbackURL == "" {
+		return nil, fmt.Errorf("no fallback URL provided")
+	}
+
+	commands := []ToolCommand{
+		{
+			Command:     "curl",
+			Args:        []string{"-L", "-o", fmt.Sprintf("/tmp/%s", a.toolName), a.installConfig.FallbackURL},
+			Description: fmt.Sprintf("Download %s from fallback URL", a.toolName),
+		},
+		{
+			Command:     "chmod",
+			Args:        []string{"+x", fmt.Sprintf("/tmp/%s", a.toolName)},
+			Description: fmt.Sprintf("Make %s executable", a.toolName),
+		},
+		{
+			Command:     "sudo",
+			Args:        []string{"mv", fmt.Sprintf("/tmp/%s", a.toolName), "/usr/local/bin/"},
+			Description: fmt.Sprintf("Install %s to /usr/local/bin", a.toolName),
+		},
+	}
+
+	return commands, nil
 }
 
 // IsInstalled checks if the tool is already installed

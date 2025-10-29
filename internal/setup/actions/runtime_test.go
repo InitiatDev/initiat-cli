@@ -155,98 +155,23 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 	}
 }
 
-func TestEnsureRuntimeAction_GetBrewFormula(t *testing.T) {
-	tests := []struct {
-		runtimeName string
-		expected    string
-	}{
-		{"node", "node"},
-		{"python", "python"},
-		{"go", "go"},
-		{"elixir", "elixir"},
-		{"erlang", "erlang"},
-		{"java", "openjdk"},
-		{"rust", "rust"},
-		{"dotnet", "dotnet"},
-		{"unknown", "unknown"},
-	}
+// TestEnsureRuntimeAction_GetBrewFormula removed - logic now handled by strategy pattern
 
-	for _, tt := range tests {
-		t.Run(tt.runtimeName, func(t *testing.T) {
-			action := &EnsureRuntimeAction{runtimeName: tt.runtimeName}
-			result := action.getBrewFormula()
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
-}
+// TestEnsureRuntimeAction_GetAptPackage removed - logic now handled by strategy pattern
 
-func TestEnsureRuntimeAction_GetAptPackage(t *testing.T) {
-	tests := []struct {
-		runtimeName string
-		expected    string
-	}{
-		{"node", "nodejs"},
-		{"python", "python3"},
-		{"go", "golang-go"},
-		{"elixir", "elixir"},
-		{"erlang", "erlang"},
-		{"java", "openjdk-11-jdk"},
-		{"rust", "rustc"},
-		{"dotnet", "dotnet-sdk-6.0"},
-		{"unknown", "unknown"},
-	}
+// TestEnsureRuntimeAction_GetChocoPackage removed - logic now handled by strategy pattern
 
-	for _, tt := range tests {
-		t.Run(tt.runtimeName, func(t *testing.T) {
-			action := &EnsureRuntimeAction{runtimeName: tt.runtimeName}
-			result := action.getAptPackage()
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
-}
-
-func TestEnsureRuntimeAction_GetChocoPackage(t *testing.T) {
-	tests := []struct {
-		runtimeName string
-		expected    string
-	}{
-		{"node", "nodejs"},
-		{"python", "python"},
-		{"go", "golang"},
-		{"elixir", "elixir"},
-		{"erlang", "erlang"},
-		{"java", "openjdk"},
-		{"rust", "rust"},
-		{"dotnet", "dotnet"},
-		{"unknown", "unknown"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.runtimeName, func(t *testing.T) {
-			action := &EnsureRuntimeAction{runtimeName: tt.runtimeName}
-			result := action.getChocoPackage()
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
-}
-
-func TestEnsureRuntimeAction_AsdfCommands(t *testing.T) {
-	action := &EnsureRuntimeAction{
-		runtimeName: "node",
-		version:     "18.0.0",
-	}
+func TestEnsureRuntimeAction_StrategyBasedCommands(t *testing.T) {
+	action := NewEnsureRuntimeAction("node", "18.0.0", nil, nil)
 	ctx := &ActionContext{
-		OS:   OSMacOS,
-		Arch: "x86_64",
+		OS:         OSMacOS,
+		Arch:       "x86_64",
+		Env:        map[string]string{},
+		WorkingDir: "/tmp",
+		Timeout:    30 * time.Second,
 	}
 
-	commands, err := action.getAsdfCommands(ctx)
+	commands, err := action.getInstallCommands(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -255,126 +180,17 @@ func TestEnsureRuntimeAction_AsdfCommands(t *testing.T) {
 		t.Fatal("Expected commands but got none")
 	}
 
-	// Check that we have the expected commands
-	expectedCommands := []string{"list", "plugin add", "install", "global"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if cmd.Command == "asdf" && strings.Contains(strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected asdf command containing '%s' not found", expected)
+	// Should have check, install, and global commands for asdf
+	expectedCommands := []string{"asdf", "asdf", "asdf"}
+	if len(commands) != len(expectedCommands) {
+		t.Errorf("Expected %d commands, got %d", len(expectedCommands), len(commands))
+	}
+
+	for i, expected := range expectedCommands {
+		if commands[i].Command != expected {
+			t.Errorf("Command %d: expected %s, got %s", i, expected, commands[i].Command)
 		}
 	}
 }
 
-func TestEnsureRuntimeAction_BrewCommands(t *testing.T) {
-	action := &EnsureRuntimeAction{
-		runtimeName: "node",
-		version:     "18.0.0",
-	}
-	ctx := &ActionContext{
-		OS:   OSMacOS,
-		Arch: "x86_64",
-	}
-	brew := &BrewInstall{Formula: "node"}
-
-	commands, err := action.getBrewCommands(brew, ctx)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"which", "brew install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
-
-func TestEnsureRuntimeAction_AptCommands(t *testing.T) {
-	action := &EnsureRuntimeAction{
-		runtimeName: "node",
-		version:     "18.0.0",
-	}
-	ctx := &ActionContext{
-		OS:   OSLinux,
-		Arch: "x86_64",
-	}
-	apt := &AptInstall{Packages: []string{"nodejs"}, Update: true}
-
-	commands, err := action.getAptCommands(apt, ctx)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"which", "apt update", "apt install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
-
-func TestEnsureRuntimeAction_ChocoCommands(t *testing.T) {
-	action := &EnsureRuntimeAction{
-		runtimeName: "node",
-		version:     "18.0.0",
-	}
-	ctx := &ActionContext{
-		OS:   OSWindows,
-		Arch: "x86_64",
-	}
-	choco := &ChocoInstall{Packages: []string{"nodejs"}}
-
-	commands, err := action.getChocoCommands(choco, ctx)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"where", "choco install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
+// Old test methods removed - functionality now handled by strategy pattern

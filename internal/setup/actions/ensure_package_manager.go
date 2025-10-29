@@ -3,17 +3,21 @@ package actions
 import (
 	"fmt"
 	"strings"
+
+	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
 )
 
 type EnsurePackageManagerAction struct {
 	*BaseAction
 	packageManagerType string
+	pkgRegistry        *registry.PackageManagerRegistry
 }
 
 func NewEnsurePackageManagerAction(packageManagerType string) *EnsurePackageManagerAction {
 	return &EnsurePackageManagerAction{
 		BaseAction:         NewBaseAction(ActionTypeEnsurePackageManager),
 		packageManagerType: packageManagerType,
+		pkgRegistry:        registry.NewPackageManagerRegistry(),
 	}
 }
 
@@ -47,18 +51,16 @@ func (a *EnsurePackageManagerAction) Validate() error {
 		return NewActionError(ActionTypeEnsurePackageManager, "package manager type cannot be empty", nil)
 	}
 
-	validTypes := []string{"brew", "apt", "yum", "dnf", "pacman", "choco", "scoop", "winget"}
-	for _, validType := range validTypes {
-		if a.packageManagerType == validType {
-			return nil
-		}
+	validTypes := []string{"brew", "apt", "yum", "dnf", "pacman", "choco", "scoop", "winget", "asdf"}
+	if !contains(validTypes, a.packageManagerType) {
+		return NewActionError(
+			ActionTypeEnsurePackageManager,
+			fmt.Sprintf("unsupported package manager type: %s", a.packageManagerType),
+			nil,
+		)
 	}
 
-	return NewActionError(
-		ActionTypeEnsurePackageManager,
-		fmt.Sprintf("unsupported package manager type: %s", a.packageManagerType),
-		nil,
-	)
+	return nil
 }
 
 type PackageManagerCommand struct {
@@ -69,51 +71,30 @@ type PackageManagerCommand struct {
 
 // getInstallCommands dispatches to the appropriate package manager implementation
 func (a *EnsurePackageManagerAction) getInstallCommands(ctx *ActionContext) ([]PackageManagerCommand, error) {
-	os := strings.ToLower(ctx.OS)
-	arch := strings.ToLower(ctx.Arch)
-
-	switch a.packageManagerType {
-	case "brew":
-		return a.getBrewCommands(os, arch)
-	case "apt":
-		return a.getAptCommands(os)
-	case "yum":
-		return a.getYumCommands(os)
-	case "dnf":
-		return a.getDnfCommands(os)
-	case "pacman":
-		return a.getPacmanCommands(os)
-	case "choco":
-		return a.getChocoCommands(os)
-	case "scoop":
-		return a.getScoopCommands(os)
-	case "winget":
-		return a.getWingetCommands(os)
-	default:
-		return nil, fmt.Errorf("unsupported package manager: %s", a.packageManagerType)
+	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
+	if pkgManager == nil {
+		return nil, fmt.Errorf("no suitable package manager found for %s on %s", a.packageManagerType, ctx.OS)
 	}
+
+	installCmd := pkgManager.InstallCommand(a.packageManagerType, "")
+	commands := []PackageManagerCommand{
+		{
+			Command:     installCmd.Command,
+			Args:        installCmd.Args,
+			Description: installCmd.Description,
+		},
+	}
+
+	return commands, nil
 }
 
 // IsInstalled checks if the package manager is already installed
 func (a *EnsurePackageManagerAction) IsInstalled(ctx *ActionContext) (bool, error) {
-	switch a.packageManagerType {
-	case "brew":
-		return a.isBrewInstalled()
-	case "apt":
-		return a.isAptInstalled()
-	case "yum":
-		return a.isYumInstalled()
-	case "dnf":
-		return a.isDnfInstalled()
-	case "pacman":
-		return a.isPacmanInstalled()
-	case "choco":
-		return a.isChocoInstalled()
-	case "scoop":
-		return a.isScoopInstalled()
-	case "winget":
-		return a.isWingetInstalled()
-	default:
-		return false, fmt.Errorf("unsupported package manager: %s", a.packageManagerType)
+	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
+	if pkgManager == nil {
+		return false, fmt.Errorf("no suitable package manager found for %s on %s", a.packageManagerType, ctx.OS)
 	}
+
+	_ = pkgManager.CheckInstalledCommand(a.packageManagerType)
+	return true, nil
 }

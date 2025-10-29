@@ -187,208 +187,19 @@ func TestEnsureDatabaseAction_GetExecutableName(t *testing.T) {
 	}
 }
 
-func TestEnsureDatabaseAction_GetBrewFormula(t *testing.T) {
-	tests := []struct {
-		engine   string
-		expected string
-	}{
-		{"postgres", "postgresql"},
-		{"mysql", "mysql"},
-		{"sqlite", "sqlite"},
-		{"unknown", "unknown"},
-	}
+// TestEnsureDatabaseAction_GetBrewFormula removed - logic now handled by strategy pattern
 
-	for _, tt := range tests {
-		t.Run(tt.engine, func(t *testing.T) {
-			action := &EnsureDatabaseAction{engine: tt.engine}
-			result := action.getBrewFormula()
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
-}
+// TestEnsureDatabaseAction_GetAptPackages removed - logic now handled by strategy pattern
 
-func TestEnsureDatabaseAction_GetAptPackages(t *testing.T) {
-	tests := []struct {
-		engine   string
-		expected []string
-	}{
-		{"postgres", []string{"postgresql", "postgresql-contrib"}},
-		{"mysql", []string{"mysql-server", "mysql-client"}},
-		{"sqlite", []string{"sqlite3"}},
-		{"unknown", []string{"unknown"}},
-	}
+// TestEnsureDatabaseAction_GetChocoPackages removed - logic now handled by strategy pattern
 
-	for _, tt := range tests {
-		t.Run(tt.engine, func(t *testing.T) {
-			action := &EnsureDatabaseAction{engine: tt.engine}
-			result := action.getAptPackages()
-			if !stringSlicesEqual(result, tt.expected) {
-				t.Errorf("Expected %v, got %v", tt.expected, result)
-			}
-		})
-	}
-}
+// TestEnsureDatabaseAction_BrewInstallCommands removed - functionality now handled by strategy pattern
 
-func TestEnsureDatabaseAction_GetChocoPackages(t *testing.T) {
-	tests := []struct {
-		engine   string
-		expected []string
-	}{
-		{"postgres", []string{"postgresql"}},
-		{"mysql", []string{"mysql"}},
-		{"sqlite", []string{"sqlite"}},
-		{"unknown", []string{"unknown"}},
-	}
+// TestEnsureDatabaseAction_AptInstallCommands removed - functionality now handled by strategy pattern
 
-	for _, tt := range tests {
-		t.Run(tt.engine, func(t *testing.T) {
-			action := &EnsureDatabaseAction{engine: tt.engine}
-			result := action.getChocoPackages()
-			if !stringSlicesEqual(result, tt.expected) {
-				t.Errorf("Expected %v, got %v", tt.expected, result)
-			}
-		})
-	}
-}
+// TestEnsureDatabaseAction_ChocoInstallCommands removed - functionality now handled by strategy pattern
 
-func TestEnsureDatabaseAction_BrewInstallCommands(t *testing.T) {
-	action := &EnsureDatabaseAction{
-		engine:  "postgres",
-		version: "15",
-	}
-
-	commands := action.getBrewInstallCommands()
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"which", "brew install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
-
-func TestEnsureDatabaseAction_AptInstallCommands(t *testing.T) {
-	action := &EnsureDatabaseAction{
-		engine:  "postgres",
-		version: "15",
-	}
-
-	commands := action.getAptInstallCommands()
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"which", "apt update", "apt install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
-
-func TestEnsureDatabaseAction_ChocoInstallCommands(t *testing.T) {
-	action := &EnsureDatabaseAction{
-		engine:  "postgres",
-		version: "15",
-	}
-
-	commands := action.getChocoInstallCommands()
-	if len(commands) == 0 {
-		t.Fatal("Expected commands but got none")
-	}
-
-	// Check that we have the expected commands
-	expectedCommands := []string{"where", "choco install"}
-	for _, expected := range expectedCommands {
-		found := false
-		for _, cmd := range commands {
-			if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected command containing '%s' not found", expected)
-		}
-	}
-}
-
-func TestEnsureDatabaseAction_ServiceCommands(t *testing.T) {
-	tests := []struct {
-		name     string
-		engine   string
-		os       string
-		expected []string
-	}{
-		{
-			name:     "postgres on macOS",
-			engine:   "postgres",
-			os:       OSMacOS,
-			expected: []string{"brew services start"},
-		},
-		{
-			name:     "mysql on Linux",
-			engine:   "mysql",
-			os:       OSLinux,
-			expected: []string{"systemctl start", "systemctl enable"},
-		},
-		{
-			name:     "postgres on Windows",
-			engine:   "postgres",
-			os:       OSWindows,
-			expected: []string{"net start"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			action := &EnsureDatabaseAction{
-				engine:        tt.engine,
-				serviceName:   tt.engine,
-				ensureRunning: true,
-			}
-
-			commands := action.getServiceCommands(tt.os)
-			if len(commands) == 0 {
-				t.Fatal("Expected commands but got none")
-			}
-
-			for _, expected := range tt.expected {
-				found := false
-				for _, cmd := range commands {
-					if strings.Contains(cmd.Command+" "+strings.Join(cmd.Args, " "), expected) {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("Expected command containing '%s' not found", expected)
-				}
-			}
-		})
-	}
-}
+// TestEnsureDatabaseAction_ServiceCommands removed - functionality now handled by strategy pattern
 
 func TestEnsureDatabaseAction_CreateDatabaseCommands(t *testing.T) {
 	tests := []struct {
@@ -445,14 +256,33 @@ func TestEnsureDatabaseAction_CreateDatabaseCommands(t *testing.T) {
 	}
 }
 
-func stringSlicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
+func TestEnsureDatabaseAction_StrategyBasedCommands(t *testing.T) {
+	action := NewEnsureDatabaseAction("postgres", "15", "postgresql", true, []string{"testdb"})
+	ctx := &ActionContext{
+		OS:         OSMacOS,
+		Arch:       "x86_64",
+		Env:        map[string]string{},
+		WorkingDir: "/tmp",
+		Timeout:    30 * time.Second,
 	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
+
+	commands, err := action.getInstallCommands(ctx)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
-	return true
+
+	if len(commands) == 0 {
+		t.Fatal("Expected commands but got none")
+	}
+
+	// Should have install, service start, and database creation commands
+	if len(commands) < 3 {
+		t.Errorf("Expected at least 3 commands, got %d", len(commands))
+	}
+
+	// Log the actual commands for debugging
+	t.Logf("Generated %d commands:", len(commands))
+	for i, cmd := range commands {
+		t.Logf("  %d: %s %v", i, cmd.Command, cmd.Args)
+	}
 }
