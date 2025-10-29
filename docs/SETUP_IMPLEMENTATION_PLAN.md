@@ -152,25 +152,25 @@ schemas/
   - Assert wraps command with exit code check
 
 #### Step 4.3: Package Manager Action
-- [ ] Create `internal/setup/actions/package.go`
-- [ ] Implement `EnsurePackageManagerAction`
-- [ ] Logic:
+- [x] Create `internal/setup/actions/package.go`
+- [x] Implement `EnsurePackageManagerAction`
+- [x] Logic:
   - `auto` → detect OS and choose (brew/apt/choco)
   - Render install commands if not present
-- [ ] Write tests in `package_test.go`:
+- [x] Write tests in `package_test.go`:
   - macOS → brew installation
   - Linux → apt installation
   - Windows → choco installation
   - Already installed → no-op
 
 #### Step 4.4: Tool Action
-- [ ] Create `internal/setup/actions/tool.go`
-- [ ] Implement `EnsureToolAction`
-- [ ] Logic:
+- [x] Create `internal/setup/actions/tool.go`
+- [x] Implement `EnsureToolAction`
+- [x] Logic:
   - Check if tool exists and version matches
   - Render install command per OS (brew/apt/choco)
   - Handle fallback URLs with checksum
-- [ ] Write tests in `tool_test.go`:
+- [x] Write tests in `tool_test.go`:
   - Tool not present → install
   - Tool present, version OK → no-op
   - Tool present, version old → upgrade

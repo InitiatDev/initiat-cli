@@ -26,6 +26,25 @@ const (
 	OSDarwin  = "darwin"
 )
 
+// Database engine constants
+const (
+	DBPostgres = "postgres"
+	DBMySQL    = "mysql"
+	DBSQLite   = "sqlite"
+)
+
+// Runtime name constants
+const (
+	RuntimeNode   = "node"
+	RuntimePython = "python"
+	RuntimeGo     = "go"
+	RuntimeElixir = "elixir"
+	RuntimeErlang = "erlang"
+	RuntimeJava   = "java"
+	RuntimeRust   = "rust"
+	RuntimeDotnet = "dotnet"
+)
+
 type Action interface {
 	Type() ActionType
 	Render(ctx *ActionContext) ([]Command, error)
