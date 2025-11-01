@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-11-02
+
+### Added
+- **Setup Scripts System**: Complete declarative development environment setup feature
+  - New `initiat project setup` command to execute setup scripts from `.initiat/setup.yml`
+  - New `initiat setup validate` command to validate setup script syntax and schema
+  - New `initiat setup schema` command to generate JSON Schema for IDE support
+  - Support for 5 execution phases: bootstrap, provision, setup, verify, and post
+  - 8 action types: `run`, `print`, `ensure_package_manager`, `ensure_tool`, `ensure_runtime`, `ensure_database`, `assert_command`, `assert_http`
+  - Conditions DSL with OS/arch detection, file existence checks, and command validation
+  - Matrix gating to restrict execution to specific OS/architecture combinations
+  - Secret injection from Initiat directly into setup scripts as environment variables
+  - Cross-platform support (macOS, Linux, Windows) with automatic package manager detection
+  - Idempotent execution - safe to run multiple times
+  - Timeout and retry support for all steps
+  - Comprehensive validation with detailed error messages
+
+### Changed
+- **Project Initialization**: Updated `initiat project init` behavior
+  - Now requires being inside a git repository to create `.initiat` directory
+  - Creates `.initiat/config.yml` instead of `.initiat` file
+  - Idempotent operation - skips creation if already initialized
+  - Remote project key initialization is also idempotent
+
 ## [0.6.1] - 2025-10-26
 
 ### Added
