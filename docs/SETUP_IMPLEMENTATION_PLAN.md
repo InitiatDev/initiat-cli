@@ -222,26 +222,26 @@ schemas/
 **Goal**: Orchestrate full setup execution plan
 
 #### Step 5.1: Main Renderer
-- [ ] Create `internal/setup/renderer.go`
-- [ ] Implement `Render(*SetupConfig, RenderContext) (*ExecutionPlan, error)`
-- [ ] Logic:
+- [x] Create `internal/setup/renderer.go`
+- [x] Implement `Render(*SetupConfig, RenderContext) (*ExecutionPlan, error)`
+- [x] Logic:
   - Validate config
   - Check matrix constraints
   - Process phases in order
   - Evaluate conditions for each step
   - Apply defaults/overrides
   - Render each action to commands
-- [ ] Return `ExecutionPlan`:
+- [x] Return `ExecutionPlan`:
   - List of commands to execute
   - Metadata (timeouts, retries, cwd, env)
-- [ ] Write tests in `renderer_test.go`:
+- [x] Write tests in `renderer_test.go`:
   - Full config rendering
   - Step skipping based on conditions
   - Default application
   - Phase ordering
   - Environment variable merging
 
-**Deliverable**: Can produce complete execution plan from YAML
+**Deliverable**: ✅ Can produce complete execution plan from YAML
 
 ---
 
