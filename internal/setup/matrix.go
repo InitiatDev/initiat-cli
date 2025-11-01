@@ -12,6 +12,12 @@ const (
 	osWindows  = "windows"
 	archX86_64 = "x86_64"
 	archARM64  = "arm64"
+
+	goOSDarwin  = "darwin"
+	goOSLinux   = "linux"
+	goOSWindows = "windows"
+	goArchAMD64 = "amd64"
+	goArchARM64 = "arm64"
 )
 
 type MatrixMatcher struct {
@@ -69,7 +75,7 @@ func (m *MatrixMatcher) normalizeOS(os string) string {
 	os = strings.ToLower(strings.TrimSpace(os))
 
 	switch os {
-	case osMacOS, "mac", "darwin":
+	case osMacOS, "mac", goOSDarwin:
 		return osMacOS
 	case osLinux, "ubuntu", "debian", "centos", "rhel", "fedora":
 		return osLinux
@@ -84,7 +90,7 @@ func (m *MatrixMatcher) normalizeArch(arch string) string {
 	arch = strings.ToLower(strings.TrimSpace(arch))
 
 	switch arch {
-	case archX86_64, "amd64", "x64":
+	case archX86_64, goArchAMD64, "x64":
 		return archX86_64
 	case archARM64, "aarch64", "arm":
 		return archARM64
@@ -95,11 +101,11 @@ func (m *MatrixMatcher) normalizeArch(arch string) string {
 
 func getCurrentOS() string {
 	switch runtime.GOOS {
-	case "darwin":
+	case goOSDarwin:
 		return osMacOS
-	case "linux":
+	case goOSLinux:
 		return osLinux
-	case "windows":
+	case goOSWindows:
 		return osWindows
 	default:
 		return runtime.GOOS
@@ -108,9 +114,9 @@ func getCurrentOS() string {
 
 func getCurrentArch() string {
 	switch runtime.GOARCH {
-	case "amd64":
+	case goArchAMD64:
 		return archX86_64
-	case "arm64":
+	case goArchARM64:
 		return archARM64
 	default:
 		return runtime.GOARCH

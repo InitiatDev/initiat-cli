@@ -249,21 +249,21 @@ schemas/
 **Goal**: Utility functions for real execution
 
 #### Step 6.1: Execution Context
-- [ ] Create `internal/setup/context.go`
-- [ ] Implement:
+- [x] Create `internal/setup/context.go`
+- [x] Implement:
   - `NewContext() *Context` (detect OS, arch, cwd)
   - `WithSecrets(map[string]string) *Context`
   - `ShouldExecuteStep(step Step) (bool, error)`
-- [ ] Write tests in `context_test.go`
+- [x] Write tests in `context_test.go`
 
 #### Step 6.2: Timeout & Retry Helpers
-- [ ] Create `internal/setup/execution.go`
-- [ ] Implement:
+- [x] Create `internal/setup/execution.go`
+- [x] Implement:
   - `ParseDuration(string) (time.Duration, error)`
   - `ParseRetryPolicy(Retries) RetryPolicy`
-- [ ] Write tests in `execution_test.go`
+- [x] Write tests in `execution_test.go`
 
-**Deliverable**: Helper utilities for execution
+**Deliverable**: ✅ Helper utilities for execution
 
 ---
 

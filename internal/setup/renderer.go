@@ -206,13 +206,13 @@ func processStep(
 func buildActionContext(step Step, config *SetupConfig, ctx *RenderContext) (*actions.ActionContext, error) {
 	timeout := ctx.DefaultTimeout
 	if step.Timeout != "" {
-		parsed, err := parseDuration(step.Timeout)
+		parsed, err := ParseDuration(step.Timeout)
 		if err != nil {
 			return nil, fmt.Errorf("invalid timeout format: %w", err)
 		}
 		timeout = parsed
 	} else if config.Defaults != nil && config.Defaults.Timeout != "" {
-		parsed, err := parseDuration(config.Defaults.Timeout)
+		parsed, err := ParseDuration(config.Defaults.Timeout)
 		if err != nil {
 			return nil, fmt.Errorf("invalid default timeout format: %w", err)
 		}
@@ -290,25 +290,7 @@ func buildActionContext(step Step, config *SetupConfig, ctx *RenderContext) (*ac
 }
 
 func buildRetryPolicy(retries *Retries) *RetryPolicy {
-	if retries == nil {
-		return nil
-	}
-
-	backoff := time.Second * 1
-	if retries.Backoff != "" {
-		if parsed, err := parseDuration(retries.Backoff); err == nil {
-			backoff = parsed
-		}
-	}
-
-	return &RetryPolicy{
-		Attempts: retries.Attempts,
-		Backoff:  backoff,
-	}
-}
-
-func parseDuration(s string) (time.Duration, error) {
-	return time.ParseDuration(s)
+	return ParseRetryPolicy(retries)
 }
 
 func mergeEnv(envs ...map[string]string) map[string]string {
