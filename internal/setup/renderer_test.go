@@ -425,9 +425,13 @@ func TestRender_InvalidConfig(t *testing.T) {
 		Shell:      "/bin/bash",
 	}
 
-	_, err := Render(config, ctx)
-	if err == nil {
-		t.Fatal("Expected error for invalid version")
+	plan, err := Render(config, ctx)
+	if err != nil {
+		t.Fatalf("Render should not validate config (caller should), got error: %v", err)
+	}
+
+	if plan == nil {
+		t.Fatal("Expected execution plan, got nil")
 	}
 }
 

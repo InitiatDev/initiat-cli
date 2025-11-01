@@ -56,10 +56,6 @@ type PhaseSummary struct {
 }
 
 func Render(config *SetupConfig, ctx *RenderContext) (*ExecutionPlan, error) {
-	if err := Validate(config); err != nil {
-		return nil, fmt.Errorf("config validation failed: %w", err)
-	}
-
 	if err := validateMatrix(config, ctx); err != nil {
 		return nil, err
 	}
@@ -168,7 +164,7 @@ func processStep(
 		return nil, 0, fmt.Errorf("action rendering failed for step %s[%d]: %w", phaseName, stepIndex, err)
 	}
 
-	retryPolicy := buildRetryPolicy(step.Retries)
+	retryPolicy := ParseRetryPolicy(step.Retries)
 	var execCommands []ExecutableCommand
 
 	for _, cmd := range commands {
@@ -276,10 +272,6 @@ func buildActionContext(step Step, config *SetupConfig, ctx *RenderContext) (*ac
 		Timeout:         timeout,
 		ContinueOnError: continueOnError,
 	}, nil
-}
-
-func buildRetryPolicy(retries *Retries) *RetryPolicy {
-	return ParseRetryPolicy(retries)
 }
 
 func mergeEnv(envs ...map[string]string) map[string]string {

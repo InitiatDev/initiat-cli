@@ -121,10 +121,11 @@ func (e *Executor) shouldRedact(key string) bool {
 }
 
 func isRedactable(key string) bool {
-	return strings.Contains(strings.ToLower(key), "secret") ||
-		strings.Contains(strings.ToLower(key), "password") ||
-		strings.Contains(strings.ToLower(key), "token") ||
-		strings.Contains(strings.ToLower(key), "api_key") ||
-		strings.Contains(strings.ToLower(key), "access_token") ||
-		strings.Contains(strings.ToLower(key), "refresh_token")
+	keyLower := strings.ToLower(key)
+	return strings.Contains(keyLower, "secret") ||
+		strings.Contains(keyLower, "password") ||
+		strings.Contains(keyLower, "token") ||
+		strings.Contains(keyLower, "api_key") ||
+		strings.Contains(keyLower, "access_token") ||
+		strings.Contains(keyLower, "refresh_token")
 }

@@ -3,8 +3,6 @@ package setup
 import (
 	"errors"
 	"fmt"
-	"os"
-	"runtime"
 	"time"
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
@@ -17,23 +15,27 @@ var ErrNoCommandsToExecute = errors.New("no commands to execute")
 
 type SetupRunner struct {
 	projectCtx *config.ProjectContext
-	store      *storage.Storage
-	apiClient  *client.Client
+	store      StorageInterface
+	apiClient  APIClientInterface
 }
 
 func NewSetupRunner(projectCtx *config.ProjectContext) *SetupRunner {
+	return NewSetupRunnerWithDeps(projectCtx, storage.New(), client.New())
+}
+
+func NewSetupRunnerWithDeps(
+	projectCtx *config.ProjectContext,
+	store StorageInterface,
+	apiClient APIClientInterface,
+) *SetupRunner {
 	return &SetupRunner{
 		projectCtx: projectCtx,
-		store:      storage.New(),
-		apiClient:  client.New(),
+		store:      store,
+		apiClient:  apiClient,
 	}
 }
 
 func (r *SetupRunner) Run(config *SetupConfig) error {
-	if err := Validate(config); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
-	}
-
 	secrets, err := r.fetchRequiredSecrets(config)
 	if err != nil {
 		return fmt.Errorf("failed to fetch secrets: %w", err)
@@ -58,20 +60,6 @@ func (r *SetupRunner) Run(config *SetupConfig) error {
 		return fmt.Errorf("setup execution failed: %w", err)
 	}
 
-	return nil
-}
-
-func (r *SetupRunner) ValidateAndPrintErrors(config *SetupConfig) error {
-	if err := Validate(config); err != nil {
-		if validationErrs, ok := err.(ValidationErrors); ok {
-			for _, validationErr := range validationErrs {
-				fmt.Printf("  - %s\n", validationErr.Error())
-			}
-		} else {
-			fmt.Printf("  - %s\n", err.Error())
-		}
-		return err
-	}
 	return nil
 }
 
@@ -158,41 +146,4 @@ func (r *SetupRunner) createRenderContext(secrets map[string]string) (*RenderCon
 		DefaultTimeout:         time.Minute * defaultTimeoutMinutes,
 		DefaultContinueOnError: false,
 	}, nil
-}
-
-func collectSecretNames(config *SetupConfig) []string {
-	secretMap := make(map[string]bool)
-
-	for _, phase := range GetAllPhases(config) {
-		for _, step := range phase.Steps {
-			if step.EnvFromSecrets != nil {
-				for _, secretName := range step.EnvFromSecrets {
-					secretMap[secretName] = true
-				}
-			}
-		}
-	}
-
-	secretNames := make([]string, 0, len(secretMap))
-	for name := range secretMap {
-		secretNames = append(secretNames, name)
-	}
-
-	return secretNames
-}
-
-func detectShell() string {
-	shell := os.Getenv("SHELL")
-	if shell != "" {
-		return shell
-	}
-
-	switch runtime.GOOS {
-	case goOSWindows:
-		return "powershell"
-	case goOSDarwin, goOSLinux:
-		return "/bin/bash"
-	default:
-		return "/bin/sh"
-	}
 }

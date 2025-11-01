@@ -1,12 +1,14 @@
 package setup
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/testutil"
+	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
 func TestSetupRunner_Run(t *testing.T) {
@@ -75,182 +77,6 @@ func TestSetupRunner_Run_NoCommands(t *testing.T) {
 	}
 }
 
-func TestSetupRunner_ValidateAndPrintErrors(t *testing.T) {
-	tests := []struct {
-		name        string
-		setupConfig *SetupConfig
-		wantError   bool
-		contains    []string
-	}{
-		{
-			name: "valid config",
-			setupConfig: &SetupConfig{
-				Version: 1,
-			},
-			wantError: false,
-			contains:  []string{},
-		},
-		{
-			name: "invalid version",
-			setupConfig: &SetupConfig{
-				Version: 2,
-			},
-			wantError: true,
-			contains:  []string{"version"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			capture := testutil.CaptureStdout()
-			defer capture.Restore()
-
-			projectCtx := &config.ProjectContext{
-				OrgSlug:     "test-org",
-				ProjectSlug: "test-project",
-			}
-			runner := NewSetupRunner(projectCtx)
-
-			err := runner.ValidateAndPrintErrors(tt.setupConfig)
-
-			if (err != nil) != tt.wantError {
-				t.Errorf("ValidateAndPrintErrors() error = %v, wantError %v", err, tt.wantError)
-			}
-
-			for _, text := range tt.contains {
-				capture.AssertContains(t, text)
-			}
-		})
-	}
-}
-
-func TestSetupRunner_collectSecretNames(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   *SetupConfig
-		expected []string
-	}{
-		{
-			name: "no secrets",
-			config: &SetupConfig{
-				Version: 1,
-				Setup: []Step{
-					{Run: "echo test"},
-				},
-			},
-			expected: []string{},
-		},
-		{
-			name: "single secret",
-			config: &SetupConfig{
-				Version: 1,
-				Setup: []Step{
-					{
-						Run:            "echo test",
-						EnvFromSecrets: []string{"API_KEY"},
-					},
-				},
-			},
-			expected: []string{"API_KEY"},
-		},
-		{
-			name: "multiple secrets in multiple steps",
-			config: &SetupConfig{
-				Version: 1,
-				Bootstrap: []Step{
-					{
-						EnvFromSecrets: []string{"SECRET1"},
-					},
-				},
-				Setup: []Step{
-					{
-						EnvFromSecrets: []string{"SECRET1", "SECRET2"},
-					},
-				},
-			},
-			expected: []string{"SECRET1", "SECRET2"},
-		},
-		{
-			name: "duplicate secrets",
-			config: &SetupConfig{
-				Version: 1,
-				Bootstrap: []Step{
-					{EnvFromSecrets: []string{"API_KEY"}},
-				},
-				Setup: []Step{
-					{EnvFromSecrets: []string{"API_KEY"}},
-				},
-			},
-			expected: []string{"API_KEY"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := collectSecretNames(tt.config)
-
-			if len(result) != len(tt.expected) {
-				t.Errorf("collectSecretNames() returned %d secrets, want %d", len(result), len(tt.expected))
-			}
-
-			secretMap := make(map[string]bool)
-			for _, s := range result {
-				secretMap[s] = true
-			}
-
-			for _, expected := range tt.expected {
-				if !secretMap[expected] {
-					t.Errorf("collectSecretNames() missing secret: %s", expected)
-				}
-			}
-		})
-	}
-}
-
-func TestSetupRunner_detectShell(t *testing.T) {
-	originalShell := os.Getenv("SHELL")
-
-	tests := []struct {
-		name     string
-		setShell string
-		wantCont string
-	}{
-		{
-			name:     "with SHELL env var",
-			setShell: "/bin/zsh",
-			wantCont: "/bin/zsh",
-		},
-		{
-			name:     "without SHELL env var",
-			setShell: "",
-			wantCont: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.setShell != "" {
-				os.Setenv("SHELL", tt.setShell)
-			} else {
-				os.Unsetenv("SHELL")
-			}
-			defer func() {
-				if originalShell != "" {
-					os.Setenv("SHELL", originalShell)
-				} else {
-					os.Unsetenv("SHELL")
-				}
-			}()
-
-			result := detectShell()
-
-			if tt.setShell != "" && result != tt.setShell {
-				t.Errorf("detectShell() = %q, want %q", result, tt.setShell)
-			}
-		})
-	}
-}
-
 func TestNewSetupRunner(t *testing.T) {
 	projectCtx := &config.ProjectContext{
 		OrgSlug:     "test-org",
@@ -270,6 +96,72 @@ func TestNewSetupRunner(t *testing.T) {
 	if runner.apiClient == nil {
 		t.Error("NewSetupRunner() apiClient is nil")
 	}
+}
+
+func TestNewSetupRunnerWithDeps(t *testing.T) {
+	projectCtx := &config.ProjectContext{
+		OrgSlug:     "test-org",
+		ProjectSlug: "test-project",
+	}
+
+	mockStore := &mockStorage{
+		hasDeviceID:   true,
+		encryptionKey: []byte("test-key"),
+	}
+	mockClient := &mockAPIClient{}
+
+	runner := NewSetupRunnerWithDeps(projectCtx, mockStore, mockClient)
+
+	if runner.projectCtx != projectCtx {
+		t.Error("NewSetupRunnerWithDeps() projectCtx not set correctly")
+	}
+
+	if runner.store != mockStore {
+		t.Error("NewSetupRunnerWithDeps() store not set correctly")
+	}
+
+	if runner.apiClient != mockClient {
+		t.Error("NewSetupRunnerWithDeps() apiClient not set correctly")
+	}
+}
+
+type mockStorage struct {
+	hasDeviceID   bool
+	encryptionKey []byte
+}
+
+func (m *mockStorage) HasDeviceID() bool {
+	return m.hasDeviceID
+}
+
+func (m *mockStorage) GetEncryptionPrivateKey() ([]byte, error) {
+	if m.encryptionKey == nil {
+		return nil, fmt.Errorf("key not found")
+	}
+	return m.encryptionKey, nil
+}
+
+type mockAPIClient struct {
+	secrets           map[string]*types.SecretWithValue
+	wrappedProjectKey string
+}
+
+func (m *mockAPIClient) GetSecret(orgSlug, projectSlug, secretKey string) (*types.SecretWithValue, error) {
+	if m.secrets == nil {
+		return nil, fmt.Errorf("secret not found")
+	}
+	secret, ok := m.secrets[secretKey]
+	if !ok {
+		return nil, fmt.Errorf("secret not found")
+	}
+	return secret, nil
+}
+
+func (m *mockAPIClient) GetWrappedProjectKey(orgSlug, projectSlug string) (string, error) {
+	if m.wrappedProjectKey == "" {
+		return "", fmt.Errorf("project key not found")
+	}
+	return m.wrappedProjectKey, nil
 }
 
 func TestSetupRunner_Run_WithActualFile(t *testing.T) {

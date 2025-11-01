@@ -2,7 +2,6 @@ package setup
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/InitiatDev/initiat-cli/internal/setup/actions"
 	"github.com/InitiatDev/initiat-cli/internal/setup/actions/types"
@@ -78,7 +77,7 @@ func (f *ActionFactory) buildHTTPRetries(retries *Retries) (*types.Retries, erro
 		return nil, nil
 	}
 
-	backoffDuration, err := time.ParseDuration(retries.Backoff)
+	backoffDuration, err := ParseDuration(retries.Backoff)
 	if err != nil {
 		return nil, fmt.Errorf("invalid retry backoff format: %w", err)
 	}
