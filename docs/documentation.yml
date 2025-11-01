@@ -353,40 +353,53 @@ commands:
     id: "project.setup"
     name: "setup"
     category: "project"
-    description: "Set up a new project by creating a .initiat file and initializing the project"
+    description: "Run the setup script from .initiat/setup.yml to configure the development environment"
     usage: "initiat project setup"
     arguments: []
     options: []
     examples:
-      - description: "Set up a new project"
+      - description: "Run setup script"
         command: "initiat project setup"
     workflow_steps:
-      - "Creates a .initiat file in the current directory"
-      - "Prompts for organization (uses default if set)"
-      - "Asks for project name (defaults to current folder name)"
-      - "Sets the values in the .initiat file"
-      - "Checks if project exists remotely"
-      - "Initializes project key if project exists"
-      - "Provides guidance if project doesn't exist"
+      - "Reads and parses .initiat/setup.yml"
+      - "Validates the setup configuration against the schema"
+      - "Fetches required secrets from Initiat (if needed)"
+      - "Executes the setup script (installs tools, runtimes, databases, etc.)"
+      - "Runs all phases sequentially (bootstrap → provision → setup → verify → post)"
+    prerequisites:
+      - "Must be inside a git repository"
+      - "Project context must be initialized (.initiat/config.yml must exist)"
+      - "Device must be registered and approved for the project"
     output: |
-      🚀 Setting up a new project...
+      📋 Loading setup script from .initiat/setup.yml...
+      🔍 Validating setup configuration...
+      ✅ Setup configuration is valid
+      🚀 Executing setup script...
 
-      🏢 Organization (default: my-company): 
-      📦 Project name (default: my-project): 
-      ✅ Created .initiat file with org: my-company, project: my-project
-      🔐 Project key initialized successfully!
+      [bootstrap phase]
+        ✓ Ensuring package manager...
+        ✓ Ensuring git...
 
-      🎉 Project setup complete!
-      📍 Project: my-company/my-project
-      📁 Local config: .initiat file created
+      [provision phase]
+        ✓ Installing Node.js runtime...
+        ✓ Ensuring PostgreSQL database...
 
-      Next steps:
-        • Add secrets: initiat secret set API_KEY --value your-secret
-        • List secrets: initiat secret list
-        • Invite team members: initiat project invite-device
+      [setup phase]
+        ✓ Installing dependencies...
+        ✓ Running migrations...
+
+      [verify phase]
+        ✓ Verifying installation...
+
+      [post phase]
+        ✓ Setup complete!
+
+      ✅ Setup completed successfully!
     metadata:
-      difficulty: "beginner"
-      estimated_time: "2 minutes"
+      difficulty: "intermediate"
+      estimated_time: "5-15 minutes"
+      related_docs:
+        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md) for complete syntax reference"
 
   env.init:
     id: "env.init"
@@ -572,6 +585,95 @@ commands:
     metadata:
       difficulty: "beginner"
       estimated_time: "30 seconds"
+
+  setup.validate:
+    id: "setup.validate"
+    name: "validate"
+    category: "setup"
+    description: "Validate a setup script YAML file against the schema"
+    usage: "initiat setup validate [setup-file]"
+    arguments:
+      - name: "setup-file"
+        description: "Path to setup file (optional, defaults to .initiat/setup.yml)"
+        required: false
+    options: []
+    examples:
+      - description: "Validate default setup file"
+        command: "initiat setup validate"
+      - description: "Validate specific file"
+        command: "initiat setup validate .initiat/setup.yml"
+      - description: "Validate custom file"
+        command: "initiat setup validate custom-setup.yml"
+    workflow_steps:
+      - "Reads and parses the setup YAML file"
+      - "Validates against JSON Schema"
+      - "Performs additional Go-specific validation (secret references, path safety, etc.)"
+      - "Shows detailed errors if validation fails"
+    output_success: |
+      Validating .initiat/setup.yml...
+      ✅ Setup script is valid!
+    output_error: |
+      Validating .initiat/setup.yml...
+      ❌ Validation failed:
+        - version: must be 1
+        - setup[0].ensure_runtime: install configuration is required
+        - env.secrets: 'DATABASE_URL' referenced in env_from_secrets but not declared in env.secrets
+    use_cases:
+      - "Validate setup scripts before committing"
+      - "Check setup scripts in CI/CD pipelines"
+      - "Debug setup script issues"
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "30 seconds"
+      related_docs:
+        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md) for syntax details"
+
+  setup.schema:
+    id: "setup.schema"
+    name: "schema"
+    category: "setup"
+    description: "Output the JSON Schema for .initiat/setup.yml files"
+    usage: "initiat setup schema [--output FILE]"
+    arguments: []
+    options:
+      - name: "output"
+        short: "o"
+        description: "Save schema to file instead of stdout"
+        required: false
+    examples:
+      - description: "Output schema to stdout"
+        command: "initiat setup schema"
+      - description: "Save schema to file"
+        command: "initiat setup schema --output schemas/setup-v1.json"
+        output: |
+          ✅ Schema saved to schemas/setup-v1.json
+    workflow_steps:
+      - "Generates JSON Schema v7 for setup scripts"
+      - "Outputs to stdout (default) or saves to file"
+      - "Schema includes all action types, validation rules, and constraints"
+    output: |
+      {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Setup Script Schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          ...
+        }
+      }
+    use_cases:
+      - "Generate schema for IDE autocomplete support"
+      - "Distribute schema separately (e.g., in separate repo)"
+      - "Validate setup files in other languages/tools"
+      - "Document the setup script format programmatically"
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "10 seconds"
+      related_docs:
+        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md) for complete syntax reference"
 
   secret.set:
     id: "secret.set"

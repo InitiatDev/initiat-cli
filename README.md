@@ -245,6 +245,7 @@ initiat project init acme-corp/production
 ## Documentation
 
 ### **Complete Guides**
+- **[Setup Scripts](docs/SETUP_SCRIPTS.md)**: Complete documentation for `.initiat/setup.yml` setup scripts
 - **[Command Reference](docs/COMMANDS.md)**: Complete CLI command documentation
 - **[Security Architecture](docs/SECURITY.md)**: Detailed security and cryptographic implementation
 - **[Release Process](docs/RELEASES.md)**: How to create and manage releases

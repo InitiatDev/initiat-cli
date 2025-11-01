@@ -8,6 +8,7 @@ This document provides comprehensive documentation for all Initiat CLI commands,
 - [Authentication Commands](#authentication-commands)
 - [Device Management](#device-management)
 - [Project Management](#project-management)
+- [Setup Script Management](#setup-script-management)
 - [Environment Management](#environment-management)
 - [Secret Management](#secret-management)
 - [Configuration Management](#configuration-management)
@@ -352,6 +353,167 @@ Next steps:
   • List secrets: initiat secret list
   • Invite devices: initiat project invite-device
 ```
+
+### `initiat project setup`
+
+Run the setup script from `.initiat/setup.yml` to configure the development environment.
+
+**What it does:**
+1. Reads and parses `.initiat/setup.yml`
+2. Validates the setup configuration against the schema
+3. Fetches required secrets from Initiat (if needed)
+4. Executes the setup script (installs tools, runtimes, databases, etc.)
+5. Runs all phases sequentially (bootstrap → provision → setup → verify → post)
+
+**Prerequisites:**
+- Must be inside a git repository
+- Project context must be initialized (`.initiat/config.yml` must exist)
+- Device must be registered and approved for the project
+
+**Examples:**
+```bash
+# Run setup script (requires project context)
+initiat project setup
+```
+
+**Output:**
+```
+📋 Loading setup script from .initiat/setup.yml...
+🔍 Validating setup configuration...
+✅ Setup configuration is valid
+🚀 Executing setup script...
+
+[bootstrap phase]
+  ✓ Ensuring package manager...
+  ✓ Ensuring git...
+
+[provision phase]
+  ✓ Installing Node.js runtime...
+  ✓ Ensuring PostgreSQL database...
+
+[setup phase]
+  ✓ Installing dependencies...
+  ✓ Running migrations...
+
+[verify phase]
+  ✓ Verifying installation...
+
+[post phase]
+  ✓ Setup complete!
+
+✅ Setup completed successfully!
+```
+
+**Error Handling:**
+- If setup file is not found, returns an error
+- If validation fails, shows detailed validation errors
+- If secrets are required but device is not registered, prompts for device registration
+- If any step fails (and `continue_on_error` is false), execution stops
+
+**Related Documentation:**
+- See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for complete syntax reference
+
+## Setup Script Management
+
+### `initiat setup validate [setup-file]`
+
+Validate a setup script YAML file against the schema.
+
+**Arguments:**
+- `setup-file`: Path to setup file (optional, defaults to `.initiat/setup.yml`)
+
+**Examples:**
+```bash
+# Validate default setup file
+initiat setup validate
+
+# Validate specific file
+initiat setup validate .initiat/setup.yml
+
+# Validate custom file
+initiat setup validate custom-setup.yml
+```
+
+**What it does:**
+1. Reads and parses the setup YAML file
+2. Validates against JSON Schema
+3. Performs additional Go-specific validation (secret references, path safety, etc.)
+4. Shows detailed errors if validation fails
+
+**Output (Success):**
+```
+Validating .initiat/setup.yml...
+✅ Setup script is valid!
+```
+
+**Output (Failure):**
+```
+Validating .initiat/setup.yml...
+❌ Validation failed:
+  - version: must be 1
+  - setup[0].ensure_runtime: install configuration is required
+  - env.secrets: 'DATABASE_URL' referenced in env_from_secrets but not declared in env.secrets
+```
+
+**Use Cases:**
+- Validate setup scripts before committing
+- Check setup scripts in CI/CD pipelines
+- Debug setup script issues
+
+**Related Documentation:**
+- See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for syntax details
+
+### `initiat setup schema [--output FILE]`
+
+Output the JSON Schema for `.initiat/setup.yml` files.
+
+**Options:**
+- `--output, -o`: Save schema to file instead of stdout
+
+**Examples:**
+```bash
+# Output schema to stdout
+initiat setup schema
+
+# Save schema to file
+initiat setup schema --output schemas/setup-v1.json
+initiat setup schema -o docs/schemas/setup-v1.json
+```
+
+**What it does:**
+1. Generates JSON Schema v7 for setup scripts
+2. Outputs to stdout (default) or saves to file
+3. Schema includes all action types, validation rules, and constraints
+
+**Output (Stdout):**
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Setup Script Schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    ...
+  }
+}
+```
+
+**Output (File):**
+```
+✅ Schema saved to schemas/setup-v1.json
+```
+
+**Use Cases:**
+- Generate schema for IDE autocomplete support
+- Distribute schema separately (e.g., in separate repo)
+- Validate setup files in other languages/tools
+- Document the setup script format programmatically
+
+**Related Documentation:**
+- See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for complete syntax reference
 
 ## Environment Management
 
