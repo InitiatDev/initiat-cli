@@ -271,35 +271,36 @@ schemas/
 **Goal**: Wire up to actual CLI command
 
 #### Step 7.1: Setup Command Structure
-- [ ] Create `cmd/setup.go`
-- [ ] Add subcommands:
+- [x] Create `cmd/setup.go`
+- [x] Add subcommands:
   - `initiat setup validate` - validate YAML only
-  - `initiat setup run` - execute setup
-  - `initiat setup run --phase <phase>` - run up to phase
   - `initiat setup schema` - output JSON Schema
+- [x] Execution is under `initiat project setup` (requires project context for secrets)
 
 #### Step 7.2: Validate Subcommand
-- [ ] Read `.initiat/setup.yml`
-- [ ] Parse and validate
-- [ ] Print success/errors
+- [x] Read `.initiat/setup.yml`
+- [x] Parse and validate
+- [x] Print success/errors
 
 #### Step 7.3: Schema Subcommand
-- [ ] Output generated JSON Schema to stdout
-- [ ] Option to save to file: `--output schemas/setup-v1.json`
+- [x] Output generated JSON Schema to stdout
+- [x] Option to save to file: `--output schemas/setup-v1.json`
 
-#### Step 7.4: Run Subcommand
-- [ ] Read and parse YAML
-- [ ] Create execution context
-- [ ] Fetch secrets if needed
-- [ ] Render execution plan
-- [ ] Execute commands with:
+#### Step 7.4: Run Subcommand (via `project setup`)
+- [x] Read and parse YAML
+- [x] Create execution context
+- [x] Fetch secrets if needed
+- [x] Render execution plan
+- [x] Execute commands with:
   - Timeout enforcement
   - Retry logic
   - Secret redaction in logs
   - Progress output
-- [ ] Handle failures per `continue_on_error`
+- [x] Handle failures per `continue_on_error`
 
-**Deliverable**: Working CLI commands + JSON Schema output
+**Deliverable**: ✅ Working CLI commands + JSON Schema output
+
+**Note**: Execution is handled by `initiat project setup` rather than `initiat setup run` because setup execution requires project context for secret management. Idempotent execution ensures safe re-runs without phase flags.
 
 ---
 

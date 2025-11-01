@@ -103,27 +103,16 @@ func processPhases(
 		Phases: []PhaseSummary{},
 	}
 
-	phases := []struct {
-		name  string
-		steps []Step
-	}{
-		{"bootstrap", config.Bootstrap},
-		{"provision", config.Provision},
-		{"setup", config.Setup},
-		{"verify", config.Verify},
-		{"post", config.Post},
-	}
-
-	for _, phase := range phases {
+	for _, phase := range GetAllPhases(config) {
 		phaseSummary := PhaseSummary{
-			Name:         phase.name,
-			StepCount:    len(phase.steps),
+			Name:         phase.Name,
+			StepCount:    len(phase.Steps),
 			CommandCount: 0,
 		}
 
-		for stepIndex, step := range phase.steps {
+		for stepIndex, step := range phase.Steps {
 			commands, stepCommandsCount, err := processStep(
-				phase.name, stepIndex, step, config, ctx, conditionEval, actionFactory)
+				phase.Name, stepIndex, step, config, ctx, conditionEval, actionFactory)
 			if err != nil {
 				return nil, nil, err
 			}

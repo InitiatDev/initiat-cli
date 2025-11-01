@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -9,6 +10,7 @@ import (
 	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/env"
 	"github.com/InitiatDev/initiat-cli/internal/project"
+	"github.com/InitiatDev/initiat-cli/internal/setup"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/types"
@@ -211,9 +213,45 @@ func checkProjectInitStatus(project *types.Project) bool {
 }
 
 func runProjectSetup(cmd *cobra.Command, args []string) error {
-	fmt.Println("⚠️  Setup script execution not yet implemented (Phase 7)")
-	fmt.Println()
-	fmt.Println("This command will eventually run the setup script from .initiat/setup.yml")
-	fmt.Println("to configure the development environment.")
+	setupFile := ".initiat/setup.yml"
+
+	projectCtx, err := GetProjectContext()
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get project context: %w", err)
+	}
+
+	fmt.Printf("📋 Loading setup script from %s...\n", setupFile)
+	config, err := setup.ParseFile(setupFile)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to parse setup file: %w", err)
+	}
+
+	fmt.Println("🔍 Validating setup configuration...")
+	if err := setup.Validate(config); err != nil {
+		fmt.Println("❌ Validation failed:")
+		if validationErrs, ok := err.(setup.ValidationErrors); ok {
+			for _, validationErr := range validationErrs {
+				fmt.Printf("  - %s\n", validationErr.Error())
+			}
+		} else {
+			fmt.Printf("  - %s\n", err.Error())
+		}
+		return fmt.Errorf("validation failed")
+	}
+
+	fmt.Println("✅ Setup configuration is valid")
+
+	fmt.Println("🔧 Creating execution context...")
+	fmt.Println("📝 Generating execution plan...")
+
+	runner := setup.NewSetupRunner(projectCtx)
+	if err := runner.Run(config); err != nil {
+		if errors.Is(err, setup.ErrNoCommandsToExecute) {
+			fmt.Println("ℹ️  No commands to execute (all steps skipped due to conditions)")
+			return nil
+		}
+		return fmt.Errorf("❌ Setup execution failed: %w", err)
+	}
+
 	return nil
 }

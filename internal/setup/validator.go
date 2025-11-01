@@ -63,20 +63,9 @@ func validateVersion(config *SetupConfig) ValidationErrors {
 func validateSteps(config *SetupConfig) ValidationErrors {
 	var errors ValidationErrors
 
-	allSteps := []struct {
-		name  string
-		steps []Step
-	}{
-		{"bootstrap", config.Bootstrap},
-		{"provision", config.Provision},
-		{"setup", config.Setup},
-		{"verify", config.Verify},
-		{"post", config.Post},
-	}
-
-	for _, phase := range allSteps {
-		for i, step := range phase.steps {
-			stepErrors := validateStep(step, fmt.Sprintf("%s[%d]", phase.name, i))
+	for _, phase := range GetAllPhases(config) {
+		for i, step := range phase.Steps {
+			stepErrors := validateStep(step, fmt.Sprintf("%s[%d]", phase.Name, i))
 			errors = append(errors, stepErrors...)
 		}
 	}
@@ -275,23 +264,12 @@ func validateSecrets(config *SetupConfig) ValidationErrors {
 		declaredSecrets[secret] = true
 	}
 
-	allSteps := []struct {
-		name  string
-		steps []Step
-	}{
-		{"bootstrap", config.Bootstrap},
-		{"provision", config.Provision},
-		{"setup", config.Setup},
-		{"verify", config.Verify},
-		{"post", config.Post},
-	}
-
-	for _, phase := range allSteps {
-		for i, step := range phase.steps {
+	for _, phase := range GetAllPhases(config) {
+		for i, step := range phase.Steps {
 			for j, secret := range step.EnvFromSecrets {
 				if !declaredSecrets[secret] {
 					errors = append(errors, ValidationError{
-						Field:   fmt.Sprintf("%s[%d].env_from_secrets[%d]", phase.name, i, j),
+						Field:   fmt.Sprintf("%s[%d].env_from_secrets[%d]", phase.Name, i, j),
 						Message: fmt.Sprintf("secret '%s' not declared in env.secrets", secret),
 					})
 				}
@@ -320,29 +298,18 @@ func validateTimeouts(config *SetupConfig) ValidationErrors {
 func validatePaths(config *SetupConfig) ValidationErrors {
 	var errors ValidationErrors
 
-	allSteps := []struct {
-		name  string
-		steps []Step
-	}{
-		{"bootstrap", config.Bootstrap},
-		{"provision", config.Provision},
-		{"setup", config.Setup},
-		{"verify", config.Verify},
-		{"post", config.Post},
-	}
-
-	for _, phase := range allSteps {
-		for i, step := range phase.steps {
+	for _, phase := range GetAllPhases(config) {
+		for i, step := range phase.Steps {
 			if step.CWD != "" {
 				if filepath.IsAbs(step.CWD) {
 					errors = append(errors, ValidationError{
-						Field:   fmt.Sprintf("%s[%d].cwd", phase.name, i),
+						Field:   fmt.Sprintf("%s[%d].cwd", phase.Name, i),
 						Message: "must be relative path (no absolute paths allowed)",
 					})
 				}
 				if strings.Contains(step.CWD, "..") {
 					errors = append(errors, ValidationError{
-						Field:   fmt.Sprintf("%s[%d].cwd", phase.name, i),
+						Field:   fmt.Sprintf("%s[%d].cwd", phase.Name, i),
 						Message: "must not contain '..' (no parent directory access)",
 					})
 				}
