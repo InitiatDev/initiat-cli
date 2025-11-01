@@ -131,6 +131,15 @@ func SetupProject(details SetupDetails) (*SetupResult, error) {
 }
 
 func CreateInitiatFile(orgSlug, projectSlug string) error {
+	exists, err := CheckInitiatFileExists()
+	if err != nil {
+		return fmt.Errorf("failed to check for existing .initiat file: %w", err)
+	}
+
+	if exists {
+		return nil
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)

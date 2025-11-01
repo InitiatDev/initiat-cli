@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/env"
 	"github.com/InitiatDev/initiat-cli/internal/project"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
@@ -29,8 +29,16 @@ var projectListCmd = &cobra.Command{
 
 var projectInitCmd = &cobra.Command{
 	Use:   "init [project-path]",
-	Short: "Initialize project key",
-	Long: `Initialize a new project key for secure secret storage.
+	Short: "Initialize a project",
+	Long: `Initialize a project by creating local .initiat/config.yml and initializing the project key remotely.
+
+This command will:
+- Create .initiat/config.yml in the current directory (if in a git repository)
+- Prompt for organization (uses default if set)
+- Ask for project name (defaults to current folder name)
+- Initialize the project key remotely (if not already initialized)
+
+Both operations are idempotent - they will skip if already completed.
 
 Examples:
   initiat project init acme-corp/production
@@ -45,15 +53,13 @@ Examples:
 
 var projectSetupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "Set up a new project",
-	Long: `Set up a new project by creating a .initiat file and initializing the project.
+	Short: "Run project setup script",
+	Long: `Run the setup script from .initiat/setup.yml to configure the development environment.
 
 This command will:
-- Create a .initiat file in the current directory
-- Prompt for organization (uses default if set)
-- Ask for project name (defaults to current folder name)
-- Create the project remotely if it doesn't exist
-- Initialize the project key
+- Read and parse .initiat/setup.yml
+- Validate the setup configuration
+- Execute the setup script (install tools, runtimes, databases, etc.)
 
 Examples:
   initiat project setup`,
@@ -138,15 +144,22 @@ func runProjectInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("❌ %w", err)
 	}
 
-	fmt.Printf("Initializing project key for \"%s\"...\n", projectCtx.String())
+	fmt.Printf("Initializing project \"%s\"...\n", projectCtx.String())
 
 	store := storage.New()
 	if !store.HasDeviceID() {
 		return fmt.Errorf("❌ Device not registered. Please run 'initiat device register <name>' first")
 	}
 
+	orgSlug := projectCtx.OrgSlug
+	projectSlug := projectCtx.ProjectSlug
+
+	if err := ensureInitiatFileExists(orgSlug, projectSlug); err != nil {
+		return fmt.Errorf("❌ Failed to create .initiat/config.yml: %w", err)
+	}
+
 	c := client.New()
-	proj, err := c.GetProjectBySlug(projectCtx.OrgSlug, projectCtx.ProjectSlug)
+	proj, err := c.GetProjectBySlug(orgSlug, projectSlug)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to get project info: %w", err)
 	}
@@ -155,7 +168,38 @@ func runProjectInit(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return project.InitializeProjectKey(c, store, proj, projectCtx.OrgSlug, projectCtx.ProjectSlug)
+	if err := project.InitializeProjectKey(c, store, proj, orgSlug, projectSlug); err != nil {
+		return fmt.Errorf("❌ Failed to initialize project key: %w", err)
+	}
+
+	fmt.Printf("✅ Project \"%s\" initialized successfully!\n", projectCtx.String())
+	return nil
+}
+
+func ensureInitiatFileExists(orgSlug, projectSlug string) error {
+	exists, err := project.CheckInitiatFileExists()
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		fmt.Println("✅ .initiat/config.yml already exists")
+		return nil
+	}
+
+	if !env.IsGitRepository() {
+		fmt.Println("⚠️  Not in a git repository - skipping .initiat/config.yml creation")
+		fmt.Println("💡 Create a git repository first, or manually create .initiat/config.yml")
+		return nil
+	}
+
+	fmt.Println("Creating .initiat/config.yml...")
+	if err := project.CreateInitiatFile(orgSlug, projectSlug); err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Created .initiat/config.yml with org: %s, project: %s\n", orgSlug, projectSlug)
+	return nil
 }
 
 func checkProjectInitStatus(project *types.Project) bool {
@@ -167,78 +211,9 @@ func checkProjectInitStatus(project *types.Project) bool {
 }
 
 func runProjectSetup(cmd *cobra.Command, args []string) error {
-	fmt.Println("Setting up a new project...")
+	fmt.Println("⚠️  Setup script execution not yet implemented (Phase 7)")
 	fmt.Println()
-
-	exists, err := project.CheckInitiatFileExists()
-	if err != nil {
-		return fmt.Errorf("❌ Failed to check for existing .initiat file: %w", err)
-	}
-
-	if exists {
-		fmt.Println("⚠️  A .initiat file already exists in this directory.")
-		fmt.Print("Do you want to overwrite it? (y/N): ")
-		var response string
-		_, _ = fmt.Scanln(&response)
-		response = strings.ToLower(strings.TrimSpace(response))
-		if response != "y" && response != "yes" {
-			fmt.Println("Setup cancelled")
-			return nil
-		}
-	}
-
-	orgSlug, err := project.PromptForOrganization()
-	if err != nil {
-		return fmt.Errorf("❌ Failed to get organization: %w", err)
-	}
-
-	projectSlug, err := project.PromptForProjectName()
-	if err != nil {
-		return fmt.Errorf("❌ Failed to get project name: %w", err)
-	}
-
-	if err := project.CreateInitiatFile(orgSlug, projectSlug); err != nil {
-		return fmt.Errorf("❌ Failed to create .initiat file: %w", err)
-	}
-
-	fmt.Printf("✅ Created .initiat file with org: %s, project: %s\n", orgSlug, projectSlug)
-
-	details := project.SetupDetails{
-		OrgSlug:     orgSlug,
-		ProjectSlug: projectSlug,
-	}
-
-	result, err := project.SetupProject(details)
-	if err != nil {
-		return fmt.Errorf("❌ Failed to set up project: %w", err)
-	}
-
-	if result.Success {
-		if result.KeyInitialized {
-			fmt.Println("Project key initialized successfully!")
-		} else {
-			fmt.Printf("❌ %s\n", result.Message)
-			fmt.Println()
-			fmt.Println("To create a new project:")
-			fmt.Println("   1. Visit https://www.initiat.dev")
-			fmt.Println("   2. Create the project in your organization")
-			fmt.Println("   3. Run this setup command again")
-			fmt.Println()
-			fmt.Println("✅ Local .initiat file has been created.")
-			fmt.Println("Run 'initiat project setup' again after creating the project remotely.")
-			return nil
-		}
-	}
-
-	fmt.Println()
-	fmt.Println("Project setup complete!")
-	fmt.Printf("Project: %s/%s\n", orgSlug, projectSlug)
-	fmt.Println("Local config: .initiat file created")
-	fmt.Println()
-	fmt.Println("Next steps:")
-	fmt.Println("  • Add secrets: initiat secret set API_KEY --value your-secret")
-	fmt.Println("  • List secrets: initiat secret list")
-	fmt.Println("  • Invite team members: initiat project invite-device")
-
+	fmt.Println("This command will eventually run the setup script from .initiat/setup.yml")
+	fmt.Println("to configure the development environment.")
 	return nil
 }
