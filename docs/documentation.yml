@@ -1226,7 +1226,7 @@ guides:
     description: "Add team members to projects and approve their devices"
     difficulty: "intermediate"
     estimated_time: "10 minutes"
-    prerequisites: ["admin_access"]
+    prerequisites: ["Admin access to projects"]
     steps:
       - step: 1
         title: "Review Pending Approvals"
@@ -1267,7 +1267,7 @@ guides:
     description: "Set up projects for different environments (dev, staging, prod)"
     difficulty: "intermediate"
     estimated_time: "20 minutes"
-    prerequisites: ["admin_access", "multiple_environments"]
+    prerequisites: ["Admin access to projects", "Multiple environment projects set up"]
     steps:
       - step: 1
         title: "List Available Projects"
@@ -1321,7 +1321,7 @@ guides:
     description: "Safely rotate secrets across environments"
     difficulty: "intermediate"
     estimated_time: "30 minutes"
-    prerequisites: ["access_to_all_environments", "new_secret_values_ready"]
+    prerequisites: ["Access to all environments", "New secret values ready"]
     steps:
       - step: 1
         title: "Audit Current Secrets"
@@ -1382,7 +1382,7 @@ guides:
     description: "Complete guide to managing CLI configuration, project defaults, and aliases"
     difficulty: "beginner"
     estimated_time: "10 minutes"
-    prerequisites: ["basic_understanding_of_initiat_cli"]
+    prerequisites: ["Basic understanding of Initiat CLI"]
     steps:
       - step: 1
         title: "View Current Configuration"
@@ -1433,46 +1433,46 @@ guides:
 
   local_configuration:
     id: "local_configuration"
-    title: "Local Configuration with .initiat Files"
+    title: "Local Project Configuration"
     type: "guide"
-    description: "Use .initiat files for project-specific configuration overrides"
+    description: "Set up project-specific configuration using .initiat/config.yml for automatic project context"
     difficulty: "beginner"
     estimated_time: "5 minutes"
-    prerequisites: ["basic_understanding_of_initiat_cli"]
+    prerequisites: ["Basic understanding of Initiat CLI", "Git repository initialized"]
     steps:
       - step: 1
         title: "Navigate to Project Directory"
         command: "cd /path/to/your/project"
         description: "Go to your project directory"
-        explanation: "Local configuration files are read from the current directory"
+        explanation: "Local configuration files are read from the current directory. Must be in a git repository."
       - step: 2
-        title: "Create .initiat File"
-        command: "initiat project setup"
-        description: "Use the guided setup to create .initiat file"
-        explanation: "This creates a .initiat file with your project context"
+        title: "Initialize Project Configuration"
+        command: "initiat project init acme-corp/production"
+        description: "Create .initiat/config.yml with project context"
+        explanation: "This creates .initiat/config.yml with your project's org and project settings. The command will automatically create this file if you're in a git repository."
       - step: 3
         title: "Verify Local Configuration"
-        command: "cat .initiat"
-        description: "Check the contents of your .initiat file"
-        explanation: "The file should contain org and project settings"
+        command: "cat .initiat/config.yml"
+        description: "Check the contents of your configuration file"
+        explanation: "The file should contain org and project settings that define the project context"
       - step: 4
         title: "Test Local Configuration"
         command: "initiat secret list"
         description: "Test that local configuration is working"
-        explanation: "Commands should now use the local project context automatically"
+        explanation: "Commands should now use the local project context automatically without needing to specify --project-path"
       - step: 5
         title: "Override with Flags (Optional)"
         command: "initiat secret list --project-path other-org/other-project"
         description: "Override local config with command flags when needed"
         explanation: "Command-line flags always take precedence over local configuration"
     success_criteria:
-      - ".initiat file is created in project directory"
+      - ".initiat/config.yml file is created in project directory"
       - "Commands use local project context automatically"
       - "Can override local config with command flags when needed"
     next_steps:
-      - "Share .initiat files with team members"
-      - "Add .initiat to version control (if appropriate)"
+      - "Share .initiat/config.yml with team members (commit to git)"
       - "Set up local config for multiple projects"
+      - "Use project aliases for even faster workflow"
     metadata:
       tags: ["local-config", "project-setup", "productivity"]
       order: 6
@@ -1484,7 +1484,7 @@ guides:
     description: "Set up and manage local development environments with Initiat"
     difficulty: "intermediate"
     estimated_time: "15 minutes"
-    prerequisites: ["project_initialized", "secrets_available"]
+    prerequisites: ["Project initialized", "Secrets available in project"]
     steps:
       - step: 1
         title: "Initialize Environment Management"
@@ -1542,7 +1542,7 @@ guides:
     description: "Systematic approach to resolving common issues"
     difficulty: "beginner"
     estimated_time: "15 minutes"
-    prerequisites: ["basic_understanding_of_initiat_cli"]
+    prerequisites: ["Basic understanding of Initiat CLI"]
     steps:
       - step: 1
         title: "Check Authentication"
@@ -1589,263 +1589,4 @@ guides:
       - "Update team on resolution"
     metadata:
       tags: ["troubleshooting", "debugging", "support"]
-      order: 7
-
-reference:
-  global_options:
-    id: "global_options"
-    title: "Global Options"
-    type: "reference"
-    description: "Global options that apply to all CLI commands"
-    content:
-      options:
-        - name: "config"
-          description: "Path to configuration file"
-          default: "~/.initiat/config.yaml"
-          environment_variable: null
-        - name: "api-url"
-          description: "API base URL"
-          default: "https://www.initiat.dev"
-          environment_variable: "INITIAT_API_BASE_URL"
-        - name: "service-name"
-          description: "Keyring service name"
-          default: "initiat-cli"
-          environment_variable: null
-        - name: "project-path"
-          short: "P"
-          description: "Full project path (org/project) or alias"
-          environment_variable: null
-        - name: "project"
-          short: "p"
-          description: "Project name (uses default org or --org)"
-          environment_variable: null
-        - name: "org"
-          description: "Organization slug (used with --project)"
-          environment_variable: null
-    metadata:
-      order: 1
-
-  project_context:
-    id: "project_context"
-    title: "Project Context Resolution"
-    type: "reference"
-    description: "Different ways to specify project context in commands"
-    content:
-      methods:
-        - method: "Local Configuration (.initiat file) (New!)"
-          command: "initiat secret list"
-          use_case: "When you have a .initiat file in your project directory"
-          output: |
-            # Commands automatically use local project context
-            # No prompts needed when .initiat file exists
-        - method: "Interactive Selection"
-          command: "initiat secret list"
-          use_case: "When you want to select from available projects interactively"
-          output: |
-            ❓ Project context is required for this command.
-            💡 You can specify project using:
-               --project-path org/project
-               --org org --project project
-               Create a .initiat file with org and project
-               Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
-            
-            Available projects:
-              1. Production Environment (acme-corp/production)
-              2. Staging Environment (acme-corp/staging)
-              3. Development Environment (acme-corp/dev)
-              0. Enter custom project
-            
-            Select project (0 for custom): 
-        - method: "Full project path"
-          command: "initiat secret list --project-path acme-corp/production"
-          use_case: "When you need to specify the exact project"
-        - method: "Separate org and project"
-          command: "initiat secret list --org acme-corp --project production"
-          use_case: "When you want to be explicit about organization and project"
-        - method: "Project only (uses default org)"
-          command: "initiat secret list --project production"
-          use_case: "When using your default organization"
-        - method: "Short flags"
-          command: "initiat secret list -P acme-corp/production"
-          use_case: "For faster typing with short flags"
-        - method: "Mixed short flags"
-          command: "initiat secret list --org acme-corp -p production"
-          use_case: "Combining short flags for org and project"
-      configuration_priority:
-        title: "Configuration Priority"
-        description: "Order of precedence for project context resolution"
-        order:
-          - "Command-line flags (highest priority)"
-          - "Local .initiat file"
-          - "Global configuration defaults"
-          - "Environment variables (lowest priority)"
-    metadata:
-      order: 2
-
-  error_handling:
-    id: "error_handling"
-    title: "Error Handling"
-    type: "reference"
-    description: "Common error scenarios and how to resolve them"
-    content:
-      error_types:
-        authentication:
-          - error: "Device not registered"
-            message: "❌ Device not registered. Please run 'initiat device register <name>' first"
-            solution: "Register your device with initiat device register <device-name>"
-          - error: "Project key not initialized"
-            message: "❌ Failed to get project key: project key not initialized"
-            solution: "Initialize project keys with initiat project init <project-path>"
-          - error: "Invalid registration token"
-            message: "❌ Invalid or expired registration token"
-            solution: "Clear token and re-authenticate with initiat device clear-token && initiat auth login"
-        network:
-          - error: "Network connection failed"
-            message: "❌ Failed to set secret: network connection failed"
-            solution: "Check your internet connection and try again"
-          - error: "Secret not found"
-            message: "❌ Failed to get secret: server returned 404"
-            solution: "Verify the secret key exists with initiat secret list"
-        validation:
-          - error: "Invalid secret key"
-            message: "❌ Invalid secret key: must contain only alphanumeric characters and underscores"
-            solution: "Use a valid secret key name"
-          - error: "Invalid secret value"
-            message: "❌ Invalid secret value: cannot be empty"
-            solution: "Provide a non-empty secret value"
-        configuration:
-          - error: "Permission denied"
-            message: "❌ Failed to initialize config: permission denied"
-            solution: "Check file permissions and try again"
-          - error: "Invalid project path"
-            message: "❌ Invalid project path: expected 'org-slug/project-slug'"
-            solution: "Use the correct project path format"
-    metadata:
-      order: 3
-
-  configuration_reference:
-    id: "configuration_reference"
-    title: "Configuration Reference"
-    type: "reference"
-    description: "Complete reference for all configuration options and settings"
-    content:
-      configuration_file:
-        title: "Configuration File"
-        description: "Location and format of the configuration file"
-        details:
-          - "File: ~/.initiat/config.yaml"
-          - "Format: YAML"
-          - "Permissions: 600 (owner read/write only)"
-          - "Auto-created on first use"
-      available_keys:
-        title: "Available Configuration Keys"
-        description: "All configuration keys that can be set"
-        keys:
-          - key: "api.url"
-            description: "API base URL"
-            default: "https://www.initiat.dev"
-            example: 'initiat config set api.url "https://api.initiat.dev"'
-          - key: "api.timeout"
-            description: "API timeout duration"
-            default: "30s"
-            example: 'initiat config set api.timeout "60s"'
-          - key: "org"
-            description: "Default organization slug"
-            default: ""
-            example: 'initiat config set org "my-company"'
-          - key: "project"
-            description: "Default project slug"
-            default: ""
-            example: 'initiat config set project "production"'
-          - key: "service"
-            description: "Service name for keyring"
-            default: "initiat-cli"
-            example: 'initiat config set service "my-custom-service"'
-      environment_variables:
-        title: "Environment Variables"
-        description: "Configuration via environment variables"
-        variables:
-          - name: "INITIAT_API_BASE_URL"
-            description: "API base URL"
-            example: "export INITIAT_API_BASE_URL=https://api.initiat.dev"
-          - name: "INITIAT_API_TIMEOUT"
-            description: "API timeout"
-            example: "export INITIAT_API_TIMEOUT=60s"
-          - name: "INITIAT_SERVICE_NAME"
-            description: "Service name for keyring"
-            example: "export INITIAT_SERVICE_NAME=my-custom-service"
-          - name: "INITIAT_PROJECT_DEFAULT_ORG"
-            description: "Default organization"
-            example: "export INITIAT_PROJECT_DEFAULT_ORG=my-company"
-          - name: "INITIAT_PROJECT_DEFAULT_PROJECT"
-            description: "Default project"
-            example: "export INITIAT_PROJECT_DEFAULT_PROJECT=production"
-      configuration_precedence:
-        title: "Configuration Precedence"
-        description: "Order of configuration priority (highest to lowest)"
-        order:
-          - "Command-line flags"
-          - "Environment variables"
-          - "Configuration file"
-          - "Default values"
-      project_aliases:
-        title: "Project Aliases"
-        description: "Creating and managing project shortcuts"
-        examples:
-          - "Create alias: initiat config alias set prod acme-corp/production"
-          - "Use alias: initiat secret list --project-path prod"
-          - "List aliases: initiat config alias list"
-          - "Remove alias: initiat config alias remove prod"
-    metadata:
-      order: 4
-
-  best_practices:
-    id: "best_practices"
-    title: "Best Practices"
-    type: "reference"
-    description: "Recommended practices for using Initiat CLI effectively"
-    content:
-      project_organization:
-        title: "Project Organization"
-        description: "Best practices for organizing projects and secrets"
-        tips:
-          - "Use descriptive project names: acme-corp/production, acme-corp/staging"
-          - "Initialize project keys before storing secrets"
-          - "Use consistent naming conventions for secret keys"
-          - "Group related secrets in the same project"
-      secret_management:
-        title: "Secret Management"
-        description: "Best practices for managing secrets securely"
-        tips:
-          - "Use descriptive secret keys: API_KEY, DB_PASSWORD, JWT_SECRET"
-          - "Add descriptions for complex secrets"
-          - "Regularly rotate secrets and update versions"
-          - "Never share secret values in plain text"
-      device_management:
-        title: "Device Management"
-        description: "Best practices for managing device access"
-        tips:
-          - "Use descriptive device names: john-macbook, ci-server-prod"
-          - "Register devices before team members need access"
-          - "Approve device access promptly for team productivity"
-          - "Regularly audit device access and remove unused devices"
-      configuration_management:
-        title: "Configuration Management"
-        description: "Best practices for managing CLI configuration"
-        tips:
-          - "Set default organization and project for faster workflows"
-          - "Use project aliases for frequently accessed projects"
-          - "Configure API settings for your environment"
-          - "Use environment variables for CI/CD pipelines"
-          - "Regularly review and clean up unused aliases"
-      security_considerations:
-        title: "Security Considerations"
-        description: "Important security practices to follow"
-        tips:
-          - "Never share device credentials or project keys"
-          - "Use --force flag carefully with secret operations"
-          - "Regularly audit device access and remove unused devices"
-          - "Keep CLI updated to latest version for security patches"
-          - "Use strong, unique device names for easy identification"
-    metadata:
-      order: 5
+      order: 8
