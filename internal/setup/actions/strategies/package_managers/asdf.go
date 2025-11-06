@@ -34,7 +34,11 @@ func (p *AsdfPackageManager) CheckInstalledCommand(pkg string) types.Command {
 
 func (p *AsdfPackageManager) GetInstallCommands(pkg, version string) []types.Command {
 	commands := []types.Command{
-		p.CheckInstalledCommand(pkg),
+		{
+			Command:     "asdf",
+			Args:        []string{"plugin", "add", pkg},
+			Description: fmt.Sprintf("Add %s plugin to asdf", pkg),
+		},
 		p.InstallCommand(pkg, version),
 	}
 
@@ -48,4 +52,12 @@ func (p *AsdfPackageManager) GetInstallCommands(pkg, version string) []types.Com
 	}
 
 	return commands
+}
+
+func (p *AsdfPackageManager) InstallSelfCommand() types.Command {
+	return types.Command{
+		Command:     "/bin/bash",
+		Args:        []string{"-c", "git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0"},
+		Description: "Install asdf version manager",
+	}
 }

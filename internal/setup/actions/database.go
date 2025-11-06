@@ -94,7 +94,7 @@ type DatabaseCommand struct {
 func (a *EnsureDatabaseAction) getInstallCommands(ctx *ActionContext) ([]DatabaseCommand, error) {
 	var commands []DatabaseCommand
 
-	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
+	pkgManager := a.pkgRegistry.FindSystemPackageManager(ctx.OS)
 	if pkgManager == nil {
 		return nil, fmt.Errorf("no suitable package manager found for %s on %s", a.engine, ctx.OS)
 	}

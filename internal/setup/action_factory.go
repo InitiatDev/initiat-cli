@@ -48,12 +48,12 @@ func (f *ActionFactory) BuildFromStep(step *Step) (actions.Action, error) {
 	}
 }
 
-func (f *ActionFactory) buildToolInstallConfig(install *ToolInstallConfig) *actions.ToolInstallConfig {
+func (f *ActionFactory) buildToolInstallConfig(install *ToolInstallConfig) *types.ToolInstallConfig {
 	if install == nil {
 		return nil
 	}
 
-	return &actions.ToolInstallConfig{
+	return &types.ToolInstallConfig{
 		Brew:        f.convertBrewInstall(install.Brew),
 		Apt:         f.convertAptInstall(install.Apt),
 		Choco:       f.convertChocoInstall(install.Choco),
@@ -88,26 +88,26 @@ func (f *ActionFactory) buildHTTPRetries(retries *Retries) (*types.Retries, erro
 	}, nil
 }
 
-func (f *ActionFactory) convertBrewInstall(brew *BrewInstall) *actions.BrewInstall {
+func (f *ActionFactory) convertBrewInstall(brew *BrewInstall) *types.BrewInstall {
 	if brew == nil {
 		return nil
 	}
-	return &actions.BrewInstall{Formula: brew.Formula}
+	return &types.BrewInstall{Formula: brew.Formula}
 }
 
-func (f *ActionFactory) convertAptInstall(apt *AptInstall) *actions.AptInstall {
+func (f *ActionFactory) convertAptInstall(apt *AptInstall) *types.AptInstall {
 	if apt == nil {
 		return nil
 	}
-	return &actions.AptInstall{
+	return &types.AptInstall{
 		Packages: apt.Packages,
 		Update:   apt.Update,
 	}
 }
 
-func (f *ActionFactory) convertChocoInstall(choco *ChocoInstall) *actions.ChocoInstall {
+func (f *ActionFactory) convertChocoInstall(choco *ChocoInstall) *types.ChocoInstall {
 	if choco == nil {
 		return nil
 	}
-	return &actions.ChocoInstall{Packages: choco.Packages}
+	return &types.ChocoInstall{Packages: choco.Packages}
 }

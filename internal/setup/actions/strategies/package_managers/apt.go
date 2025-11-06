@@ -29,9 +29,32 @@ func (p *AptPackageManager) CheckInstalledCommand(pkg string) types.Command {
 	}
 }
 
-func (p *AptPackageManager) GetInstallCommands(pkg, version string) []types.Command {
-	return []types.Command{
-		p.CheckInstalledCommand(pkg),
-		p.InstallCommand(pkg, version),
+func (p *AptPackageManager) InstallSelfCommand() types.Command {
+	return types.Command{
+		Command:     "which",
+		Args:        []string{"apt"},
+		Description: "Check if apt is available (usually pre-installed on Linux)",
 	}
+}
+
+func (p *AptPackageManager) ExtractToolInstallCommands(config interface{}) ([]types.Command, bool) {
+	cfg, ok := config.(*types.ToolInstallConfig)
+	if !ok || cfg.Apt == nil || len(cfg.Apt.Packages) == 0 {
+		return nil, false
+	}
+
+	var commands []types.Command
+	if cfg.Apt.Update {
+		commands = append(commands, types.Command{
+			Command:     "sudo",
+			Args:        []string{"apt", "update"},
+			Description: "Update apt package list",
+		})
+	}
+
+	for _, pkg := range cfg.Apt.Packages {
+		commands = append(commands, p.InstallCommand(pkg, ""))
+	}
+
+	return commands, true
 }

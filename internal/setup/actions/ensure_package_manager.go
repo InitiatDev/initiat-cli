@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
@@ -11,6 +12,9 @@ type EnsurePackageManagerAction struct {
 	*BaseAction
 	packageManagerType string
 	pkgRegistry        *registry.PackageManagerRegistry
+	resolvedType       string
+	resolvedManager    registry.SystemPackageManager
+	resolvedOS         string
 }
 
 func NewEnsurePackageManagerAction(packageManagerType string) *EnsurePackageManagerAction {
@@ -26,24 +30,82 @@ func (a *EnsurePackageManagerAction) Render(ctx *ActionContext) ([]Command, erro
 		return nil, NewActionError(ActionTypeEnsurePackageManager, "package manager type cannot be empty", nil)
 	}
 
-	commands, err := a.getInstallCommands(ctx)
+	managerType, err := a.resolveManagerType(ctx.OS)
 	if err != nil {
-		return nil, NewActionError(ActionTypeEnsurePackageManager, "failed to generate install commands", err)
+		return nil, NewActionError(ActionTypeEnsurePackageManager, "failed to resolve package manager type", err)
 	}
 
-	var result []Command
-	for _, cmd := range commands {
-		result = append(result, Command{
-			Command:     cmd.Command,
-			Args:        cmd.Args,
+	installed, err := a.isManagerInstalled(managerType)
+	if err != nil {
+		return nil, NewActionError(ActionTypeEnsurePackageManager, "failed to check if package manager is installed", err)
+	}
+
+	if installed {
+		if a.resolvedManager == nil {
+			return nil, NewActionError(ActionTypeEnsurePackageManager, "package manager not resolved", nil)
+		}
+
+		checkCmd := a.resolvedManager.CheckInstalledCommand(managerType)
+		return []Command{
+			{
+				Command:     checkCmd.Command,
+				Args:        checkCmd.Args,
+				Env:         ctx.Env,
+				WorkingDir:  ctx.WorkingDir,
+				Timeout:     ctx.Timeout,
+				Description: checkCmd.Description,
+			},
+		}, nil
+	}
+
+	if a.resolvedManager == nil {
+		return nil, NewActionError(ActionTypeEnsurePackageManager, "package manager not resolved", nil)
+	}
+
+	installCmd := a.resolvedManager.InstallSelfCommand()
+	return []Command{
+		{
+			Command:     installCmd.Command,
+			Args:        installCmd.Args,
 			Env:         ctx.Env,
 			WorkingDir:  ctx.WorkingDir,
 			Timeout:     ctx.Timeout,
-			Description: cmd.Description,
-		})
+			Description: installCmd.Description,
+		},
+	}, nil
+}
+
+func (a *EnsurePackageManagerAction) resolveManagerType(os string) (string, error) {
+	if a.resolvedType != "" && a.resolvedOS == os {
+		return a.resolvedType, nil
 	}
 
-	return result, nil
+	if a.packageManagerType != "auto" {
+		pkgManager := a.pkgRegistry.FindByName(a.packageManagerType)
+		if pkgManager != nil {
+			if sysMgr, ok := pkgManager.(registry.SystemPackageManager); ok {
+				a.resolvedType = sysMgr.Name()
+				a.resolvedManager = sysMgr
+				a.resolvedOS = os
+				return a.resolvedType, nil
+			}
+			return "", fmt.Errorf("package manager %s is not a system package manager", a.packageManagerType)
+		}
+
+		a.resolvedType = a.packageManagerType
+		a.resolvedOS = os
+		return a.resolvedType, nil
+	}
+
+	pkgManager := a.findSystemPackageManager(os)
+	if pkgManager == nil {
+		return "", fmt.Errorf("no suitable package manager found for OS: %s", os)
+	}
+
+	a.resolvedType = pkgManager.Name()
+	a.resolvedManager = pkgManager
+	a.resolvedOS = os
+	return a.resolvedType, nil
 }
 
 func (a *EnsurePackageManagerAction) Validate() error {
@@ -51,7 +113,7 @@ func (a *EnsurePackageManagerAction) Validate() error {
 		return NewActionError(ActionTypeEnsurePackageManager, "package manager type cannot be empty", nil)
 	}
 
-	validTypes := []string{"brew", "apt", "yum", "dnf", "pacman", "choco", "scoop", "winget", "asdf"}
+	validTypes := []string{"auto", "brew", "apt", "yum", "dnf", "pacman", "choco", "scoop", "winget", "asdf"}
 	if !contains(validTypes, a.packageManagerType) {
 		return NewActionError(
 			ActionTypeEnsurePackageManager,
@@ -63,38 +125,20 @@ func (a *EnsurePackageManagerAction) Validate() error {
 	return nil
 }
 
-type PackageManagerCommand struct {
-	Command     string
-	Args        []string
-	Description string
+func (a *EnsurePackageManagerAction) findSystemPackageManager(os string) registry.SystemPackageManager {
+	return a.pkgRegistry.FindSystemPackageManager(os)
 }
 
-// getInstallCommands dispatches to the appropriate package manager implementation
-func (a *EnsurePackageManagerAction) getInstallCommands(ctx *ActionContext) ([]PackageManagerCommand, error) {
-	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
-	if pkgManager == nil {
-		return nil, fmt.Errorf("no suitable package manager found for %s on %s", a.packageManagerType, ctx.OS)
-	}
-
-	installCmd := pkgManager.InstallCommand(a.packageManagerType, "")
-	commands := []PackageManagerCommand{
-		{
-			Command:     installCmd.Command,
-			Args:        installCmd.Args,
-			Description: installCmd.Description,
-		},
-	}
-
-	return commands, nil
-}
-
-// IsInstalled checks if the package manager is already installed
 func (a *EnsurePackageManagerAction) IsInstalled(ctx *ActionContext) (bool, error) {
-	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
-	if pkgManager == nil {
-		return false, fmt.Errorf("no suitable package manager found for %s on %s", a.packageManagerType, ctx.OS)
+	managerType, err := a.resolveManagerType(ctx.OS)
+	if err != nil {
+		return false, err
 	}
 
-	_ = pkgManager.CheckInstalledCommand(a.packageManagerType)
-	return true, nil
+	return a.isManagerInstalled(managerType)
+}
+
+func (a *EnsurePackageManagerAction) isManagerInstalled(managerType string) (bool, error) {
+	_, err := exec.LookPath(managerType)
+	return err == nil, nil
 }

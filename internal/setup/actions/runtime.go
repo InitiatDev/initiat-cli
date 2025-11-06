@@ -2,9 +2,11 @@ package actions
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
+	"github.com/InitiatDev/initiat-cli/internal/setup/actions/types"
 )
 
 type EnsureRuntimeAction struct {
@@ -37,10 +39,27 @@ func (a *EnsureRuntimeAction) Render(ctx *ActionContext) ([]Command, error) {
 		return nil, NewActionError(ActionTypeEnsureRuntime, "runtime name cannot be empty", nil)
 	}
 
-	// Check if any package manager is available for this OS
 	if !a.pkgRegistry.HasAvailableManagers(ctx.OS) {
 		return nil, NewActionError(ActionTypeEnsureRuntime,
 			fmt.Sprintf("no package manager available for %s", ctx.OS), nil)
+	}
+
+	installed, err := a.IsInstalled(ctx)
+	if err != nil {
+		return nil, NewActionError(ActionTypeEnsureRuntime, "failed to check if runtime is installed", err)
+	}
+
+	if installed {
+		return []Command{
+			{
+				Command:     a.runtimeName,
+				Args:        []string{"version"},
+				Env:         ctx.Env,
+				WorkingDir:  ctx.WorkingDir,
+				Timeout:     ctx.Timeout,
+				Description: fmt.Sprintf("Verify %s is installed", a.runtimeName),
+			},
+		}, nil
 	}
 
 	commands, err := a.getInstallCommands(ctx)
@@ -48,19 +67,7 @@ func (a *EnsureRuntimeAction) Render(ctx *ActionContext) ([]Command, error) {
 		return nil, NewActionError(ActionTypeEnsureRuntime, "failed to generate install commands", err)
 	}
 
-	var result []Command
-	for _, cmd := range commands {
-		result = append(result, Command{
-			Command:     cmd.Command,
-			Args:        cmd.Args,
-			Env:         ctx.Env,
-			WorkingDir:  ctx.WorkingDir,
-			Timeout:     ctx.Timeout,
-			Description: cmd.Description,
-		})
-	}
-
-	return result, nil
+	return wrapCommandsWithContext(commands, ctx), nil
 }
 
 func (a *EnsureRuntimeAction) Validate() error {
@@ -95,25 +102,50 @@ type RuntimeCommand struct {
 	Description string
 }
 
-// getInstallCommands determines the best install method for the current platform
+func (r RuntimeCommand) GetCommand() string     { return r.Command }
+func (r RuntimeCommand) GetArgs() []string      { return r.Args }
+func (r RuntimeCommand) GetDescription() string { return r.Description }
+
 func (a *EnsureRuntimeAction) getInstallCommands(ctx *ActionContext) ([]RuntimeCommand, error) {
-	manager := a.pkgRegistry.FindManager(ctx.OS)
-	if manager == nil {
-		return nil, fmt.Errorf("no suitable install method found for %s on %s", a.runtimeName, ctx.OS)
+	if a.manager != nil && a.manager.Asdf {
+		runtimeManager := a.pkgRegistry.FindRuntimePackageManager(ctx.OS)
+		if runtimeManager != nil {
+			var commands []RuntimeCommand
+			installCommands := runtimeManager.GetInstallCommands(a.runtimeName, a.version)
+			for _, cmd := range installCommands {
+				commands = append(commands, RuntimeCommand{
+					Command:     cmd.Command,
+					Args:        cmd.Args,
+					Description: cmd.Description,
+				})
+			}
+			return commands, nil
+		}
 	}
 
-	var commands []RuntimeCommand
-
-	installCommands := manager.GetInstallCommands(a.runtimeName, a.version)
-	for _, cmd := range installCommands {
-		commands = append(commands, RuntimeCommand{
-			Command:     cmd.Command,
-			Args:        cmd.Args,
-			Description: cmd.Description,
-		})
+	systemManager := a.pkgRegistry.FindSystemPackageManager(ctx.OS)
+	if systemManager != nil {
+		if sysManager, ok := systemManager.(interface {
+			InstallCommand(pkg, version string) types.Command
+		}); ok {
+			installCmd := sysManager.InstallCommand(a.runtimeName, a.version)
+			return []RuntimeCommand{
+				{
+					Command:     installCmd.Command,
+					Args:        installCmd.Args,
+					Description: installCmd.Description,
+				},
+			}, nil
+		}
 	}
 
-	return commands, nil
+	return nil, fmt.Errorf("no suitable install method found for %s on %s", a.runtimeName, ctx.OS)
+}
+
+// IsInstalled checks if the runtime is already installed
+func (a *EnsureRuntimeAction) IsInstalled(ctx *ActionContext) (bool, error) {
+	_, err := exec.LookPath(a.runtimeName)
+	return err == nil, nil
 }
 
 // contains checks if a string is in a slice

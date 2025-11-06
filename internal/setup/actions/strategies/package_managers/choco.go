@@ -32,9 +32,35 @@ func (p *ChocoPackageManager) CheckInstalledCommand(pkg string) types.Command {
 	}
 }
 
-func (p *ChocoPackageManager) GetInstallCommands(pkg, version string) []types.Command {
-	return []types.Command{
-		p.CheckInstalledCommand(pkg),
-		p.InstallCommand(pkg, version),
+func (p *ChocoPackageManager) InstallSelfCommand() types.Command {
+	installScript := "Set-ExecutionPolicy Bypass -Scope Process -Force; " +
+		"[System.Net.ServicePointManager]::SecurityProtocol = " +
+		"[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+		"iex ((New-Object System.Net.WebClient).DownloadString(" +
+		"'https://community.chocolatey.org/install.ps1'))"
+	return types.Command{
+		Command: "powershell",
+		Args: []string{
+			"-NoProfile",
+			"-ExecutionPolicy",
+			"Bypass",
+			"-Command",
+			installScript,
+		},
+		Description: "Install Chocolatey",
 	}
+}
+
+func (p *ChocoPackageManager) ExtractToolInstallCommands(config interface{}) ([]types.Command, bool) {
+	cfg, ok := config.(*types.ToolInstallConfig)
+	if !ok || cfg.Choco == nil || len(cfg.Choco.Packages) == 0 {
+		return nil, false
+	}
+
+	var commands []types.Command
+	for _, pkg := range cfg.Choco.Packages {
+		commands = append(commands, p.InstallCommand(pkg, ""))
+	}
+
+	return commands, true
 }

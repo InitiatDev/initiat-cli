@@ -6,38 +6,18 @@ import (
 	"strings"
 
 	"github.com/InitiatDev/initiat-cli/internal/setup/actions/registry"
+	"github.com/InitiatDev/initiat-cli/internal/setup/actions/types"
 )
 
 type EnsureToolAction struct {
 	*BaseAction
 	toolName      string
 	version       string
-	installConfig *ToolInstallConfig
+	installConfig *types.ToolInstallConfig
 	pkgRegistry   *registry.PackageManagerRegistry
 }
 
-type ToolInstallConfig struct {
-	Brew        *BrewInstall  `yaml:"brew,omitempty" json:"brew,omitempty"`
-	Apt         *AptInstall   `yaml:"apt,omitempty" json:"apt,omitempty"`
-	Choco       *ChocoInstall `yaml:"choco,omitempty" json:"choco,omitempty"`
-	FallbackURL string        `yaml:"fallback_url,omitempty" json:"fallback_url,omitempty"`
-	Checksum    string        `yaml:"checksum,omitempty" json:"checksum,omitempty"`
-}
-
-type BrewInstall struct {
-	Formula string `yaml:"formula" json:"formula"`
-}
-
-type AptInstall struct {
-	Packages []string `yaml:"packages" json:"packages"`
-	Update   bool     `yaml:"update,omitempty" json:"update,omitempty"`
-}
-
-type ChocoInstall struct {
-	Packages []string `yaml:"packages" json:"packages"`
-}
-
-func NewEnsureToolAction(toolName, version string, installConfig *ToolInstallConfig) *EnsureToolAction {
+func NewEnsureToolAction(toolName, version string, installConfig *types.ToolInstallConfig) *EnsureToolAction {
 	return &EnsureToolAction{
 		BaseAction:    NewBaseAction(ActionTypeEnsureTool),
 		toolName:      toolName,
@@ -52,24 +32,30 @@ func (a *EnsureToolAction) Render(ctx *ActionContext) ([]Command, error) {
 		return nil, NewActionError(ActionTypeEnsureTool, "tool name cannot be empty", nil)
 	}
 
+	installed, err := a.IsInstalled(ctx)
+	if err != nil {
+		return nil, NewActionError(ActionTypeEnsureTool, "failed to check if tool is installed", err)
+	}
+
+	if installed {
+		return []Command{
+			{
+				Command:     "which",
+				Args:        []string{a.toolName},
+				Env:         ctx.Env,
+				WorkingDir:  ctx.WorkingDir,
+				Timeout:     ctx.Timeout,
+				Description: fmt.Sprintf("Verify %s is installed", a.toolName),
+			},
+		}, nil
+	}
+
 	commands, err := a.getInstallCommands(ctx)
 	if err != nil {
 		return nil, NewActionError(ActionTypeEnsureTool, "failed to generate install commands", err)
 	}
 
-	var result []Command
-	for _, cmd := range commands {
-		result = append(result, Command{
-			Command:     cmd.Command,
-			Args:        cmd.Args,
-			Env:         ctx.Env,
-			WorkingDir:  ctx.WorkingDir,
-			Timeout:     ctx.Timeout,
-			Description: cmd.Description,
-		})
-	}
-
-	return result, nil
+	return wrapCommandsWithContext(commands, ctx), nil
 }
 
 func (a *EnsureToolAction) Validate() error {
@@ -99,26 +85,69 @@ type ToolCommand struct {
 	Description string
 }
 
-// getInstallCommands determines the best install method for the current platform
+func (t ToolCommand) GetCommand() string     { return t.Command }
+func (t ToolCommand) GetArgs() []string      { return t.Args }
+func (t ToolCommand) GetDescription() string { return t.Description }
+
 func (a *EnsureToolAction) getInstallCommands(ctx *ActionContext) ([]ToolCommand, error) {
-	pkgManager := a.pkgRegistry.FindManager(ctx.OS)
-	if pkgManager != nil {
-		installCmd := pkgManager.InstallCommand(a.toolName, a.version)
-		commands := []ToolCommand{
+	if a.installConfig != nil {
+		manager := a.findManagerWithConfig(ctx.OS)
+		if manager != nil {
+			return a.getCommandsFromConfig(manager)
+		}
+	}
+
+	systemManager := a.pkgRegistry.FindSystemPackageManager(ctx.OS)
+	if systemManager != nil {
+		installCmd := systemManager.InstallCommand(a.toolName, a.version)
+		return []ToolCommand{
 			{
 				Command:     installCmd.Command,
 				Args:        installCmd.Args,
 				Description: installCmd.Description,
 			},
-		}
-		return commands, nil
+		}, nil
 	}
 
-	if a.installConfig.FallbackURL != "" {
+	if a.installConfig != nil && a.installConfig.FallbackURL != "" {
 		return a.getFallbackCommands(ctx)
 	}
 
 	return nil, fmt.Errorf("no suitable install method found for %s on %s", a.toolName, ctx.OS)
+}
+
+func (a *EnsureToolAction) findManagerWithConfig(os string) registry.SystemPackageManager {
+	systemManager := a.pkgRegistry.FindSystemPackageManager(os)
+	if systemManager == nil {
+		return nil
+	}
+
+	_, ok := systemManager.ExtractToolInstallCommands(a.installConfig)
+	if ok {
+		return systemManager
+	}
+
+	return nil
+}
+
+func (a *EnsureToolAction) getCommandsFromConfig(
+	pkgManager registry.SystemPackageManager,
+) ([]ToolCommand, error) {
+	commands, ok := pkgManager.ExtractToolInstallCommands(a.installConfig)
+	if !ok {
+		return nil, fmt.Errorf("install config not properly specified")
+	}
+
+	var result []ToolCommand
+	for _, cmd := range commands {
+		result = append(result, ToolCommand{
+			Command:     cmd.Command,
+			Args:        cmd.Args,
+			Description: cmd.Description,
+		})
+	}
+
+	return result, nil
 }
 
 // getFallbackCommands generates fallback installation commands for direct download
@@ -152,4 +181,23 @@ func (a *EnsureToolAction) getFallbackCommands(_ *ActionContext) ([]ToolCommand,
 func (a *EnsureToolAction) IsInstalled(ctx *ActionContext) (bool, error) {
 	_, err := exec.LookPath(a.toolName)
 	return err == nil, nil
+}
+
+func wrapCommandsWithContext[T interface {
+	GetCommand() string
+	GetArgs() []string
+	GetDescription() string
+}](commands []T, ctx *ActionContext) []Command {
+	result := make([]Command, len(commands))
+	for i, cmd := range commands {
+		result[i] = Command{
+			Command:     cmd.GetCommand(),
+			Args:        cmd.GetArgs(),
+			Env:         ctx.Env,
+			WorkingDir:  ctx.WorkingDir,
+			Timeout:     ctx.Timeout,
+			Description: cmd.GetDescription(),
+		}
+	}
+	return result
 }

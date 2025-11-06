@@ -20,7 +20,6 @@ bootstrap:
   - name: "Ensure Git is installed"
     ensure_tool:
       name: git
-      version: ">=2.0"
       install:
         brew:
           formula: git
@@ -54,7 +53,7 @@ setup:
     run: go mod verify
 
   - name: "Install Linux X11 libraries for clipboard support"
-    if: os("linux")
+    if: os == "linux"
     run: |
       if command -v apt-get &> /dev/null; then
         sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
@@ -77,11 +76,11 @@ verify:
     run: go build -o initiat .
 
   - name: "Verify binary was created (Unix)"
-    if: os("macos") || os("linux")
+    if: os == "macos" || os == "linux"
     run: test -f initiat && echo "Binary created successfully"
 
   - name: "Verify binary was created (Windows)"
-    if: os("windows")
+    if: os == "windows"
     run: if (Test-Path initiat.exe) { Write-Host "Binary created successfully" } else { exit 1 }
 
 post:

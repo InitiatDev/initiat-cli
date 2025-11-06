@@ -36,9 +36,19 @@ func (p *BrewPackageManager) CheckInstalledCommand(pkg string) types.Command {
 	}
 }
 
-func (p *BrewPackageManager) GetInstallCommands(pkg, version string) []types.Command {
-	return []types.Command{
-		p.CheckInstalledCommand(pkg),
-		p.InstallCommand(pkg, version),
+func (p *BrewPackageManager) InstallSelfCommand() types.Command {
+	return types.Command{
+		Command:     "/bin/bash",
+		Args:        []string{"-c", "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"},
+		Description: "Install Homebrew",
 	}
+}
+
+func (p *BrewPackageManager) ExtractToolInstallCommands(config interface{}) ([]types.Command, bool) {
+	cfg, ok := config.(*types.ToolInstallConfig)
+	if !ok || cfg.Brew == nil || cfg.Brew.Formula == "" {
+		return nil, false
+	}
+
+	return []types.Command{p.InstallCommand(cfg.Brew.Formula, "")}, true
 }

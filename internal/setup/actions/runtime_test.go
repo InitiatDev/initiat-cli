@@ -121,7 +121,8 @@ func TestEnsureRuntimeAction_Render(t *testing.T) {
 // TestEnsureRuntimeAction_GetChocoPackage removed - logic now handled by strategy pattern
 
 func TestEnsureRuntimeAction_StrategyBasedCommands(t *testing.T) {
-	action := NewEnsureRuntimeAction("node", "18.0.0", nil)
+	manager := &RuntimeManager{Asdf: true}
+	action := NewEnsureRuntimeAction("node", "18.0.0", manager)
 	ctx := &ActionContext{
 		OS:         OSMacOS,
 		Arch:       "x86_64",
@@ -139,7 +140,7 @@ func TestEnsureRuntimeAction_StrategyBasedCommands(t *testing.T) {
 		t.Fatal("Expected commands but got none")
 	}
 
-	// Should have check, install, and global commands for asdf
+	// Should have plugin add, install, and global commands for asdf
 	expectedCommands := []string{"asdf", "asdf", "asdf"}
 	if len(commands) != len(expectedCommands) {
 		t.Errorf("Expected %d commands, got %d", len(expectedCommands), len(commands))
