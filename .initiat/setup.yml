@@ -1,0 +1,100 @@
+version: 1
+name: "Initiat CLI Development Setup"
+description: "Set up development environment for building Initiat CLI locally"
+
+matrix:
+  os: [macos, linux, windows]
+  arch: [x86_64, arm64]
+
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+
+bootstrap:
+  - name: "Ensure package manager"
+    ensure_package_manager:
+      type: auto
+
+  - name: "Ensure Git is installed"
+    ensure_tool:
+      name: git
+      version: ">=2.0"
+      install:
+        brew:
+          formula: git
+        apt:
+          packages: [git]
+          update: true
+        choco:
+          packages: [git]
+
+provision:
+  - name: "Ensure Go runtime"
+    ensure_runtime:
+      name: go
+      version: ">=1.25.3"
+      manager:
+        asdf: true
+      fallback_installers:
+        - brew:
+            formula: go
+        - apt:
+            packages: [golang-go]
+            update: true
+        - choco:
+            packages: [golang]
+
+setup:
+  - name: "Download Go dependencies"
+    run: go mod download
+
+  - name: "Verify Go modules"
+    run: go mod verify
+
+  - name: "Install Linux X11 libraries for clipboard support"
+    if: os("linux")
+    run: |
+      if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+      elif command -v yum &> /dev/null; then
+        sudo yum install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+      elif command -v dnf &> /dev/null; then
+        sudo dnf install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+      elif command -v pacman &> /dev/null; then
+        sudo pacman -S --noconfirm libx11 libxrandr libxinerama libxcursor libxi
+      fi
+
+verify:
+  - name: "Verify Go version"
+    assert_command: go version
+
+  - name: "Verify Go modules are available"
+    assert_command: go list -m all
+
+  - name: "Build the project"
+    run: go build -o initiat .
+
+  - name: "Verify binary was created (Unix)"
+    if: os("macos") || os("linux")
+    run: test -f initiat && echo "Binary created successfully"
+
+  - name: "Verify binary was created (Windows)"
+    if: os("windows")
+    run: if (Test-Path initiat.exe) { Write-Host "Binary created successfully" } else { exit 1 }
+
+post:
+  - name: "Setup complete"
+    print: |
+      ✅ Development environment setup complete!
+
+      You can now build the project with:
+        • make build
+        • go build -o initiat .
+
+      Or run tests with:
+        • make test
+        • go test ./...
+
+      For more commands, see the Makefile or run 'make help'
