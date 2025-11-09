@@ -25,6 +25,10 @@ func (w ProjectRoutes) GetBySlug(orgSlug, projectSlug string) string {
 	return fmt.Sprintf("%s/%s/%s", Projects, orgSlug, projectSlug)
 }
 
+func (w ProjectRoutes) Create(orgSlug string) string {
+	return fmt.Sprintf("%s/%s", Projects, orgSlug)
+}
+
 func (w ProjectRoutes) Secrets(orgSlug, projectSlug string) string {
 	return fmt.Sprintf("%s/%s/%s/secrets", Projects, orgSlug, projectSlug)
 }

@@ -217,9 +217,15 @@ func TestProjectInitKeyAlreadyInitialized(t *testing.T) {
 	_ = runProjectInit(projectInitCmd, []string{})
 }
 
-func TestProjectInitKeyNotFound(t *testing.T) {
+func TestProjectInitKeyNotFound_UserDeclines(t *testing.T) {
 	capture := testutil.CaptureStdout()
 	defer capture.Restore()
+
+	mock, err := testutil.MockStdin("n\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -231,14 +237,122 @@ func TestProjectInitKeyNotFound(t *testing.T) {
 	setupTestEnvironment(t, server.URL)
 
 	projectPath = "test-org/non-existent"
-	err := runProjectInit(projectInitCmd, []string{})
+	err = runProjectInit(projectInitCmd, []string{})
 	if err == nil {
-		t.Error("Expected error for non-existent project")
+		t.Error("Expected error when user declines to create project")
 		return
 	}
-	if !strings.Contains(err.Error(), "Failed to get project info") {
-		t.Errorf("Expected specific error message, got: %v", err)
+	if !strings.Contains(err.Error(), "Project creation cancelled") {
+		t.Errorf("Expected 'Project creation cancelled' error, got: %v", err)
 	}
+	capture.AssertContains(t, "does not exist")
+	capture.AssertContains(t, "Would you like to create it?")
+}
+
+func TestProjectInitKeyNotFound_UserCreates(t *testing.T) {
+	capture := testutil.CaptureStdout()
+	defer capture.Restore()
+
+	mock, err := testutil.MockStdin("y\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/projects/test-org":
+			if r.Method == "POST" {
+				var req types.CreateProjectRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("Failed to decode request: %v", err)
+				}
+
+				projectData := types.Project{
+					ID:             1,
+					Name:           "New Project",
+					Slug:           "new-project",
+					CompositeSlug:  "test-org/new-project",
+					Description:    "",
+					KeyInitialized: false,
+					KeyVersion:     0,
+					Role:           "Owner",
+					Organization: struct {
+						ID   int    `json:"id"`
+						Name string `json:"name"`
+						Slug string `json:"slug"`
+					}{
+						ID:   1,
+						Name: "Test Org",
+						Slug: "test-org",
+					},
+				}
+
+				response := map[string]interface{}{
+					"success": true,
+					"message": "Project created successfully",
+					"data": map[string]interface{}{
+						"project": projectData,
+					},
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				json.NewEncoder(w).Encode(response)
+				return
+			}
+		case "/api/v1/projects/test-org/new-project":
+			if r.Method == "GET" {
+				w.WriteHeader(http.StatusNotFound)
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]string{"error": "project not found"})
+				return
+			}
+		case "/api/v1/projects/test-org/new-project/initialize":
+			if r.Method != "POST" {
+				t.Errorf("Expected POST, got %s", r.Method)
+			}
+
+			var req types.InitializeProjectKeyRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("Failed to decode request: %v", err)
+			}
+
+			if req.WrappedProjectKey == "" {
+				t.Error("Expected wrapped project key")
+			}
+
+			if _, err := crypto.Decode(req.WrappedProjectKey); err != nil {
+				t.Errorf("Invalid encoded wrapped key: %v", err)
+			}
+
+			response := map[string]interface{}{
+				"success": true,
+				"message": "Project key initialized successfully",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+
+		default:
+			t.Errorf("Unexpected request path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	setupTestEnvironment(t, server.URL)
+
+	projectPath = "test-org/new-project"
+	err = runProjectInit(projectInitCmd, []string{})
+	if err != nil {
+		t.Fatalf("runProjectInit failed: %v", err)
+	}
+
+	capture.AssertContains(t, "does not exist")
+	capture.AssertContains(t, "Would you like to create it?")
+	capture.AssertContains(t, "Creating project")
+	capture.AssertContains(t, "created successfully")
+	capture.AssertContains(t, "initialized successfully")
 }
 
 func setupTestEnvironment(t *testing.T, serverURL string) {

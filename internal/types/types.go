@@ -54,6 +54,16 @@ type ListProjectsResponse struct {
 	Projects []Project `json:"projects"`
 }
 
+type CreateProjectRequest struct {
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description,omitempty"`
+}
+
+type CreateProjectResponse struct {
+	Project Project `json:"project"`
+}
+
 type InitializeProjectKeyRequest struct {
 	WrappedProjectKey string `json:"wrapped_project_key"`
 }

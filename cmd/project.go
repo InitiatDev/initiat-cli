@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/env"
 	"github.com/InitiatDev/initiat-cli/internal/project"
+	"github.com/InitiatDev/initiat-cli/internal/prompt"
 	"github.com/InitiatDev/initiat-cli/internal/setup"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
@@ -163,7 +165,26 @@ func runProjectInit(cmd *cobra.Command, args []string) error {
 	c := client.New()
 	proj, err := c.GetProjectBySlug(orgSlug, projectSlug)
 	if err != nil {
-		return fmt.Errorf("❌ Failed to get project info: %w", err)
+		if errors.Is(err, client.ErrProjectNotFound) {
+			fmt.Printf("⚠️  Project \"%s/%s\" does not exist.\n", orgSlug, projectSlug)
+			create, promptErr := prompt.PromptYesNo("Would you like to create it?")
+			if promptErr != nil {
+				return fmt.Errorf("❌ Failed to read user input: %w", promptErr)
+			}
+			if !create {
+				return fmt.Errorf("❌ Project creation cancelled")
+			}
+
+			projectName := slugToTitle(projectSlug)
+			fmt.Printf("Creating project \"%s\"...\n", projectCtx.String())
+			proj, err = c.CreateProject(orgSlug, projectName, projectSlug, "")
+			if err != nil {
+				return fmt.Errorf("❌ Failed to create project: %w", err)
+			}
+			fmt.Printf("✅ Project \"%s\" created successfully!\n", projectCtx.String())
+		} else {
+			return fmt.Errorf("❌ Failed to get project info: %w", err)
+		}
 	}
 
 	if !checkProjectInitStatus(proj) {
@@ -202,6 +223,16 @@ func ensureInitiatFileExists(orgSlug, projectSlug string) error {
 
 	fmt.Printf("✅ Created .initiat/config.yml with org: %s, project: %s\n", orgSlug, projectSlug)
 	return nil
+}
+
+func slugToTitle(slug string) string {
+	words := strings.Split(slug, "-")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(word[:1]) + strings.ToLower(word[1:])
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func checkProjectInitStatus(project *types.Project) bool {

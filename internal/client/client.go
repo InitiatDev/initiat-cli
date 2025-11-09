@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/ed25519"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,6 +19,8 @@ const (
 	defaultTimeoutSeconds = 30
 	debugPreviewLength    = 20 // Length of key preview for debug output
 )
+
+var ErrProjectNotFound = errors.New("project not found")
 
 type Client struct {
 	baseURL    string
@@ -151,12 +154,42 @@ func (c *Client) GetProjectBySlug(orgSlug, projectSlug string) (*types.Project, 
 		return nil, err
 	}
 
+	if statusCode == http.StatusNotFound {
+		return nil, ErrProjectNotFound
+	}
+
 	var project types.Project
 	if err := httputil.HandleGetResponse(statusCode, body, &project); err != nil {
 		return nil, fmt.Errorf("get project failed: %w", err)
 	}
 
 	return &project, nil
+}
+
+func (c *Client) CreateProject(orgSlug string, name, slug, description string) (*types.Project, error) {
+	createReq := types.CreateProjectRequest{
+		Name:        name,
+		Slug:        slug,
+		Description: description,
+	}
+
+	jsonData, err := json.Marshal(createReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal create project request: %w", err)
+	}
+
+	url := routes.BuildURL(c.baseURL, routes.Project.Create(orgSlug))
+	statusCode, body, err := httputil.DoSignedRequest(c.httpClient, routes.POST, url, jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	var createResp types.CreateProjectResponse
+	if err := httputil.HandleStandardResponse(statusCode, body, &createResp); err != nil {
+		return nil, fmt.Errorf("create project failed: %w", err)
+	}
+
+	return &createResp.Project, nil
 }
 
 func (c *Client) InitializeProjectKey(orgSlug, projectSlug string, wrappedKey []byte) error {

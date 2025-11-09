@@ -352,3 +352,138 @@ func TestRegisterDevice_Success_With200(t *testing.T) {
 	assert.True(t, resp.Success)
 	assert.Equal(t, "device-456", resp.Device.DeviceID)
 }
+
+func TestGetProjectBySlug_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"error": "project not found"})
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	project, err := client.GetProjectBySlug("test-org", "non-existent")
+	assert.Error(t, err)
+	assert.Nil(t, project)
+	assert.Equal(t, ErrProjectNotFound, err)
+}
+
+func TestCreateProject_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/api/v1/projects/test-org", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		var req types.CreateProjectRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "My Project", req.Name)
+		assert.Equal(t, "my-project", req.Slug)
+		assert.Equal(t, "Test description", req.Description)
+
+		projectData := types.Project{
+			ID:             1,
+			Name:           "My Project",
+			Slug:           "my-project",
+			CompositeSlug:  "test-org/my-project",
+			Description:    "Test description",
+			KeyInitialized: false,
+			KeyVersion:     0,
+			Role:           "Owner",
+			Organization: struct {
+				ID   int    `json:"id"`
+				Name string `json:"name"`
+				Slug string `json:"slug"`
+			}{
+				ID:   1,
+				Name: "Test Org",
+				Slug: "test-org",
+			},
+		}
+
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Project created successfully",
+			"data": map[string]interface{}{
+				"project": projectData,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	project, err := client.CreateProject("test-org", "My Project", "my-project", "Test description")
+	assert.NoError(t, err)
+	assert.NotNil(t, project)
+	assert.Equal(t, "My Project", project.Name)
+	assert.Equal(t, "my-project", project.Slug)
+	assert.Equal(t, "test-org/my-project", project.CompositeSlug)
+	assert.Equal(t, "Test description", project.Description)
+	assert.False(t, project.KeyInitialized)
+}
+
+func TestCreateProject_EmptyDescription(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req types.CreateProjectRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "", req.Description)
+
+		projectData := types.Project{
+			ID:             1,
+			Name:           "My Project",
+			Slug:           "my-project",
+			CompositeSlug:  "test-org/my-project",
+			KeyInitialized: false,
+		}
+
+		response := map[string]interface{}{
+			"success": true,
+			"message": "Project created successfully",
+			"data": map[string]interface{}{
+				"project": projectData,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	project, err := client.CreateProject("test-org", "My Project", "my-project", "")
+	assert.NoError(t, err)
+	assert.NotNil(t, project)
+}
+
+func TestCreateProject_ServerError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"success": false,
+			"message": "Project slug already exists",
+			"errors":  []string{"Project slug already exists"},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	client := NewWithBaseURL(server.URL)
+
+	project, err := client.CreateProject("test-org", "My Project", "my-project", "")
+	assert.Error(t, err)
+	assert.Nil(t, project)
+	assert.Contains(t, err.Error(), "Project slug already exists")
+}

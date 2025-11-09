@@ -95,3 +95,15 @@ type ProjectOption struct {
 	Name string
 	Slug string
 }
+
+// PromptYesNo prompts the user for a yes/no answer
+func PromptYesNo(promptText string) (bool, error) {
+	fmt.Printf("%s (y/n): ", promptText)
+	reader := bufio.NewReader(os.Stdin)
+	answer, err := reader.ReadString('\n')
+	if err != nil {
+		return false, fmt.Errorf("failed to read answer: %w", err)
+	}
+	answer = strings.TrimSpace(strings.ToLower(answer))
+	return answer == "y" || answer == "yes", nil
+}

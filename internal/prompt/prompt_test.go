@@ -3,6 +3,8 @@ package prompt
 import (
 	"strings"
 	"testing"
+
+	"github.com/InitiatDev/initiat-cli/internal/testutil"
 )
 
 func TestPromptProject_ValidInput(t *testing.T) {
@@ -79,5 +81,69 @@ func TestPromptProject_EmptyInput(t *testing.T) {
 		if !strings.Contains(err, "empty") {
 			t.Error("Expected error message to contain 'empty'")
 		}
+	}
+}
+
+func TestPromptYesNo_Yes(t *testing.T) {
+	mock, err := testutil.MockStdin("y\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
+
+	result, err := PromptYesNo("Test prompt")
+	if err != nil {
+		t.Errorf("PromptYesNo() error = %v, want nil", err)
+	}
+	if !result {
+		t.Error("PromptYesNo() = false, want true")
+	}
+}
+
+func TestPromptYesNo_YesUppercase(t *testing.T) {
+	mock, err := testutil.MockStdin("YES\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
+
+	result, err := PromptYesNo("Test prompt")
+	if err != nil {
+		t.Errorf("PromptYesNo() error = %v, want nil", err)
+	}
+	if !result {
+		t.Error("PromptYesNo() = false, want true")
+	}
+}
+
+func TestPromptYesNo_No(t *testing.T) {
+	mock, err := testutil.MockStdin("n\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
+
+	result, err := PromptYesNo("Test prompt")
+	if err != nil {
+		t.Errorf("PromptYesNo() error = %v, want nil", err)
+	}
+	if result {
+		t.Error("PromptYesNo() = true, want false")
+	}
+}
+
+func TestPromptYesNo_NoUppercase(t *testing.T) {
+	mock, err := testutil.MockStdin("NO\n")
+	if err != nil {
+		t.Fatalf("Failed to mock stdin: %v", err)
+	}
+	defer mock.Restore()
+
+	result, err := PromptYesNo("Test prompt")
+	if err != nil {
+		t.Errorf("PromptYesNo() error = %v, want nil", err)
+	}
+	if result {
+		t.Error("PromptYesNo() = true, want false")
 	}
 }
