@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2025-11-09
+
+### Changed
+- **Project Initialization**: Updated `initiat project init` behavior
+  - Project initialization now creates the project if it does not exist remotely.
+- **Setup scripts**: Added setup script
+  - Added script to set up InitiatCLI locally
+
+### Fixed
+- **Setup scripts**: Fixed package managers
+  - Separated package managers into system managers and runtime managers
+  - System managers install base level system tools, like git
+  - Runtime managers install versioned language runtimes
+  - Runtime managers can fall back to using asdf
+  - Package managers now know how to install themselves
+
 ## [0.7.0] - 2025-11-02
 
 ### Added
