@@ -8,10 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/routes"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 )
 
@@ -361,6 +364,7 @@ func TestGetProjectBySlug_NotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
+	setupTestEnvironmentForSignedRequests(t, server.URL)
 	client := NewWithBaseURL(server.URL)
 
 	project, err := client.GetProjectBySlug("test-org", "non-existent")
@@ -417,6 +421,7 @@ func TestCreateProject_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
+	setupTestEnvironmentForSignedRequests(t, server.URL)
 	client := NewWithBaseURL(server.URL)
 
 	project, err := client.CreateProject("test-org", "My Project", "my-project", "Test description")
@@ -459,6 +464,7 @@ func TestCreateProject_EmptyDescription(t *testing.T) {
 	}))
 	defer server.Close()
 
+	setupTestEnvironmentForSignedRequests(t, server.URL)
 	client := NewWithBaseURL(server.URL)
 
 	project, err := client.CreateProject("test-org", "My Project", "my-project", "")
@@ -480,10 +486,57 @@ func TestCreateProject_ServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
+	setupTestEnvironmentForSignedRequests(t, server.URL)
 	client := NewWithBaseURL(server.URL)
 
 	project, err := client.CreateProject("test-org", "My Project", "my-project", "")
 	assert.Error(t, err)
 	assert.Nil(t, project)
 	assert.Contains(t, err.Error(), "Project slug already exists")
+}
+
+func setupTestEnvironmentForSignedRequests(t *testing.T, serverURL string) {
+	viper.Reset()
+
+	if err := config.InitConfig(); err != nil {
+		t.Fatalf("Failed to init config: %v", err)
+	}
+
+	if err := config.Set("api.base_url", serverURL); err != nil {
+		t.Fatalf("Failed to set API URL: %v", err)
+	}
+
+	if err := config.Set("service_name", "initiat-cli-test-"+t.Name()); err != nil {
+		t.Fatalf("Failed to set service name: %v", err)
+	}
+
+	store := storage.New()
+
+	signingPublic, signingPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate signing keypair: %v", err)
+	}
+
+	if err := store.StoreSigningPrivateKey(signingPrivate); err != nil {
+		t.Fatalf("Failed to store signing private key: %v", err)
+	}
+
+	encryptionPrivate := make([]byte, 32)
+	rand.Read(encryptionPrivate)
+	if err := store.StoreEncryptionPrivateKey(encryptionPrivate); err != nil {
+		t.Fatalf("Failed to store encryption private key: %v", err)
+	}
+
+	if err := store.StoreDeviceID("test-device-123"); err != nil {
+		t.Fatalf("Failed to store device ID: %v", err)
+	}
+
+	t.Cleanup(func() {
+		store.DeleteSigningPrivateKey()
+		store.DeleteEncryptionPrivateKey()
+		store.DeleteDeviceID()
+		store.DeleteToken()
+	})
+
+	_ = signingPublic
 }
