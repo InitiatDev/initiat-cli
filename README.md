@@ -106,45 +106,7 @@ initiat secret list
 
 ## What's Coming Next
 
-**Automated Environment Setup** 🚀 *Planned for 2026*
-
-One command to rule them all. No more "works on my machine" - we'll automate the entire development environment setup process.
-
-```bash
-initiat setup my-project  # Sets up entire development environment
-```
-
-- Automated dependency installation
-- Environment validation to prevent drift
-- Docker and containerization support
-- Custom templates per project and role
-
-**Guided Onboarding Workflows** 📚 *Planned for 2026*
-
-Interactive guides that actually work. Capture knowledge from your senior developers and turn it into step-by-step onboarding workflows.
-
-- Step-by-step setup guides for new team members
-- Progress tracking and completion verification
-- Knowledge capture from experienced developers
-- Custom templates per project and role
-
-**Integration Ecosystem** 🔗 *Planned for 2026*
-
-Connect everything together. We're building integrations with the tools you already use to create a seamless developer experience.
-
-- GitHub/GitLab repository integration
-- CI/CD pipeline configuration
-- Kubernetes and cloud platform setup
-- Popular development tools integration
-
-**Team Visibility & Analytics** 📊 *Planned for 2026*
-
-Data-driven developer experience. Understand where your team is spending time and identify bottlenecks in your development process.
-
-- Onboarding dashboards showing progress and bottlenecks
-- Time-to-productivity metrics
-- Usage analytics and optimization insights
-- Compliance reporting for security and audit
+See our [roadmap](https://www.initiat.dev/roadmap) for exciting upcoming features
 
 ## Technical Foundation
 
@@ -218,21 +180,8 @@ initiat project init acme-corp/production
 ## Getting Started
 
 ### **Installation**
-1. **Create account** at [initiat.dev](https://initiat.dev) (coming soon)
-2. **Download CLI** from [GitHub Releases](https://github.com/InitiatDev/initiat-cli/releases)
-3. **Linux users**: Install X11 development libraries for clipboard support:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
-   
-   # CentOS/RHEL/Fedora
-   sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-   # or for newer versions:
-   sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-   
-   # Arch Linux
-   sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
-   ```
+1. **Create account** at [initiat.dev](https://initiat.dev)
+2. **Follow the setup instructions** at [initiat.dev](https://initiat.dev/docs/setup)
 4. **Set up projects** for your teams and projects
 5. **Configure device approval** workflows
 
