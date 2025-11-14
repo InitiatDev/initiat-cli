@@ -8,7 +8,7 @@
 
 > **For Engineering Leaders**: Stop losing weeks to environment setup, secret management, and onboarding friction. Initiat transforms your developer experience from days of setup to minutes of productivity.
 
-## The Problem: Developer Experience Debt
+## The Problem
 
 **Every engineering team faces the same productivity killers:**
 
@@ -20,99 +20,92 @@
 
 **The Cost**: Lost productivity, frustrated developers, delayed releases, and security vulnerabilities.
 
-## What's Available Now
+## What Initiat Does
 
-**Zero-Knowledge Secret Management** 🔐 *Production ready - Invite only*
+Initiat solves these problems with three core capabilities:
 
-Transform how your team handles secrets with enterprise-grade security. Our zero-knowledge architecture ensures that even we can't decrypt your secrets - everything is encrypted client-side before transmission.
+### 🔐 Zero-Knowledge Secret Management
+
+Manage team secrets with enterprise-grade security. Secrets are encrypted on your device before transmission, and we can never decrypt them - even with full server access.
+
+**Key Features:**
+- Client-side encryption with Ed25519/X25519 cryptography
+- Team-based access control with device approval workflows
+- Audit trails for security and compliance
+- Cross-platform CLI for macOS, Linux, and Windows
+
+**Learn more:** [Security Documentation](docs/SECURITY.md)
+
+### 🚀 Automated Environment Setup
+
+Define your development environment in `.initiat/setup.yml` and let Initiat handle the rest. Works across macOS, Linux, and Windows with explicit, GitHub Actions-style commands.
+
+**Key Features:**
+- Explicit command-based setup (no magic, just clear commands)
+- Cross-platform support with OS-specific conditions
+- Idempotent operations (safe to run multiple times)
+- Integrates with secret management for secure configuration
+
+**Learn more:** [Setup Scripts Documentation](docs/SETUP_SCRIPTS.md)
+
+### 👥 Team & Project Management
+
+Organize secrets and environments by team and project. Control who can access what with device approval workflows and granular permissions.
+
+**Key Features:**
+- Device registration and approval workflows
+- Project-based organization for teams and projects
+- Role-based access control
+- Secure key storage using OS keychain integration
+
+**Learn more:** [Command Reference](docs/COMMANDS.md)
+
+## Quick Start
+
+### Installation
+
+1. **Create account** at [initiat.dev](https://initiat.dev)
+2. **Follow the setup instructions** at [initiat.dev](https://initiat.dev/docs/setup)
+3. **Register your device**: `initiat device register "my-laptop"`
+4. **Get approved** by your team administrator
+5. **Start using secrets**: `initiat secret set API_KEY --value "sk-..."`
+
+### Basic Usage
 
 ```bash
-# Set a secret for your team (with project selection)
+# Set a secret
 initiat secret set API_KEY --value "sk-1234567890abcdef"
-# CLI will prompt: Select project (0 for custom): 1
 
-# Get a secret (decrypted client-side)
+# Get a secret
 initiat secret get API_KEY
-# CLI will prompt: Select project (0 for custom): 1
 
-# List all secrets in a project
+# List all secrets
 initiat secret list
-# CLI will prompt: Select project (0 for custom): 1
 
-# Or specify project explicitly
-initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production
-```
-
-- **Client-side encryption** with Ed25519/X25519 cryptography
-- **Team-based access control** with device approval workflows
-- **Audit trails** for security and compliance
-- **Cross-platform CLI** for macOS, Linux, and Windows
-
-**Team Management** 👥 *Production ready - Invite only*
-
-Streamline device and project management with granular control over who can access what. Every device must be approved, and every project can be configured with specific permissions.
-
-```bash
-# Register a new device
-initiat device register "my-laptop"
-
-# Check pending device approvals
-initiat device approvals
-
-# Approve all pending devices
-initiat device approve --all
-
-# List available projects
-initiat project list
-
-# Initialize a new project
+# Initialize a project
 initiat project init acme-corp/production
+
+# Run setup script
+initiat project setup
 ```
 
-- **Device registration** and approval workflows
-- **Project-based organization** for teams and projects
-- **Role-based access control** with granular permissions
-- **Secure key storage** using OS keychain integration
+## Documentation
 
-**Interactive Project Selection**
+### Core Documentation
 
-Never remember project names again. When you don't specify a project, the CLI intelligently prompts you to select from available projects.
+- **[Security & Secret Management](docs/SECURITY.md)**: How secrets are encrypted and protected
+- **[Setup Scripts](docs/SETUP_SCRIPTS.md)**: Complete guide to `.initiat/setup.yml`
+- **[Command Reference](docs/COMMANDS.md)**: All CLI commands and options
 
-```bash
-# No project specified - CLI will show interactive selection
-initiat secret list
+### Additional Resources
 
-# Output:
-# ❓ Project context is required for this command.
-# 💡 You can specify project using:
-#    --project-path org/project
-#    --org org --project project
-#    Or configure defaults with 'initiat config set org <org>' and 'initiat config set project <project>'
-#
-# Available projects:
-#   1. Production Environment (acme-corp/production)
-#   2. Staging Environment (acme-corp/staging)
-#   3. Development Environment (acme-corp/dev)
-#   0. Enter custom project
-#
-# Select project (0 for custom): 
-```
-
-**Benefits:**
-- **Faster Workflow**: No need to remember exact project names
-- **Discovery**: See all available projects at a glance
-- **Flexible**: Can still enter custom projects when needed
-- **User-Friendly**: Clear guidance and helpful error messages
-
-## What's Coming Next
-
-See our [roadmap](https://www.initiat.dev/roadmap) for exciting upcoming features
+- **[Release Process](docs/RELEASES.md)**: How to create and manage releases
+- **[Account Setup](https://initiat.dev)**: Create account and get started
+- **[Support](https://github.com/InitiatDev/initiat-cli/issues)**: GitHub Issues
 
 ## Technical Foundation
 
 **Cryptographic Security**
-
-We use industry-standard cryptographic primitives to ensure your secrets are protected at the highest level. Every operation is designed with security-first principles.
 
 - **Ed25519 signatures** for device authentication
 - **X25519 key exchange** for project key wrapping
@@ -122,93 +115,17 @@ We use industry-standard cryptographic primitives to ensure your secrets are pro
 
 **Zero-Knowledge Architecture**
 
-Our zero-knowledge architecture means we can't see your secrets, even if we wanted to. Everything is encrypted client-side before it ever reaches our servers.
-
 - Client-side encryption before transmission
 - Server cannot decrypt secrets or project keys
-- Private keys stored in OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+- Private keys stored in OS keychain
 - Forward secrecy - compromising one device doesn't affect others
 
-## Quick Start
-
-**Secret Management**
-
-Manage your team's secrets with enterprise-grade security. Every secret is encrypted client-side before transmission.
-
-```bash
-# Set a secret
-initiat secret set API_KEY --value "sk-1234567890abcdef" --project-path acme-corp/production
-
-# Get a secret
-initiat secret get API_KEY --project-path acme-corp/production
-
-# List all secrets
-initiat secret list --project-path acme-corp/production
-```
-
-**Device Management**
-
-Control access with device approval workflows. Every device must be registered and approved before it can access secrets.
-
-```bash
-# Register your device
-initiat device register "my-laptop"
-
-# Check pending approvals
-initiat device approvals
-
-# Approve all pending devices
-initiat device approve --all
-```
-
-**Project Management**
-
-Organize your secrets by team and project. Each project can have its own access controls and permissions.
-
-```bash
-# List available projects
-initiat project list
-
-# Initialize a new project (with interactive selection)
-initiat project init
-# CLI will prompt: Select project (0 for custom): 1
-
-# Or specify project explicitly
-initiat project init acme-corp/production
-```
-
-## Getting Started
-
-### **Installation**
-1. **Create account** at [initiat.dev](https://initiat.dev)
-2. **Follow the setup instructions** at [initiat.dev](https://initiat.dev/docs/setup)
-4. **Set up projects** for your teams and projects
-5. **Configure device approval** workflows
-
-### **For Teams**
-1. **Evaluate** current secret management process
-2. **Plan migration** from insecure channels (Slack, email, etc.)
-3. **Train teams** on new workflows
-4. **Monitor usage** and security improvements
-
-## Documentation
-
-### **Complete Guides**
-- **[Setup Scripts](docs/SETUP_SCRIPTS.md)**: Complete documentation for `.initiat/setup.yml` setup scripts
-- **[Command Reference](docs/COMMANDS.md)**: Complete CLI command documentation
-- **[Security Architecture](docs/SECURITY.md)**: Detailed security and cryptographic implementation
-- **[Release Process](docs/RELEASES.md)**: How to create and manage releases
-
-### **Quick Links**
-- **Account Setup**: Create account at [initiat.dev](https://initiat.dev)
-- **Support**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
+**Learn more:** [Security Documentation](docs/SECURITY.md)
 
 ## Contributing
 
 We welcome contributions! Here's how to get started:
 
-### **Quick Start**
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
 3. **Make** your changes with tests
@@ -217,7 +134,8 @@ We welcome contributions! Here's how to get started:
 6. **Push** to the branch (`git push origin feature/amazing-feature`)
 7. **Open** a Pull Request
 
-### **Development Setup**
+### Development Setup
+
 ```bash
 # Clone your fork
 git clone https://github.com/yourusername/initiat-cli.git
@@ -226,38 +144,23 @@ cd initiat-cli
 # Install dependencies
 go mod tidy
 
-# Linux users: Install X11 dependencies for clipboard support
-# Ubuntu/Debian
-sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+# Run the setup script (installs dependencies, tools, etc.)
+initiat setup run
 
-# CentOS/RHEL/Fedora
-sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-# or for newer versions:
-sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-
-# Arch Linux
-sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
-
-# Run tests to ensure everything works
+# Run tests
 make ci
 
-# Build and test the CLI
+# Build the CLI
 go build -o initiat .
-./initiat --help
 ```
 
-### **What We're Looking For**
-- **Bug fixes** and improvements
-- **New features** that align with our roadmap
-- **Documentation** improvements
-- **Security** enhancements
-- **Performance** optimizations
+**Learn more:** See [Setup Scripts Documentation](docs/SETUP_SCRIPTS.md) for the complete development environment setup.
 
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
-**Important**: This license allows you to use, modify, and distribute the software, but requires that any derivative works or network services using this software must also be open source under the same license. This protects the open source nature of the project while allowing commercial use of the web application.
+**Important**: This license allows you to use, modify, and distribute the software, but requires that any derivative works or network services using this software must also be open source under the same license.
 
 ## Support
 
