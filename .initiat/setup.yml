@@ -13,37 +13,46 @@ defaults:
   cwd: "."
 
 bootstrap:
-  - name: "Ensure package manager"
-    ensure_package_manager:
-      type: auto
+  - name: "Install Homebrew (macOS)"
+    if: os("macos") && !cmd_ok("command -v brew")
+    run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-  - name: "Ensure Git is installed"
-    ensure_tool:
-      name: git
-      install:
-        brew:
-          formula: git
-        apt:
-          packages: [git]
-          update: true
-        choco:
-          packages: [git]
+  - name: "Update apt (Linux)"
+    if: os("linux")
+    run: sudo apt-get update
+
+  - name: "Install Git (macOS)"
+    if: os("macos") && !cmd_ok("command -v git")
+    run: brew install git
+
+  - name: "Install Git (Linux)"
+    if: os("linux") && !cmd_ok("command -v git")
+    run: sudo apt-get install -y git
+
+  - name: "Install Git (Windows)"
+    if: os("windows") && !cmd_ok("where git")
+    run: choco install git -y
+
+  - name: "Install asdf (macOS/Linux)"
+    if: '!os("windows") && !cmd_ok("command -v asdf")'
+    run: |
+      git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 || true
+      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
+      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.zshrc || true
+      . "$HOME/.asdf/asdf.sh"
 
 provision:
-  - name: "Ensure Go runtime"
-    ensure_runtime:
-      name: go
-      version: ">=1.25.3"
-      manager:
-        asdf: true
-      fallback_installers:
-        - brew:
-            formula: go
-        - apt:
-            packages: [golang-go]
-            update: true
-        - choco:
-            packages: [golang]
+  - name: "Install Go via asdf"
+    if: '!os("windows") && !cmd_ok("go --version")'
+    run: |
+      . "$HOME/.asdf/asdf.sh" || true
+      asdf plugin add golang || true
+      asdf install golang 1.25.3
+      asdf global golang 1.25.3
+
+  - name: "Install Go via Chocolatey (Windows)"
+    if: os("windows") && !cmd_ok("go --version")
+    run: choco install golang -y
 
 setup:
   - name: "Download Go dependencies"
@@ -53,7 +62,7 @@ setup:
     run: go mod verify
 
   - name: "Install Linux X11 libraries for clipboard support"
-    if: os == "linux"
+    if: os("linux")
     run: |
       if command -v apt-get &> /dev/null; then
         sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
@@ -67,20 +76,20 @@ setup:
 
 verify:
   - name: "Verify Go version"
-    assert_command: go version
+    run: go version || exit 1
 
   - name: "Verify Go modules are available"
-    assert_command: go list -m all
+    run: go list -m all || exit 1
 
   - name: "Build the project"
     run: go build -o initiat .
 
   - name: "Verify binary was created (Unix)"
-    if: os == "macos" || os == "linux"
+    if: '!os("windows")'
     run: test -f initiat && echo "Binary created successfully"
 
   - name: "Verify binary was created (Windows)"
-    if: os == "windows"
+    if: os("windows")
     run: if (Test-Path initiat.exe) { Write-Host "Binary created successfully" } else { exit 1 }
 
 post:

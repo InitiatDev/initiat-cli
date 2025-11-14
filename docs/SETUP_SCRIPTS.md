@@ -1,6 +1,6 @@
 # Setup Scripts Documentation
 
-**Version 1** — Declarative development environment setup for Initiat CLI
+**Version 1** — Explicit, command-based development environment setup for Initiat CLI
 
 `.initiat/setup.yml` allows you to define a complete, reproducible development environment setup that works across macOS, Linux, and Windows. This document provides a formal specification of the syntax and behavior.
 
@@ -26,8 +26,8 @@
 
 Setup scripts define how to transform a bare system into a fully functional development environment. They are:
 
-- **Declarative**: Describe what you want, not how to get it
-- **Idempotent**: Safe to run multiple times
+- **Explicit**: Commands are written directly, similar to GitHub Actions
+- **Idempotent**: Safe to run multiple times (use conditions to check for existing installations)
 - **Cross-platform**: Works on macOS, Linux, and Windows
 - **Secure**: Integrates with Initiat's zero-knowledge secret management
 
@@ -158,7 +158,7 @@ Each step defines metadata and exactly one action.
 | `optional_secrets` | bool    | No       | Don't fail if secret missing                      |
 | `continue_on_error`  | bool    | No       | Continue even if step fails                      |
 | `retries`           | object  | No       | Retry policy (see [Retries](#retries--timeouts)) |
-| *one action*        | varies  | ✅ Yes   | Exactly one action field (see [Actions](#actions)) |
+| *one action*        | varies  | ✅ Yes   | Exactly one action field: `run` or `print`       |
 
 ---
 
@@ -174,10 +174,27 @@ Run a shell command with environment variables and secrets injected.
 run: "npm ci && npm run build"
 ```
 
+For multi-line commands, use YAML block scalars:
+
+```yaml
+run: |
+  asdf plugin add golang || true
+  asdf install golang 1.25.3
+  asdf global golang 1.25.3
+```
+
+**Behavior:**
 - Uses the shell from `defaults.shell` (or `auto` → bash/sh/powershell)
 - Inherits all `env` variables and secrets
 - Secret values are redacted in logs
 - Standard output/error are displayed
+- Commands are explicit and visible in the YAML
+
+**Best Practices:**
+- Use `if` conditions with `cmd_ok()` to check if tools are already installed
+- Use `|| exit 1` for assertions (e.g., `go version || exit 1`)
+- Use `|| true` for idempotent operations (e.g., `asdf plugin add golang || true`)
+- For OS-specific commands, use `if: os("macos")` conditions
 
 ### `print` — Print Message
 
@@ -187,191 +204,21 @@ Display a message to the user.
 print: "✅ Setup complete. Run: mix phx.server"
 ```
 
+For multi-line messages:
+
+```yaml
+print: |
+  ✅ Development environment setup complete!
+
+  You can now build the project with:
+    • make build
+    • go build -o initiat .
+```
+
+**Behavior:**
 - Always executes (unless `if` condition is false)
 - No shell execution, just output
-
-### `ensure_package_manager` — Ensure Package Manager
-
-Install a system package manager if not present.
-
-```yaml
-ensure_package_manager:
-  type: auto  # auto|brew|apt|choco
-```
-
-**Supported Types:**
-- `auto` — Automatically detect and install based on OS (brew for macOS, apt for Linux, choco for Windows)
-- `brew` — Homebrew (macOS)
-- `apt` — APT package manager (Linux)
-- `choco` — Chocolatey (Windows)
-
-**Behavior:**
-- Checks if the package manager is available
-- If not present, installs it automatically
-- Idempotent: safe to run multiple times
-
-### `ensure_tool` — Ensure CLI Tool
-
-Install a command-line tool with optional version checking.
-
-```yaml
-ensure_tool:
-  name: git
-  version: ">=2.34"
-  install:
-    brew: { formula: git }
-    apt: { packages: [git], update: true }
-    choco: { packages: [git] }
-    fallback_url: "https://example.com/git.zip"
-    checksum: "sha256:abc123..."
-```
-
-**Fields:**
-
-| Field            | Type   | Required | Description                              |
-| ---------------- | ------ | -------- | -------------------------------------- |
-| `name`           | string | ✅ Yes   | Tool name (for version checking)       |
-| `version`        | string | No       | Version constraint (e.g., `">=2.34"`)  |
-| `install.brew`   | object | No       | Homebrew installation config           |
-| `install.apt`    | object | No       | APT installation config                |
-| `install.choco`  | object | No       | Chocolatey installation config          |
-| `install.fallback_url` | string | No | URL if package managers fail (requires `checksum`) |
-| `install.checksum` | string | No | Checksum for fallback URL (`sha256:...`) |
-
-**Install Config:**
-
-```yaml
-brew:
-  formula: git  # Homebrew formula name
-
-apt:
-  packages: [git, git-core]  # Package names
-  update: true                # Run apt update first
-
-choco:
-  packages: [git]  # Chocolatey package names
-```
-
-**Behavior:**
-- Checks if tool exists and version matches
-- If missing or version mismatch, installs using the appropriate package manager for the OS
-- Falls back to `fallback_url` if package manager installation fails (requires checksum verification)
-
-### `ensure_runtime` — Ensure Language Runtime
-
-Install a language runtime (Node.js, Python, Go, etc.).
-
-```yaml
-ensure_runtime:
-  name: elixir
-  version: "1.16.x"
-  manager:
-    asdf: true
-  fallback_installers:
-    - brew: { formula: elixir }
-    - apt: { packages: [elixir] }
-    - choco: { packages: [elixir] }
-```
-
-**Supported Runtimes:**
-- `node` — Node.js
-- `python` — Python
-- `go` — Go
-- `elixir` — Elixir
-- `erlang` — Erlang
-- `java` — Java (OpenJDK)
-- `rust` — Rust
-- `dotnet` — .NET
-
-**Fields:**
-
-| Field                | Type    | Required | Description                                  |
-| -------------------- | ------- | -------- | -------------------------------------------- |
-| `name`               | string  | ✅ Yes   | Runtime name (see list above)               |
-| `version`            | string  | No       | Version constraint (e.g., `"1.16.x"`, `">=20"`) |
-| `manager.asdf`       | bool    | No       | Prefer asdf for version management            |
-| `fallback_installers` | array  | No       | Alternative installers if asdf unavailable      |
-
-**Behavior:**
-- Prefers `asdf` if available and `manager.asdf: true`
-- Falls back to OS package managers in order if asdf unavailable
-- Versions are pinned in `.tool-versions` (asdf) or via package manager
-- Install steps are executed sequentially in `fallback_installers` order
-
-**Note:** For dependent runtimes (e.g., Elixir requires Erlang), ensure dependencies are installed in separate steps earlier in the phase.
-
-### `ensure_database` — Ensure Database Service
-
-Install and configure a database.
-
-```yaml
-ensure_database:
-  engine: postgres
-  version: "15"
-  service_name: "postgres"
-  ensure_running: true
-  create_db: ["app_dev", "app_test"]
-```
-
-**Supported Engines:**
-- `postgres` — PostgreSQL
-- `mysql` — MySQL/MariaDB
-- `sqlite` — SQLite (no installation needed)
-
-**Fields:**
-
-| Field           | Type     | Required | Description                                  |
-| --------------- | -------- | -------- | -------------------------------------------- |
-| `engine`        | string   | ✅ Yes   | Database engine (see list above)            |
-| `version`       | string   | No       | Version constraint                            |
-| `service_name`  | string   | No       | System service name                           |
-| `ensure_running` | bool    | No       | Ensure the service is running                 |
-| `create_db`     | array    | No       | Database names to create                     |
-
-**Behavior:**
-- Installs the database if not present
-- Starts the service if `ensure_running: true`
-- Creates databases listed in `create_db`
-- Service management uses OS-appropriate tools (systemd, brew services, Windows services)
-
-### `assert_command` — Assert Command Success
-
-Verify that a command exits successfully.
-
-```yaml
-assert_command: "mix --version"
-```
-
-**Behavior:**
-- Runs the command
-- Fails the step if exit code is non-zero
-- Useful for health checks and verification
-
-### `assert_http` — Assert HTTP Endpoint
-
-Poll an HTTP endpoint until it returns the expected status code.
-
-```yaml
-assert_http:
-  url: "http://localhost:4000/health"
-  expect_status: 200
-  retries:
-    attempts: 20
-    backoff: "1s"
-```
-
-**Fields:**
-
-| Field           | Type   | Required | Description                                  |
-| --------------- | ------ | -------- | -------------------------------------------- |
-| `url`           | string | ✅ Yes   | HTTP/HTTPS URL to check                      |
-| `expect_status` | int    | No       | Expected status code (default: `200`)        |
-| `retries`       | object | No       | Retry policy (see [Retries](#retries--timeouts)) |
-
-**Behavior:**
-- Uses `curl` on macOS/Linux, `PowerShell` on Windows
-- Retries with exponential backoff until success or max attempts
-- Useful for waiting for services to start
+- Useful for completion messages and next steps
 
 ---
 
@@ -392,18 +239,24 @@ The `if` field accepts a boolean expression that determines whether a step execu
 
 - `&&` — AND
 - `||` — OR
-- `!` — NOT
+- `!` — NOT (must be quoted in YAML if at start: `'!os("windows")'`)
 - `()` — Grouping
 
 ### Examples
 
 ```yaml
 if: os("macos") && file_exists("mix.exs")
-if: !cmd_ok("asdf --version")
+if: '!cmd_ok("command -v asdf")'  # Note: quote when starting with !
 if: os("linux") || os("macos")
 if: file_exists("package.json") && !file_exists("package-lock.json")
 if: (os("macos") || os("linux")) && arch("arm64")
+if: os("macos") && !cmd_ok("command -v brew")  # Install if not present
+if: '!os("windows")'  # Unix-like systems
 ```
+
+**Important:** When using `!` at the start of a condition, quote the entire condition string to avoid YAML tag syntax issues:
+- ✅ `if: '!os("windows")'`
+- ❌ `if: !os("windows")` (YAML interprets `!os` as a tag)
 
 ---
 
@@ -544,7 +397,7 @@ retries:
 **Behavior:**
 - Exponential backoff: delay doubles after each retry
 - Only transient failures should be retried
-- HTTP assertions (`assert_http`) use retries by default
+- Useful for network operations or waiting for services
 
 ### Timeouts
 
@@ -598,25 +451,145 @@ name: "Minimal Setup"
 version: 1
 name: "Node.js Setup"
 
+bootstrap:
+  - name: "Install asdf (macOS/Linux)"
+    if: '!os("windows") && !cmd_ok("command -v asdf")'
+    run: |
+      git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 || true
+      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
+      . "$HOME/.asdf/asdf.sh"
+
 provision:
-  - ensure_runtime:
-      name: node
-      version: ">=20"
-      manager: { asdf: true }
-      fallback_installers:
-        - brew: { formula: node }
-        - apt: { packages: [nodejs] }
+  - name: "Install Node.js via asdf"
+    if: '!os("windows") && !cmd_ok("node --version")'
+    run: |
+      . "$HOME/.asdf/asdf.sh" || true
+      asdf plugin add nodejs || true
+      asdf install nodejs 20.10.0
+      asdf global nodejs 20.10.0
+
+  - name: "Install Node.js via Chocolatey (Windows)"
+    if: os("windows") && !cmd_ok("node --version")
+    run: choco install nodejs -y
 
 setup:
-  - run: npm ci
+  - name: "Install dependencies"
+    run: npm ci
 
 verify:
-  - assert_command: "node --version"
+  - name: "Check Node version"
+    run: node --version || exit 1
+```
+
+### Go Project
+
+```yaml
+version: 1
+name: "Go Setup"
+
+bootstrap:
+  - name: "Install Git (macOS)"
+    if: os("macos") && !cmd_ok("command -v git")
+    run: brew install git
+
+  - name: "Install Git (Linux)"
+    if: os("linux") && !cmd_ok("command -v git")
+    run: sudo apt-get install -y git
+
+  - name: "Install asdf (macOS/Linux)"
+    if: '!os("windows") && !cmd_ok("command -v asdf")'
+    run: |
+      git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 || true
+      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
+      . "$HOME/.asdf/asdf.sh"
+
+provision:
+  - name: "Install Go via asdf"
+    if: '!os("windows") && !cmd_ok("go --version")'
+    run: |
+      . "$HOME/.asdf/asdf.sh" || true
+      asdf plugin add golang || true
+      asdf install golang 1.25.3
+      asdf global golang 1.25.3
+
+  - name: "Install Go via Chocolatey (Windows)"
+    if: os("windows") && !cmd_ok("go --version")
+    run: choco install golang -y
+
+setup:
+  - name: "Download dependencies"
+    run: go mod download
+
+verify:
+  - name: "Verify Go version"
+    run: go version || exit 1
+
+  - name: "Build the project"
+    run: go build -o myapp .
 ```
 
 ### Phoenix/Elixir Project
 
-See `test/fixtures/setup_examples/phoenix_basic.yml` for a complete example.
+```yaml
+version: 1
+name: "Phoenix Setup"
+
+bootstrap:
+  - name: "Install asdf (macOS/Linux)"
+    if: '!os("windows") && !cmd_ok("command -v asdf")'
+    run: |
+      git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 || true
+      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
+      . "$HOME/.asdf/asdf.sh"
+
+provision:
+  - name: "Install Erlang via asdf"
+    if: '!os("windows") && !cmd_ok("erl -version")'
+    run: |
+      . "$HOME/.asdf/asdf.sh" || true
+      asdf plugin add erlang || true
+      asdf install erlang 26.1.2
+      asdf global erlang 26.1.2
+
+  - name: "Install Elixir via asdf"
+    if: '!os("windows") && !cmd_ok("elixir --version")'
+    run: |
+      . "$HOME/.asdf/asdf.sh" || true
+      asdf plugin add elixir || true
+      asdf install elixir 1.16.1
+      asdf global elixir 1.16.1
+
+  - name: "Install PostgreSQL (macOS)"
+    if: os("macos") && !cmd_ok("psql --version")
+    run: |
+      brew install postgresql@15
+      brew services start postgresql@15
+
+  - name: "Install PostgreSQL (Linux)"
+    if: os("linux") && !cmd_ok("psql --version")
+    run: |
+      sudo apt-get install -y postgresql-15
+      sudo systemctl start postgresql
+      sudo systemctl enable postgresql
+
+setup:
+  - name: "Get dependencies"
+    run: mix deps.get
+
+  - name: "Setup database"
+    env_from_secrets: [DATABASE_URL]
+    run: mix ecto.setup
+
+verify:
+  - name: "Check Elixir version"
+    run: elixir --version || exit 1
+
+  - name: "Start server and check health"
+    run: |
+      mix phx.server &
+      sleep 5
+      curl -f http://localhost:4000/health || exit 1
+```
 
 ---
 
@@ -624,21 +597,24 @@ See `test/fixtures/setup_examples/phoenix_basic.yml` for a complete example.
 
 ### ✅ Do
 
-- **Use conditions** to make steps OS-specific when needed
+- **Use explicit commands** — Write commands directly in `run:` fields
+- **Check for existing installations** — Use `if: !cmd_ok("command -v tool")` to make steps idempotent
+- **Use conditions for OS-specific steps** — `if: os("macos")` for macOS-only commands
+- **Quote conditions starting with `!`** — Use `'!os("windows")'` to avoid YAML tag syntax
+- **Use `|| exit 1` for assertions** — `go version || exit 1` fails if command fails
+- **Use `|| true` for idempotent operations** — `asdf plugin add golang || true` won't fail if already added
 - **Declare all secrets** in `env.secrets` upfront
-- **Make actions idempotent** (safe to run multiple times)
 - **Use descriptive step names** for better logging
 - **Test on all target platforms**
-- **Use `assert_http` with retries** for waiting on services
 - **Keep setup scripts version-controlled**
 
 ### ❌ Don't
 
 - **Hard-code secret values** (use Initiat secrets)
 - **Write secrets to `.env` files** or commit them
-- **Use `sudo` in `run` commands** (package managers handle elevation)
+- **Skip condition checks** — Always check if tools are installed before installing
 - **Assume OS-specific tools** without `if` conditions
-- **Create non-idempotent steps** (e.g., creating files that already exist)
+- **Create non-idempotent steps** — Always check before installing/creating
 - **Skip validation** (`initiat setup validate` before committing)
 
 ---
@@ -668,11 +644,9 @@ initiat setup schema --output schemas/setup-v1.json
 
 ## Related Documentation
 
-- [Setup Implementation Plan](SETUP_IMPLEMENTATION_PLAN.md) — Internal implementation details
 - [Command Reference](COMMANDS.md) — CLI command documentation
 - [Security Architecture](SECURITY.md) — Secret management details
 
 ---
 
 **Last Updated**: Version 1.0
-

@@ -2,6 +2,8 @@ package setup
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -35,12 +37,23 @@ func (e *ConditionEvaluator) Evaluate(condition string) (bool, error) {
 	}
 
 	env := map[string]interface{}{
-		"os":   e.OS,
-		"arch": e.Arch,
-		"env":  e.Env,
+		"env": e.Env,
 	}
 
-	result, err := expr.Eval(condition, env)
+	options := []expr.Option{
+		expr.Env(env),
+		expr.Function("os", e.osFunction, new(func(string) bool)),
+		expr.Function("arch", e.archFunction, new(func(string) bool)),
+		expr.Function("file_exists", e.fileExistsFunction, new(func(string) bool)),
+		expr.Function("cmd_ok", e.cmdOkFunction, new(func(string) bool)),
+	}
+
+	program, err := expr.Compile(condition, options...)
+	if err != nil {
+		return false, fmt.Errorf("failed to compile condition '%s': %w", condition, err)
+	}
+
+	result, err := expr.Run(program, env)
 	if err != nil {
 		return false, fmt.Errorf("failed to evaluate condition '%s': %w", condition, err)
 	}
@@ -68,4 +81,56 @@ func (e *ConditionEvaluator) ShouldExecuteStep(step *Step) (bool, error) {
 	}
 
 	return e.Evaluate(step.If)
+}
+
+func (e *ConditionEvaluator) osFunction(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return false, fmt.Errorf("os() expects 1 argument")
+	}
+	name, ok := params[0].(string)
+	if !ok {
+		return false, fmt.Errorf("os() argument must be a string")
+	}
+	return e.OS == name, nil
+}
+
+func (e *ConditionEvaluator) archFunction(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return false, fmt.Errorf("arch() expects 1 argument")
+	}
+	name, ok := params[0].(string)
+	if !ok {
+		return false, fmt.Errorf("arch() argument must be a string")
+	}
+	return e.Arch == name, nil
+}
+
+func (e *ConditionEvaluator) fileExistsFunction(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return false, fmt.Errorf("file_exists() expects 1 argument")
+	}
+	path, ok := params[0].(string)
+	if !ok {
+		return false, fmt.Errorf("file_exists() argument must be a string")
+	}
+	_, err := os.Stat(path)
+	return err == nil, nil
+}
+
+func (e *ConditionEvaluator) cmdOkFunction(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return false, fmt.Errorf("cmd_ok() expects 1 argument")
+	}
+	command, ok := params[0].(string)
+	if !ok {
+		return false, fmt.Errorf("cmd_ok() argument must be a string")
+	}
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return false, nil
+	}
+	// #nosec G204 -- command is user-provided from setup.yml, which is expected
+	cmd := exec.Command(parts[0], parts[1:]...)
+	err := cmd.Run()
+	return err == nil, nil
 }

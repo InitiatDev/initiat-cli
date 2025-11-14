@@ -44,81 +44,13 @@ type Step struct {
 	ContinueOnError bool              `yaml:"continue_on_error,omitempty" json:"continue_on_error,omitempty"`
 	Retries         *Retries          `yaml:"retries,omitempty" json:"retries,omitempty"`
 
-	Run                  string                `yaml:"run,omitempty" json:"run,omitempty"`
-	Print                string                `yaml:"print,omitempty" json:"print,omitempty"`
-	EnsurePackageManager *EnsurePackageManager `yaml:"ensure_package_manager,omitempty"`
-	EnsureTool           *EnsureTool           `yaml:"ensure_tool,omitempty" json:"ensure_tool,omitempty"`
-	EnsureRuntime        *EnsureRuntime        `yaml:"ensure_runtime,omitempty" json:"ensure_runtime,omitempty"`
-	EnsureDatabase       *EnsureDatabase       `yaml:"ensure_database,omitempty" json:"ensure_database,omitempty"`
-	AssertCommand        string                `yaml:"assert_command,omitempty" json:"assert_command,omitempty"`
-	AssertHTTP           *AssertHTTP           `yaml:"assert_http,omitempty" json:"assert_http,omitempty"`
+	Run   string `yaml:"run,omitempty" json:"run,omitempty"`
+	Print string `yaml:"print,omitempty" json:"print,omitempty"`
 }
 
 type Retries struct {
 	Attempts int    `yaml:"attempts" json:"attempts"`
 	Backoff  string `yaml:"backoff" json:"backoff"`
-}
-
-type EnsurePackageManager struct {
-	Type string `yaml:"type" json:"type"`
-}
-
-type EnsureTool struct {
-	Name    string             `yaml:"name" json:"name"`
-	Version string             `yaml:"version,omitempty" json:"version,omitempty"`
-	Install *ToolInstallConfig `yaml:"install,omitempty" json:"install,omitempty"`
-}
-
-type ToolInstallConfig struct {
-	Brew        *BrewInstall  `yaml:"brew,omitempty" json:"brew,omitempty"`
-	Apt         *AptInstall   `yaml:"apt,omitempty" json:"apt,omitempty"`
-	Choco       *ChocoInstall `yaml:"choco,omitempty" json:"choco,omitempty"`
-	FallbackURL string        `yaml:"fallback_url,omitempty" json:"fallback_url,omitempty"`
-	Checksum    string        `yaml:"checksum,omitempty" json:"checksum,omitempty"`
-}
-
-type BrewInstall struct {
-	Formula string `yaml:"formula" json:"formula"`
-}
-
-type AptInstall struct {
-	Packages []string `yaml:"packages" json:"packages"`
-	Update   bool     `yaml:"update,omitempty" json:"update,omitempty"`
-}
-
-type ChocoInstall struct {
-	Packages []string `yaml:"packages" json:"packages"`
-}
-
-type EnsureRuntime struct {
-	Name               string                     `yaml:"name" json:"name"`
-	Version            string                     `yaml:"version,omitempty" json:"version,omitempty"`
-	Manager            *RuntimeManager            `yaml:"manager,omitempty" json:"manager,omitempty"`
-	FallbackInstallers []RuntimeFallbackInstaller `yaml:"fallback_installers,omitempty"`
-}
-
-type RuntimeManager struct {
-	Asdf bool `yaml:"asdf,omitempty" json:"asdf,omitempty"`
-}
-
-type RuntimeFallbackInstaller struct {
-	Brew  *BrewInstall  `yaml:"brew,omitempty" json:"brew,omitempty"`
-	Apt   *AptInstall   `yaml:"apt,omitempty" json:"apt,omitempty"`
-	Choco *ChocoInstall `yaml:"choco,omitempty" json:"choco,omitempty"`
-}
-
-type EnsureDatabase struct {
-	Engine        string   `yaml:"engine" json:"engine"`
-	Version       string   `yaml:"version,omitempty" json:"version,omitempty"`
-	ServiceName   string   `yaml:"service_name,omitempty" json:"service_name,omitempty"`
-	EnsureRunning bool     `yaml:"ensure_running,omitempty" json:"ensure_running,omitempty"`
-	CreateDB      []string `yaml:"create_db,omitempty" json:"create_db,omitempty"`
-}
-
-type AssertHTTP struct {
-	URL          string   `yaml:"url" json:"url"`
-	ExpectStatus int      `yaml:"expect_status,omitempty" json:"expect_status,omitempty"`
-	Retries      *Retries `yaml:"retries,omitempty" json:"retries,omitempty"`
 }
 
 type ParsedDuration struct {

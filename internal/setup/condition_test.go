@@ -29,10 +29,10 @@ func TestConditionEvaluator_Evaluate_OSConditions(t *testing.T) {
 		condition string
 		expected  bool
 	}{
-		{`os == "macos"`, true},
-		{`os == "linux"`, false},
-		{`os != "windows"`, true},
-		{`os != "macos"`, false},
+		{`os("macos")`, true},
+		{`os("linux")`, false},
+		{`!os("windows")`, true},
+		{`!os("macos")`, false},
 	}
 
 	for _, tc := range testCases {
@@ -55,10 +55,10 @@ func TestConditionEvaluator_Evaluate_ArchConditions(t *testing.T) {
 		condition string
 		expected  bool
 	}{
-		{`arch == "x86_64"`, true},
-		{`arch == "arm64"`, false},
-		{`arch != "arm64"`, true},
-		{`arch != "x86_64"`, false},
+		{`arch("x86_64")`, true},
+		{`arch("arm64")`, false},
+		{`!arch("arm64")`, true},
+		{`!arch("x86_64")`, false},
 	}
 
 	for _, tc := range testCases {
@@ -206,10 +206,10 @@ func TestConditionEvaluator_Evaluate_StringContains(t *testing.T) {
 		condition string
 		expected  bool
 	}{
-		{`os contains "mac"`, true},
-		{`os contains "linux"`, false},
-		{`arch contains "x86"`, true},
-		{`arch contains "arm"`, false},
+		{`os("macos")`, true},
+		{`os("linux")`, false},
+		{`arch("x86_64")`, true},
+		{`arch("arm64")`, false},
 	}
 
 	for _, tc := range testCases {
@@ -267,10 +267,10 @@ func TestConditionEvaluator_ShouldExecuteStep_WithCondition(t *testing.T) {
 		condition string
 		expected  bool
 	}{
-		{`os == "macos"`, true},
-		{`os == "linux"`, false},
-		{`arch == "x86_64"`, true},
-		{`arch == "arm64"`, false},
+		{`os("macos")`, true},
+		{`os("linux")`, false},
+		{`arch("x86_64")`, true},
+		{`arch("arm64")`, false},
 	}
 
 	for _, tc := range testCases {
@@ -303,12 +303,12 @@ func TestConditionEvaluator_ComplexConditions(t *testing.T) {
 		condition string
 		expected  bool
 	}{
-		{`os == "macos" && arch == "x86_64"`, true},
-		{`os == "macos" || arch == "arm64"`, true},
-		{`env.NODE_ENV == "development" && os == "macos"`, true},
-		{`env.VERSION contains "1.2" && arch == "x86_64"`, true},
-		{`os == "linux" && arch == "x86_64"`, false},
-		{`os == "macos" && arch == "arm64"`, false},
+		{`os("macos") && arch("x86_64")`, true},
+		{`os("macos") || arch("arm64")`, true},
+		{`env.NODE_ENV == "development" && os("macos")`, true},
+		{`env.VERSION contains "1.2" && arch("x86_64")`, true},
+		{`os("linux") && arch("x86_64")`, false},
+		{`os("macos") && arch("arm64")`, false},
 	}
 
 	for _, tc := range testCases {
@@ -330,18 +330,25 @@ func TestConditionEvaluator_EdgeCases(t *testing.T) {
 	testCases := []struct {
 		condition string
 		expected  bool
+		expectErr bool
 	}{
-		{`"" == ""`, true},
-		{`"" != "hello"`, true},
-		{`0 == 0`, true},
-		{`0 != 1`, true},
-		{`"0" == "0"`, true},
-		{`"0" == 0`, false},
+		{`"" == ""`, true, false},
+		{`"" != "hello"`, true, false},
+		{`0 == 0`, true, false},
+		{`0 != 1`, true, false},
+		{`"0" == "0"`, true, false},
+		{`"0" == 0`, false, true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.condition, func(t *testing.T) {
 			result, err := evaluator.Evaluate(tc.condition)
+			if tc.expectErr {
+				if err == nil {
+					t.Errorf("Expected error for condition: %s", tc.condition)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("Expected no error, got: %v", err)
 			}

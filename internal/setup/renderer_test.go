@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -31,8 +32,8 @@ func TestRender_MinimalConfig(t *testing.T) {
 		t.Fatalf("Expected 1 command, got %d", len(plan.Commands))
 	}
 
-	if plan.Commands[0].Command != "echo" {
-		t.Errorf("Expected command 'echo', got '%s'", plan.Commands[0].Command)
+	if plan.Commands[0].Command != "/bin/bash" {
+		t.Errorf("Expected command '/bin/bash', got '%s'", plan.Commands[0].Command)
 	}
 
 	if plan.Summary.TotalCommands != 1 {
@@ -92,12 +93,12 @@ func TestRender_WithConditions(t *testing.T) {
 		Bootstrap: []Step{
 			{
 				Name: "macOS only",
-				If:   `os == "macos"`,
+				If:   `os("macos")`,
 				Run:  "macos-command",
 			},
 			{
 				Name: "linux only",
-				If:   `os == "linux"`,
+				If:   `os("linux")`,
 				Run:  "linux-command",
 			},
 			{
@@ -123,11 +124,23 @@ func TestRender_WithConditions(t *testing.T) {
 		t.Fatalf("Expected 2 commands (macOS + always), got %d", len(plan.Commands))
 	}
 
-	if plan.Commands[0].Command != "macos-command" && plan.Commands[1].Command != "macos-command" {
+	foundMacOS := false
+	foundAlways := false
+	for _, cmd := range plan.Commands {
+		cmdStr := strings.Join(cmd.Args, " ")
+		if strings.Contains(cmdStr, "macos-command") {
+			foundMacOS = true
+		}
+		if strings.Contains(cmdStr, "always-command") {
+			foundAlways = true
+		}
+	}
+
+	if !foundMacOS {
 		t.Error("Expected to find 'macos-command'")
 	}
 
-	if plan.Commands[0].Command != "always-command" && plan.Commands[1].Command != "always-command" {
+	if !foundAlways {
 		t.Error("Expected to find 'always-command'")
 	}
 }
@@ -441,38 +454,26 @@ func TestRender_AllActionTypes(t *testing.T) {
 		Bootstrap: []Step{
 			{Print: "Starting setup"},
 			{Run: "echo test"},
-			{AssertCommand: "which git"},
+			{Run: "which git || exit 1"},
 			{
-				EnsurePackageManager: &EnsurePackageManager{
-					Type: "brew",
-				},
+				Name: "Install Homebrew",
+				Run:  "brew --version || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
 			},
 			{
-				EnsureTool: &EnsureTool{
-					Name:    "node",
-					Version: "18.0.0",
-					Install: &ToolInstallConfig{
-						Brew: &BrewInstall{Formula: "node"},
-					},
-				},
+				Name: "Install Node.js",
+				Run:  "brew install node",
 			},
 			{
-				EnsureRuntime: &EnsureRuntime{
-					Name:    "node",
-					Version: "18.0.0",
-					Manager: &RuntimeManager{Asdf: true},
-				},
+				Name: "Install Node.js via asdf",
+				Run:  "asdf plugin add nodejs && asdf install nodejs 18.0.0",
 			},
 			{
-				EnsureDatabase: &EnsureDatabase{
-					Engine: "postgres",
-				},
+				Name: "Install PostgreSQL",
+				Run:  "brew install postgresql@15",
 			},
 			{
-				AssertHTTP: &AssertHTTP{
-					URL:          "https://example.com",
-					ExpectStatus: 200,
-				},
+				Name: "Check API",
+				Run:  "curl -f https://example.com || exit 1",
 			},
 		},
 	}

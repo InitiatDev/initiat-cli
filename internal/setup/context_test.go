@@ -182,7 +182,7 @@ func TestContext_ShouldExecuteStep_WithCondition(t *testing.T) {
 
 	step := &Step{
 		Run: "echo test",
-		If:  "os == \"" + currentOS + "\"",
+		If:  "os(\"" + currentOS + "\")",
 	}
 
 	shouldExecute, err := ctx.ShouldExecuteStep(step)
@@ -194,7 +194,7 @@ func TestContext_ShouldExecuteStep_WithCondition(t *testing.T) {
 		t.Error("Expected step to execute when condition matches current OS")
 	}
 
-	step.If = "os == \"nonexistent\""
+	step.If = "os(\"nonexistent\")"
 	shouldExecute, err = ctx.ShouldExecuteStep(step)
 	if err != nil {
 		t.Fatalf("ShouldExecuteStep() failed: %v", err)
@@ -216,7 +216,7 @@ func TestContext_ShouldExecuteStep_ComplexCondition(t *testing.T) {
 
 	step := &Step{
 		Run: "echo test",
-		If:  "os == \"" + currentOS + "\" && arch == \"" + currentArch + "\"",
+		If:  "os(\"" + currentOS + "\") && arch(\"" + currentArch + "\")",
 	}
 
 	shouldExecute, err := ctx.ShouldExecuteStep(step)

@@ -79,7 +79,6 @@ func validateStep(step Step, path string) ValidationErrors {
 	errors = append(errors, validateStepActions(step, path)...)
 	errors = append(errors, validateStepTimeout(step, path)...)
 	errors = append(errors, validateStepRetries(step, path)...)
-	errors = append(errors, validateStepSpecificActions(step, path)...)
 
 	return errors
 }
@@ -98,35 +97,11 @@ func validateStepActions(step Step, path string) ValidationErrors {
 		actionCount++
 		actionFields = append(actionFields, "print")
 	}
-	if step.EnsurePackageManager != nil {
-		actionCount++
-		actionFields = append(actionFields, "ensure_package_manager")
-	}
-	if step.EnsureTool != nil {
-		actionCount++
-		actionFields = append(actionFields, "ensure_tool")
-	}
-	if step.EnsureRuntime != nil {
-		actionCount++
-		actionFields = append(actionFields, "ensure_runtime")
-	}
-	if step.EnsureDatabase != nil {
-		actionCount++
-		actionFields = append(actionFields, "ensure_database")
-	}
-	if step.AssertCommand != "" {
-		actionCount++
-		actionFields = append(actionFields, "assert_command")
-	}
-	if step.AssertHTTP != nil {
-		actionCount++
-		actionFields = append(actionFields, "assert_http")
-	}
 
 	if actionCount == 0 {
 		errors = append(errors, ValidationError{
 			Field:   path,
-			Message: "step must have exactly one action",
+			Message: "step must have exactly one action (run or print)",
 		})
 	} else if actionCount > 1 {
 		errors = append(errors, ValidationError{
@@ -169,84 +144,6 @@ func validateStepRetries(step Step, path string) ValidationErrors {
 				Message: err.Error(),
 			})
 		}
-	}
-
-	return errors
-}
-
-func validateStepSpecificActions(step Step, path string) ValidationErrors {
-	var errors ValidationErrors
-
-	if step.EnsureTool != nil {
-		errors = append(errors, validateTool(step.EnsureTool, fmt.Sprintf("%s.ensure_tool", path))...)
-	}
-
-	if step.EnsureRuntime != nil {
-		errors = append(errors, validateRuntime(step.EnsureRuntime, fmt.Sprintf("%s.ensure_runtime", path))...)
-	}
-
-	if step.EnsureDatabase != nil {
-		errors = append(errors, validateDatabase(step.EnsureDatabase, fmt.Sprintf("%s.ensure_database", path))...)
-	}
-
-	return errors
-}
-
-func validateTool(tool *EnsureTool, path string) ValidationErrors {
-	var errors ValidationErrors
-
-	if tool.Name == "" {
-		errors = append(errors, ValidationError{
-			Field:   fmt.Sprintf("%s.name", path),
-			Message: "tool name is required",
-		})
-	}
-
-	if tool.Install != nil {
-		if tool.Install.FallbackURL != "" && tool.Install.Checksum == "" {
-			errors = append(errors, ValidationError{
-				Field:   fmt.Sprintf("%s.install", path),
-				Message: "fallback_url requires checksum",
-			})
-		}
-
-		if tool.Install.Checksum != "" {
-			matched, _ := regexp.MatchString(`^sha256:[a-f0-9]+$`, tool.Install.Checksum)
-			if !matched {
-				errors = append(errors, ValidationError{
-					Field:   fmt.Sprintf("%s.install.checksum", path),
-					Message: "must be in format 'sha256:hexdigest'",
-				})
-			}
-		}
-	}
-
-	return errors
-}
-
-func validateRuntime(runtime *EnsureRuntime, path string) ValidationErrors {
-	var errors ValidationErrors
-
-	validRuntimes := []string{"node", "python", "go", "elixir", "erlang", "java", "rust", "dotnet"}
-	if !contains(validRuntimes, runtime.Name) {
-		errors = append(errors, ValidationError{
-			Field:   fmt.Sprintf("%s.name", path),
-			Message: fmt.Sprintf("must be one of: %s", strings.Join(validRuntimes, ", ")),
-		})
-	}
-
-	return errors
-}
-
-func validateDatabase(db *EnsureDatabase, path string) ValidationErrors {
-	var errors ValidationErrors
-
-	validEngines := []string{"postgres", "mysql", "sqlite"}
-	if !contains(validEngines, db.Engine) {
-		errors = append(errors, ValidationError{
-			Field:   fmt.Sprintf("%s.engine", path),
-			Message: fmt.Sprintf("must be one of: %s", strings.Join(validEngines, ", ")),
-		})
 	}
 
 	return errors
@@ -332,13 +229,4 @@ func validateDuration(duration string) error {
 	}
 
 	return nil
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }

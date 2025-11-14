@@ -51,7 +51,7 @@ func TestSetupRunner_Run_NoCommands(t *testing.T) {
 		Setup: []Step{
 			{
 				Name: "conditional-step",
-				If:   "os == 'windows'",
+				If:   "os('windows')",
 				Run:  "echo 'windows'",
 			},
 		},

@@ -3,9 +3,9 @@ package setup
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
-
-	"github.com/InitiatDev/initiat-cli/internal/setup/actions"
 )
 
 type RenderContext struct {
@@ -61,9 +61,8 @@ func Render(config *SetupConfig, ctx *RenderContext) (*ExecutionPlan, error) {
 	}
 
 	conditionEval := NewConditionEvaluator(ctx.OS, ctx.Arch, mergeEnv(ctx.GlobalEnv, ctx.Secrets))
-	actionFactory := NewActionFactory()
 
-	plan, summary, err := processPhases(config, ctx, conditionEval, actionFactory)
+	plan, summary, err := processPhases(config, ctx, conditionEval)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +91,6 @@ func processPhases(
 	config *SetupConfig,
 	ctx *RenderContext,
 	conditionEval *ConditionEvaluator,
-	actionFactory *ActionFactory,
 ) (*ExecutionPlan, *ExecutionSummary, error) {
 	var plan ExecutionPlan
 	summary := ExecutionSummary{
@@ -108,7 +106,7 @@ func processPhases(
 
 		for stepIndex, step := range phase.Steps {
 			commands, stepCommandsCount, err := processStep(
-				phase.Name, stepIndex, step, config, ctx, conditionEval, actionFactory)
+				phase.Name, stepIndex, step, config, ctx, conditionEval)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -134,7 +132,6 @@ func processStep(
 	config *SetupConfig,
 	ctx *RenderContext,
 	conditionEval *ConditionEvaluator,
-	actionFactory *ActionFactory,
 ) ([]ExecutableCommand, int, error) {
 	shouldExecute, err := conditionEval.ShouldExecuteStep(&step)
 	if err != nil {
@@ -145,50 +142,49 @@ func processStep(
 		return nil, 0, nil
 	}
 
-	stepCtx, err := buildActionContext(step, config, ctx)
+	stepCtx, err := buildStepContext(step, config, ctx)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error building action context for step %s[%d]: %w", phaseName, stepIndex, err)
+		return nil, 0, fmt.Errorf("error building step context for step %s[%d]: %w", phaseName, stepIndex, err)
 	}
 
-	action, err := actionFactory.BuildFromStep(&step)
-	if err != nil {
-		return nil, 0, fmt.Errorf("error building action for step %s[%d]: %w", phaseName, stepIndex, err)
+	if step.Run == "" && step.Print == "" {
+		return nil, 0, fmt.Errorf("step %s[%d] must have either 'run' or 'print'", phaseName, stepIndex)
 	}
 
-	if err := action.Validate(); err != nil {
-		return nil, 0, fmt.Errorf("action validation failed for step %s[%d]: %w", phaseName, stepIndex, err)
-	}
-
-	commands, err := action.Render(stepCtx)
-	if err != nil {
-		return nil, 0, fmt.Errorf("action rendering failed for step %s[%d]: %w", phaseName, stepIndex, err)
+	if step.Run != "" && step.Print != "" {
+		return nil, 0, fmt.Errorf("step %s[%d] cannot have both 'run' and 'print'", phaseName, stepIndex)
 	}
 
 	retryPolicy := ParseRetryPolicy(step.Retries)
 	var execCommands []ExecutableCommand
 
-	for _, cmd := range commands {
-		execCmd := ExecutableCommand{
-			Phase:           phaseName,
-			StepName:        step.Name,
-			StepIndex:       stepIndex,
-			Command:         cmd.Command,
-			Args:            cmd.Args,
-			Env:             cmd.Env,
-			WorkingDir:      cmd.WorkingDir,
-			Timeout:         cmd.Timeout,
-			Description:     cmd.Description,
-			Retries:         retryPolicy,
-			ContinueOnError: stepCtx.ContinueOnError,
-		}
+	if step.Print != "" {
+		cmd := buildPrintCommand(step, stepCtx, phaseName, stepIndex)
+		execCommands = append(execCommands, cmd)
+	} else if step.Run != "" {
+		cmd := buildRunCommand(step, stepCtx, phaseName, stepIndex)
+		execCommands = append(execCommands, cmd)
+	}
 
-		execCommands = append(execCommands, execCmd)
+	for i := range execCommands {
+		execCommands[i].Retries = retryPolicy
+		execCommands[i].ContinueOnError = stepCtx.ContinueOnError
 	}
 
 	return execCommands, len(execCommands), nil
 }
 
-func buildActionContext(step Step, config *SetupConfig, ctx *RenderContext) (*actions.ActionContext, error) {
+type StepContext struct {
+	OS              string
+	Arch            string
+	Env             map[string]string
+	WorkingDir      string
+	Shell           string
+	Timeout         time.Duration
+	ContinueOnError bool
+}
+
+func buildStepContext(step Step, config *SetupConfig, ctx *RenderContext) (*StepContext, error) {
 	timeout := ctx.DefaultTimeout
 	if step.Timeout != "" {
 		parsed, err := ParseDuration(step.Timeout)
@@ -262,16 +258,83 @@ func buildActionContext(step Step, config *SetupConfig, ctx *RenderContext) (*ac
 		}
 	}
 
-	return &actions.ActionContext{
+	return &StepContext{
 		OS:              ctx.OS,
 		Arch:            ctx.Arch,
 		Env:             env,
-		Secrets:         secrets,
 		WorkingDir:      workingDir,
 		Shell:           shell,
 		Timeout:         timeout,
 		ContinueOnError: continueOnError,
 	}, nil
+}
+
+func buildRunCommand(step Step, stepCtx *StepContext, phaseName string, stepIndex int) ExecutableCommand {
+	shell, args := determineShellCommand(stepCtx.Shell, step.Run)
+
+	return ExecutableCommand{
+		Phase:           phaseName,
+		StepName:        step.Name,
+		StepIndex:       stepIndex,
+		Command:         shell,
+		Args:            args,
+		Env:             stepCtx.Env,
+		WorkingDir:      stepCtx.WorkingDir,
+		Timeout:         stepCtx.Timeout,
+		Description:     fmt.Sprintf("Run: %s", step.Run),
+		ContinueOnError: stepCtx.ContinueOnError,
+	}
+}
+
+func buildPrintCommand(step Step, stepCtx *StepContext, phaseName string, stepIndex int) ExecutableCommand {
+	var command string
+	var args []string
+
+	const (
+		powershellCmd = "powershell"
+		echoCmd       = "echo"
+	)
+
+	if stepCtx.OS == osWindows {
+		command = powershellCmd
+		args = []string{"-Command", fmt.Sprintf("Write-Host '%s'", strings.ReplaceAll(step.Print, "'", "''"))}
+	} else {
+		command = echoCmd
+		args = []string{step.Print}
+	}
+
+	return ExecutableCommand{
+		Phase:           phaseName,
+		StepName:        step.Name,
+		StepIndex:       stepIndex,
+		Command:         command,
+		Args:            args,
+		Env:             stepCtx.Env,
+		WorkingDir:      stepCtx.WorkingDir,
+		Timeout:         stepCtx.Timeout,
+		Description:     fmt.Sprintf("Print: %s", step.Print),
+		ContinueOnError: stepCtx.ContinueOnError,
+	}
+}
+
+func determineShellCommand(shell string, command string) (string, []string) {
+	const (
+		powershellCmd = "powershell"
+		bashCmd       = "/bin/bash"
+	)
+
+	if shell == "auto" || shell == "" {
+		if runtime.GOOS == goOSWindows {
+			return powershellCmd, []string{"-Command", command}
+		}
+		return bashCmd, []string{"-c", command}
+	}
+
+	if strings.Contains(shell, powershellCmd) || strings.Contains(shell, "pwsh") {
+		return shell, []string{"-Command", command}
+	}
+
+	return shell, []string{"-c", command}
 }
 
 func mergeEnv(envs ...map[string]string) map[string]string {
