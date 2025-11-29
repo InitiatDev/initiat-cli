@@ -34,12 +34,10 @@ func GenerateEnvrc() error {
 
 const (
 	envrcContentUnix = `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 	envrcContentWindows = `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(cat .initiat/active)
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 )
 

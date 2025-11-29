@@ -48,14 +48,12 @@ func TestGenerateEnvrc(t *testing.T) {
 	}
 
 	expectedContent := `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 
 	if runtime.GOOS == "windows" {
 		expectedContent = `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(cat .initiat/active)
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 	}
 
@@ -113,14 +111,12 @@ func TestGenerateEnvrcToPath(t *testing.T) {
 	}
 
 	expectedContent := `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(basename "$(readlink .initiat/active 2>/dev/null || cat .initiat/active)")
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 
 	if runtime.GOOS == "windows" {
 		expectedContent = `if [ -e ".initiat/active" ]; then
-  dotenv ".initiat/active/secrets.env"
-  export INITIAT_ENV=$(cat .initiat/active)
+  eval "$(initiat env load 2>/dev/null)" || true
 fi`
 	}
 
