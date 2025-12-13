@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/env"
@@ -36,15 +37,34 @@ var envListCmd = &cobra.Command{
 		}
 
 		activeEnv, _ := env.GetActiveEnvironment()
+		localEnvs, _ := env.ListLocalEnvironments()
+		localEnvMap := make(map[string]env.EnvironmentInfo)
+		for _, localEnv := range localEnvs {
+			localEnvMap[localEnv.Slug] = localEnv
+		}
 
 		fmt.Println("Environments:")
 		for _, environment := range environments {
+			status := "not synced"
+			syncTime := "never"
+
+			if localEnv, exists := localEnvMap[environment.Slug]; exists {
+				if localEnv.HasSecrets {
+					status = "synced"
+					if !localEnv.Synced.IsZero() {
+						syncTime = formatTimeAgo(localEnv.Synced)
+					}
+				} else {
+					status = "no secrets"
+				}
+			}
+
 			marker := " "
 			if environment.Slug == activeEnv {
 				marker = "*"
 			}
 
-			fmt.Printf("%s %-10s (%d secrets)\n", marker, environment.Slug, environment.SecretsCount)
+			fmt.Printf("%s %-10s %-10s %s (%d secrets)\n", marker, environment.Slug, status, syncTime, environment.SecretsCount)
 		}
 
 		return nil
@@ -95,6 +115,48 @@ var envSwitchCmd = &cobra.Command{
 		} else {
 			fmt.Printf("⚠️  direnv not installed. Install with: %s\n", env.GetInstallInstructions())
 			fmt.Printf("Switched to \"%s\" (run 'direnv allow' after installing direnv)\n", envSlug)
+		}
+
+		return nil
+	},
+}
+
+var envSyncCmd = &cobra.Command{
+	Use:   "sync [--env <slug>]",
+	Short: "Sync secrets from cloud",
+	Long:  `Sync secrets from Initiat Cloud to local environment(s).`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if !env.IsInitCompleted() {
+			return fmt.Errorf("initiat environment not initialized. Run 'initiat env init' first")
+		}
+
+		projectCtx, err := GetProjectContext()
+		if err != nil {
+			return fmt.Errorf("failed to get project context: %w", err)
+		}
+
+		envSlug, _ := cmd.Flags().GetString("env")
+
+		if envSlug != "" {
+			apiClient := client.New()
+			_, err = apiClient.GetEnvironment(projectCtx.OrgSlug, projectCtx.ProjectSlug, envSlug)
+			if err != nil {
+				return fmt.Errorf("environment '%s' does not exist: %w", envSlug, err)
+			}
+
+			err = env.SyncEnvironment(envSlug, projectCtx.OrgSlug, projectCtx.ProjectSlug)
+			if err != nil {
+				return fmt.Errorf("failed to sync environment %s: %w", envSlug, err)
+			}
+
+			fmt.Printf("Synced environment '%s'\n", envSlug)
+		} else {
+			err = env.SyncAllEnvironments(projectCtx.OrgSlug, projectCtx.ProjectSlug)
+			if err != nil {
+				return fmt.Errorf("failed to sync environments: %w", err)
+			}
+
+			fmt.Printf("Synced all environments\n")
 		}
 
 		return nil
@@ -156,27 +218,6 @@ var envUnsetCmd = &cobra.Command{
 			fmt.Println("Environment unset (run 'direnv allow' after installing direnv)")
 		}
 
-		return nil
-	},
-}
-
-var envLoadCmd = &cobra.Command{
-	Use:    "load",
-	Short:  "Load environment secrets (for direnv)",
-	Long:   `Load and export secrets for the active environment. This command is intended to be used by direnv via eval.`,
-	Hidden: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		projectCtx, err := GetProjectContext()
-		if err != nil {
-			return fmt.Errorf("failed to get project context: %w", err)
-		}
-
-		output, err := env.LoadEnvironmentSecrets(projectCtx.OrgSlug, projectCtx.ProjectSlug)
-		if err != nil {
-			return err
-		}
-
-		fmt.Print(output)
 		return nil
 	},
 }
@@ -267,13 +308,35 @@ var envInitCmd = &cobra.Command{
 	},
 }
 
+func formatTimeAgo(t time.Time) string {
+	now := time.Now()
+	duration := now.Sub(t)
+
+	switch {
+	case duration < time.Minute:
+		return "just now"
+	case duration < time.Hour:
+		minutes := int(duration.Minutes())
+		return fmt.Sprintf("%dm ago", minutes)
+	case duration < 24*time.Hour:
+		hours := int(duration.Hours())
+		return fmt.Sprintf("%dh ago", hours)
+	default:
+		const hoursPerDay = 24
+		days := int(duration.Hours() / hoursPerDay)
+		return fmt.Sprintf("%dd ago", days)
+	}
+}
+
 func init() {
 	envCmd.AddCommand(envListCmd)
 	envCmd.AddCommand(envSwitchCmd)
+	envCmd.AddCommand(envSyncCmd)
 	envCmd.AddCommand(envCurrentCmd)
 	envCmd.AddCommand(envUnsetCmd)
 	envCmd.AddCommand(envInitCmd)
-	envCmd.AddCommand(envLoadCmd)
+
+	envSyncCmd.Flags().String("env", "", "Sync specific environment")
 
 	rootCmd.AddCommand(envCmd)
 }
