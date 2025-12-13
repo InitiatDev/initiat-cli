@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2025-11-15
+
+### Added
+- **Device Management Enhancements**: New commands for viewing and managing local device information
+  - `initiat device view` - View local device details including device ID, name, API environment, and key status
+  - `initiat device set-name <name>` - Set or update the device name stored locally
+  - Device name is now stored locally during registration (no API call needed to view it)
+- **Enhanced Device Unregistration**: Improved `initiat device unregister` command
+  - Now displays device details before unregistering
+  - Requires user confirmation before clearing credentials
+  - Helps prevent accidental device unregistration
+
+### Changed
+- **Device Name Storage**: Device name is now stored locally in the keychain
+  - Eliminates need for API calls when viewing device information
+  - Works offline and faster than fetching from server
+  - Allows backfilling device names for devices registered before this feature
+
+### Fixed
+- **Test Reliability**: Improved storage tests to properly handle keyring operations
+  - Tests now fail on actual errors instead of skipping
+  - Better error detection and reporting
+
 ## [0.7.2] - 2025-11-10
 
 ### Changed

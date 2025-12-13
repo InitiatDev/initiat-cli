@@ -154,17 +154,93 @@ Created: 2024-01-15T10:30:00Z
 💡 Next: Initialize project keys with 'initiat project list'
 ```
 
+### `initiat device view`
+
+View local device details including device ID, name, API environment, and key status.
+
+**What it does:**
+- Displays device information stored locally
+- Shows device ID, name (if set), API base URL, and key status
+- Helps verify you're working with the correct device
+
+**Examples:**
+```bash
+# View local device details
+initiat device view
+```
+
+**Output:**
+```
+Local Device Details
+
+Device Name: my-laptop
+Device ID: dev_abc123
+API Base URL: https://www.initiat.dev
+
+Keys Status:
+  ✅ Ed25519 signing key: Present
+  ✅ X25519 encryption key: Present
+```
+
+### `initiat device set-name <device-name>`
+
+Set or update the device name stored locally.
+
+**Arguments:**
+- `device-name`: Human-readable name for this device (required)
+
+**What it does:**
+- Stores device name locally in the keychain
+- Useful if you registered before device names were stored locally
+- Allows backfilling device names for existing registrations
+
+**Examples:**
+```bash
+# Set device name
+initiat device set-name "my-laptop"
+
+# Update existing device name
+initiat device set-name "work-macbook"
+```
+
+**Output:**
+```
+✅ Device name set to: my-laptop
+```
+
 ### `initiat device unregister`
 
 Clear local device credentials from the system keychain.
 
 **What it does:**
+- Displays device details before unregistering
+- Prompts for confirmation before clearing credentials
 - Removes all device credentials stored locally
 - Use when registering a fresh device or cleaning up after server deletion
 
+**Examples:**
+```bash
+# Unregister device (with confirmation)
+initiat device unregister
+```
+
 **Output:**
 ```
-🔐 Clearing local device credentials...
+⚠️  You are about to unregister this device:
+
+Device Details:
+
+Device Name: my-laptop
+Device ID: dev_abc123
+API Base URL: https://www.initiat.dev
+
+Keys Status:
+  ✅ Ed25519 signing key: Present
+  ✅ X25519 encryption key: Present
+
+Are you sure you want to clear all local device credentials? (y/n): y
+
+Clearing local device credentials...
 ✅ Device credentials cleared successfully!
 
 💡 You can now register a new device with 'initiat device register <name>'

@@ -108,6 +108,61 @@ commands:
       difficulty: "beginner"
       estimated_time: "2 minutes"
 
+  device.view:
+    id: "device.view"
+    name: "view"
+    category: "device"
+    description: "View local device details including device ID, name, API environment, and key status"
+    usage: "initiat device view"
+    arguments: []
+    options: []
+    examples:
+      - description: "View local device details"
+        command: "initiat device view"
+    workflow_steps:
+      - "Displays device information stored locally"
+      - "Shows device ID, name (if set), API base URL, and key status"
+      - "Helps verify you're working with the correct device"
+    output: |
+      Local Device Details
+
+      Device Name: my-laptop
+      Device ID: dev_abc123
+      API Base URL: https://www.initiat.dev
+
+      Keys Status:
+        ✅ Ed25519 signing key: Present
+        ✅ X25519 encryption key: Present
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "5 seconds"
+
+  device.set_name:
+    id: "device.set_name"
+    name: "set-name"
+    category: "device"
+    description: "Set or update the device name stored locally"
+    usage: "initiat device set-name <device-name>"
+    arguments:
+      - name: "device-name"
+        description: "Human-readable name for this device"
+        required: true
+    options: []
+    examples:
+      - description: "Set device name"
+        command: 'initiat device set-name "my-laptop"'
+      - description: "Update existing device name"
+        command: 'initiat device set-name "work-macbook"'
+    workflow_steps:
+      - "Stores device name locally in the keychain"
+      - "Useful if you registered before device names were stored locally"
+      - "Allows backfilling device names for existing registrations"
+    output: |
+      ✅ Device name set to: my-laptop
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "10 seconds"
+
   device.unregister:
     id: "device.unregister"
     name: "unregister"
@@ -117,13 +172,29 @@ commands:
     arguments: []
     options: []
     examples:
-      - description: "Clear device credentials"
+      - description: "Unregister device (with confirmation)"
         command: "initiat device unregister"
     workflow_steps:
+      - "Displays device details before unregistering"
+      - "Prompts for confirmation before clearing credentials"
       - "Removes all device credentials stored locally"
       - "Use when registering a fresh device or cleaning up after server deletion"
     output: |
-      🔐 Clearing local device credentials...
+      ⚠️  You are about to unregister this device:
+
+      Device Details:
+
+      Device Name: my-laptop
+      Device ID: dev_abc123
+      API Base URL: https://www.initiat.dev
+
+      Keys Status:
+        ✅ Ed25519 signing key: Present
+        ✅ X25519 encryption key: Present
+
+      Are you sure you want to clear all local device credentials? (y/n): y
+
+      Clearing local device credentials...
       ✅ Device credentials cleared successfully!
 
       💡 You can now register a new device with 'initiat device register <name>'
