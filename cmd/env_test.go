@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/InitiatDev/initiat-cli/internal/env"
 )
@@ -22,6 +23,11 @@ func TestEnvListCommand(t *testing.T) {
 	err = env.CreateEnvironmentDir("dev")
 	if err != nil {
 		t.Fatalf("CreateEnvironmentDir failed: %v", err)
+	}
+
+	err = env.WriteSecrets("dev", "API_KEY=secret123")
+	if err != nil {
+		t.Fatalf("WriteSecrets failed: %v", err)
 	}
 
 	cmd := envListCmd
@@ -198,5 +204,28 @@ func TestEnvInitCommand(t *testing.T) {
 	_, err = os.Stat(".initiat")
 	if err != nil {
 		t.Errorf("Expected .initiat directory to be created: %v", err)
+	}
+}
+
+func TestFormatTimeAgo(t *testing.T) {
+	now := time.Now()
+
+	tests := []struct {
+		duration time.Duration
+		expected string
+	}{
+		{30 * time.Second, "just now"},
+		{2 * time.Minute, "2m ago"},
+		{2 * time.Hour, "2h ago"},
+		{2 * 24 * time.Hour, "2d ago"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			result := formatTimeAgo(now.Add(-test.duration))
+			if result != test.expected {
+				t.Errorf("Expected '%s', got '%s'", test.expected, result)
+			}
+		})
 	}
 }
