@@ -92,6 +92,27 @@ func (s *Storage) DeleteDeviceID() error {
 	return keyring.Delete(s.serviceName, "device-id")
 }
 
+func (s *Storage) StoreDeviceName(deviceName string) error {
+	return keyring.Set(s.serviceName, "device-name", deviceName)
+}
+
+func (s *Storage) GetDeviceName() (string, error) {
+	deviceName, err := keyring.Get(s.serviceName, "device-name")
+	if err != nil {
+		return "", fmt.Errorf("failed to get device name: %w", err)
+	}
+	return deviceName, nil
+}
+
+func (s *Storage) DeleteDeviceName() error {
+	return keyring.Delete(s.serviceName, "device-name")
+}
+
+func (s *Storage) HasDeviceName() bool {
+	_, err := s.GetDeviceName()
+	return err == nil
+}
+
 func (s *Storage) HasToken() bool {
 	_, err := s.GetToken()
 	return err == nil
@@ -149,6 +170,10 @@ func (s *Storage) ClearDeviceCredentials() error {
 
 	if err := s.DeleteDeviceID(); err != nil {
 		errors = append(errors, fmt.Errorf("failed to delete device ID: %w", err))
+	}
+
+	if err := s.DeleteDeviceName(); err != nil {
+		errors = append(errors, fmt.Errorf("failed to delete device name: %w", err))
 	}
 
 	if err := s.DeleteSigningPrivateKey(); err != nil {

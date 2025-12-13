@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
+	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 	"golang.org/x/crypto/curve25519"
 )
@@ -189,4 +190,53 @@ func TestFormatTime(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetDeviceInfo(t *testing.T) {
+	store := storage.NewWithServiceName("initiat-cli-test-get-info")
+
+	_ = store.DeleteDeviceID()
+	_ = store.DeleteDeviceName()
+	_ = store.DeleteSigningPrivateKey()
+	_ = store.DeleteEncryptionPrivateKey()
+
+	_, err := getDeviceInfo(store)
+	if err == nil {
+		t.Error("getDeviceInfo should fail when no device ID is stored")
+	}
+
+	err = store.StoreDeviceID("test-device-id")
+	if err != nil {
+		t.Fatalf("Failed to store device ID: %v", err)
+	}
+
+	info, err := getDeviceInfo(store)
+	if err != nil {
+		t.Fatalf("getDeviceInfo failed: %v", err)
+	}
+
+	if info.deviceID != "test-device-id" {
+		t.Errorf("Expected deviceID 'test-device-id', got %q", info.deviceID)
+	}
+
+	if info.deviceName != "" {
+		t.Errorf("Expected empty deviceName, got %q", info.deviceName)
+	}
+
+	err = store.StoreDeviceName("test-device")
+	if err != nil {
+		t.Fatalf("Failed to store device name: %v", err)
+	}
+
+	info, err = getDeviceInfo(store)
+	if err != nil {
+		t.Fatalf("getDeviceInfo failed: %v", err)
+	}
+
+	if info.deviceName != "test-device" {
+		t.Errorf("Expected deviceName 'test-device', got %q", info.deviceName)
+	}
+
+	_ = store.DeleteDeviceID()
+	_ = store.DeleteDeviceName()
 }

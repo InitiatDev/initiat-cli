@@ -256,3 +256,84 @@ func TestStorageNewWithDefaultServiceName(t *testing.T) {
 	assert.Contains(t, storage.serviceName, "initiat-cli",
 		"URL-based service name should contain base name")
 }
+
+func TestStorage_DeviceNameOperations(t *testing.T) {
+	storage := NewWithServiceName("initiat-cli-test-device-name")
+	testDeviceName := "my-test-device"
+
+	_ = storage.DeleteDeviceName()
+
+	assert.False(t, storage.HasDeviceName())
+
+	err := storage.StoreDeviceName(testDeviceName)
+	if err != nil {
+		t.Fatalf("Failed to store device name: %v", err)
+	}
+
+	assert.True(t, storage.HasDeviceName())
+
+	retrievedDeviceName, err := storage.GetDeviceName()
+	assert.NoError(t, err)
+	assert.Equal(t, testDeviceName, retrievedDeviceName)
+
+	err = storage.DeleteDeviceName()
+	assert.NoError(t, err)
+
+	assert.False(t, storage.HasDeviceName())
+
+	_, err = storage.GetDeviceName()
+	assert.Error(t, err)
+}
+
+func TestStorage_ClearDeviceCredentialsIncludesDeviceName(t *testing.T) {
+	storage := NewWithServiceName("initiat-cli-test-clear")
+
+	_ = storage.DeleteDeviceID()
+	_ = storage.DeleteDeviceName()
+	_ = storage.DeleteSigningPrivateKey()
+	_ = storage.DeleteEncryptionPrivateKey()
+
+	err := storage.StoreDeviceID("test-device-id")
+	if err != nil {
+		t.Fatalf("Failed to store device ID: %v", err)
+	}
+
+	err = storage.StoreDeviceName("test-device-name")
+	if err != nil {
+		t.Fatalf("Failed to store device name: %v", err)
+	}
+
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate signing key: %v", err)
+	}
+
+	err = storage.StoreSigningPrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("Failed to store signing key: %v", err)
+	}
+
+	testKey := make([]byte, 32)
+	_, err = rand.Read(testKey)
+	if err != nil {
+		t.Fatalf("Failed to generate encryption key: %v", err)
+	}
+
+	err = storage.StoreEncryptionPrivateKey(testKey)
+	if err != nil {
+		t.Fatalf("Failed to store encryption key: %v", err)
+	}
+
+	assert.True(t, storage.HasDeviceID())
+	assert.True(t, storage.HasDeviceName())
+	assert.True(t, storage.HasSigningPrivateKey())
+	assert.True(t, storage.HasEncryptionPrivateKey())
+
+	err = storage.ClearDeviceCredentials()
+	assert.NoError(t, err)
+
+	assert.False(t, storage.HasDeviceID())
+	assert.False(t, storage.HasDeviceName())
+	assert.False(t, storage.HasSigningPrivateKey())
+	assert.False(t, storage.HasEncryptionPrivateKey())
+}

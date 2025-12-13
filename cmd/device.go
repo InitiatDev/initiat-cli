@@ -12,6 +12,7 @@ import (
 	"github.com/InitiatDev/initiat-cli/internal/client"
 	"github.com/InitiatDev/initiat-cli/internal/config"
 	"github.com/InitiatDev/initiat-cli/internal/crypto"
+	"github.com/InitiatDev/initiat-cli/internal/prompt"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/types"
@@ -80,6 +81,23 @@ var approvalCmd = &cobra.Command{
 	RunE:  runShowApproval,
 }
 
+var viewDeviceCmd = &cobra.Command{
+	Use:   "view",
+	Short: "View local device details",
+	Long: "Display details about the device registered locally, including device ID. " +
+		"Use this to verify you're working with the correct device.",
+	RunE: runViewDevice,
+}
+
+var setNameDeviceCmd = &cobra.Command{
+	Use:   "set-name <device-name>",
+	Short: "Set or update the local device name",
+	Long: "Set or update the device name stored locally. " +
+		"Useful if you registered before device names were stored locally.",
+	Args: cobra.ExactArgs(1),
+	RunE: runSetDeviceName,
+}
+
 const (
 	statusPending       = "pending"
 	maxDisplayLength    = 15
@@ -98,6 +116,8 @@ func init() {
 	deviceCmd.AddCommand(registerDeviceCmd)
 	deviceCmd.AddCommand(unregisterDeviceCmd)
 	deviceCmd.AddCommand(clearTokenCmd)
+	deviceCmd.AddCommand(viewDeviceCmd)
+	deviceCmd.AddCommand(setNameDeviceCmd)
 	deviceCmd.AddCommand(approvalsCmd)
 	deviceCmd.AddCommand(approveCmd)
 	deviceCmd.AddCommand(rejectCmd)
@@ -191,6 +211,7 @@ func storeDeviceCredentials(
 	signingPrivateKey ed25519.PrivateKey,
 	encryptionPrivateKey []byte,
 	deviceID string,
+	deviceName string,
 ) error {
 	fmt.Println("Storing keys securely in system keychain...")
 
@@ -204,6 +225,10 @@ func storeDeviceCredentials(
 
 	if err := storage.StoreDeviceID(deviceID); err != nil {
 		return fmt.Errorf("failed to store device ID: %w", err)
+	}
+
+	if err := storage.StoreDeviceName(deviceName); err != nil {
+		return fmt.Errorf("failed to store device name: %w", err)
 	}
 
 	return nil
@@ -237,7 +262,13 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = storeDeviceCredentials(storage, signingPrivateKey, encryptionPrivateKey, deviceResp.Device.DeviceID)
+	err = storeDeviceCredentials(
+		storage,
+		signingPrivateKey,
+		encryptionPrivateKey,
+		deviceResp.Device.DeviceID,
+		deviceResp.Device.Name,
+	)
 	if err != nil {
 		return err
 	}
@@ -255,17 +286,93 @@ func runRegisterDevice(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runUnregisterDevice(cmd *cobra.Command, args []string) error {
-	storage := storage.New()
+type deviceInfo struct {
+	deviceID         string
+	deviceName       string
+	apiBaseURL       string
+	hasSigningKey    bool
+	hasEncryptionKey bool
+}
 
-	if !storage.HasDeviceID() && !storage.HasSigningPrivateKey() && !storage.HasEncryptionPrivateKey() {
+func getDeviceInfo(store *storage.Storage) (*deviceInfo, error) {
+	deviceID, err := store.GetDeviceID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device ID: %w", err)
+	}
+
+	deviceName, _ := store.GetDeviceName()
+	hasSigningKey := store.HasSigningPrivateKey()
+	hasEncryptionKey := store.HasEncryptionPrivateKey()
+
+	return &deviceInfo{
+		deviceID:         deviceID,
+		deviceName:       deviceName,
+		apiBaseURL:       config.GetAPIBaseURL(),
+		hasSigningKey:    hasSigningKey,
+		hasEncryptionKey: hasEncryptionKey,
+	}, nil
+}
+
+func displayDeviceDetails(info *deviceInfo) {
+	fmt.Println("Device Details:")
+	fmt.Println()
+	if info.deviceName != "" {
+		fmt.Printf("Device Name: %s\n", info.deviceName)
+	}
+	fmt.Printf("Device ID: %s\n", info.deviceID)
+	fmt.Printf("API Base URL: %s\n", info.apiBaseURL)
+	fmt.Println()
+	fmt.Println("Keys Status:")
+	if info.hasSigningKey {
+		fmt.Println("  ✅ Ed25519 signing key: Present")
+	} else {
+		fmt.Println("  ❌ Ed25519 signing key: Missing")
+	}
+	if info.hasEncryptionKey {
+		fmt.Println("  ✅ X25519 encryption key: Present")
+	} else {
+		fmt.Println("  ❌ X25519 encryption key: Missing")
+	}
+	fmt.Println()
+}
+
+func runUnregisterDevice(cmd *cobra.Command, args []string) error {
+	store := storage.New()
+
+	if !store.HasDeviceID() && !store.HasSigningPrivateKey() && !store.HasEncryptionPrivateKey() {
 		fmt.Println("No device credentials found in local storage")
 		return nil
 	}
 
+	info, err := getDeviceInfo(store)
+	if err != nil {
+		info = &deviceInfo{
+			deviceID:         "Unknown",
+			deviceName:       "",
+			apiBaseURL:       config.GetAPIBaseURL(),
+			hasSigningKey:    store.HasSigningPrivateKey(),
+			hasEncryptionKey: store.HasEncryptionPrivateKey(),
+		}
+	}
+
+	fmt.Println("⚠️  You are about to unregister this device:")
+	fmt.Println()
+	displayDeviceDetails(info)
+
+	confirmed, err := prompt.PromptYesNo("Are you sure you want to clear all local device credentials?")
+	if err != nil {
+		return fmt.Errorf("❌ Failed to read confirmation: %w", err)
+	}
+
+	if !confirmed {
+		fmt.Println("Unregister cancelled")
+		return nil
+	}
+
+	fmt.Println()
 	fmt.Println("Clearing local device credentials...")
 
-	err := storage.ClearDeviceCredentials()
+	err = store.ClearDeviceCredentials()
 	if err != nil {
 		return fmt.Errorf("❌ Failed to clear device credentials: %w", err)
 	}
@@ -696,4 +803,60 @@ func formatTime(timeStr string) string {
 		return timeStr
 	}
 	return t.Format("Jan 2 15:04")
+}
+
+func runViewDevice(cmd *cobra.Command, args []string) error {
+	store := storage.New()
+
+	if !store.HasDeviceID() {
+		fmt.Println("No device registered locally")
+		fmt.Println()
+		fmt.Println("Register a device with: initiat device register <name>")
+		return nil
+	}
+
+	info, err := getDeviceInfo(store)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to get device info: %w", err)
+	}
+
+	if !info.hasSigningKey && !info.hasEncryptionKey {
+		fmt.Println("⚠️  Warning: Device ID found but keys are missing")
+		fmt.Println("   You may need to re-register this device")
+		return nil
+	}
+
+	displayDeviceDetails(info)
+
+	return nil
+}
+
+func runSetDeviceName(cmd *cobra.Command, args []string) error {
+	name := strings.TrimSpace(args[0])
+	if err := validation.ValidateDeviceName(name); err != nil {
+		return err
+	}
+
+	store := storage.New()
+
+	if !store.HasDeviceID() {
+		return fmt.Errorf(
+			"❌ No device registered locally. Please register a device first with 'initiat device register <name>'",
+		)
+	}
+
+	existingName, _ := store.GetDeviceName()
+	if existingName != "" {
+		fmt.Printf("Current device name: %s\n", existingName)
+		fmt.Println()
+	}
+
+	err := store.StoreDeviceName(name)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to store device name: %w", err)
+	}
+
+	fmt.Printf("✅ Device name set to: %s\n", name)
+
+	return nil
 }
