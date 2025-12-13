@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4]
+
+### Changed
+- **Environment Secret Storage**: Reverted to file-based storage for environment secrets
+  - Secrets are now stored in `.initiat/environments/<env>/secrets.env` files
+  - The `active` symlink points to the currently active environment directory
+  - Direnv automatically loads secrets from `.initiat/active/secrets.env`
+  - Removed in-memory loading approach that required `eval` commands
+  - Improved reliability and compatibility with direnv integration
+  - Secrets are stored in plaintext locally (for direnv compatibility) but remain encrypted on Initiat servers
+  - Files are protected with restrictive permissions (600) and automatically gitignored
+
+### Fixed
+- **Direnv Integration**: Fixed environment variable loading with direnv
+  - `.envrc` now uses `dotenv` to load secrets from the active environment's `secrets.env` file
+  - Environment variables now load automatically when switching environments
+  - No longer requires manual `eval` commands or shell function wrappers
+
 ## [0.7.3] - 2025-11-15
 
 ### Added
