@@ -1,0 +1,24 @@
+name: "Rails Setup"
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+provision:
+  - name: "Verify Ruby is installed"
+    if: '!cmd_ok("ruby --version")'
+    print: |
+      Ruby is not installed. Use rbenv, asdf, or system Ruby:
+        rbenv: rbenv install 3.2.0
+        asdf: asdf plugin add ruby && asdf install ruby 3.2.0
+setup:
+  - name: "Install Bundler gems"
+    if: file_exists("Gemfile")
+    run: bundle install
+verify:
+  - name: "Verify Ruby version"
+    run: ruby --version || exit 1
+post:
+  - name: "Rails setup complete"
+    print: |
+      Rails setup complete. Run server: bin/rails server

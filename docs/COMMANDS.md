@@ -7,9 +7,8 @@ This document lists all Initiat CLI commands. **Offline-first commands** (init, 
 ### Offline-first (no account required)
 
 - [Global Options](#global-options)
-- [Init (scaffold)](#init-scaffold)
+- [Setup Generation and Run](#setup-generation-and-run)
 - [Setup Script Management](#setup-script-management)
-- [Docs Generation](#docs-generation)
 - [Configuration Management](#configuration-management)
 - [Version Information](#version-information)
 
@@ -91,34 +90,77 @@ initiat secret list
 - **Flexible**: Can still enter custom projects when needed
 - **User-Friendly**: Clear guidance and helpful error messages
 
-**Note:** Project context is only required for cloud commands (secret, env sync, etc.). Offline-first commands (init, setup validate, setup run, docs generate) do not require project context.
+**Note:** Project context is only required for cloud commands (secret, env sync, etc.). Offline-first commands (setup generate, setup run, setup validate, setup schema) do not require project context.
 
-## Init (scaffold)
+## Setup Generation and Run
 
-### `initiat init`
+### `initiat setup generate [--force]`
 
-Scaffold the `.initiat/` directory in the current repository with default config and optional setup/docs templates. Works offline; no account required.
+Detect the language and framework in the current directory and write `.initiat/setup.yml` and `.initiat/config.yml` from built-in templates. Works offline; no account required.
+
+**Detection:** The CLI looks for common manifest files and adds the corresponding template(s): Go (`go.mod`), Node (`package.json` or `assets/package.json`), Python (`pyproject.toml` or `requirements.txt`), Phoenix (`mix.exs`), Rails (`Gemfile`), Docker (`docker-compose.yml` or `compose.yml`). Multiple stacks can be detected (e.g. Phoenix + Node for assets).
+
+**Service inference:** If Docker Compose is present, setup steps for Docker Compose are added. Otherwise, dependency files (Gemfile, mix.exs, package.json, requirements.txt, pyproject.toml) are scanned for PostgreSQL, MySQL, SQLite, and Redis; verify steps for those services are appended. When multiple databases are detected, a note is printed suggesting you remove unused steps from `.initiat/setup.yml`.
+
+**Options:**
+- `--force, -f`: Overwrite existing `.initiat/setup.yml` (and config when overwriting). Without this, existing setup.yml is left unchanged.
 
 **What it does:**
-- Ensures current directory is a git repository
-- Creates `.initiat/` if missing
-- Creates or updates `.initiat/config.yml` with local-only metadata (e.g. repo name)
-- Optionally creates `.initiat/setup.yml` and `.initiat/docs.yml` from templates
-- Idempotent: safe to run multiple times
+- Scans the current directory for stack markers (go.mod, package.json, mix.exs, Gemfile, etc.)
+- Loads and merges the matching templates (provision, setup, verify, post phases)
+- Infers database/Redis steps from dependencies or Docker Compose
+- Writes `.initiat/setup.yml` and `.initiat/config.yml` (creates `.initiat/` if missing)
+- Idempotent: does not overwrite existing setup.yml unless `--force` is used
 
 **Examples:**
 ```bash
-# Scaffold .initiat/ in current repo
-initiat init
+# Generate setup and config from detected project
+initiat setup generate
+
+# Overwrite existing .initiat/setup.yml
+initiat setup generate --force
 ```
 
-**Output:**
+**Output (first run):**
 ```
-✅ Initialized .initiat/ in this repository.
-   Created: .initiat/config.yml
-   Created: .initiat/setup.yml (from template)
-   Next: Edit .initiat/setup.yml and run 'initiat setup validate'
+Wrote .initiat/setup.yml
+Wrote .initiat/config.yml
+Run: initiat setup validate && initiat setup run
 ```
+
+**Output (setup already exists, no --force):**
+```
+.initiat/setup.yml already exists. Use --force to overwrite.
+```
+
+**Related Documentation:** [Setup Scripts](SETUP_SCRIPTS.md) — syntax and [Generating setup from your project](SETUP_SCRIPTS.md#generating-setup-from-your-project).
+
+### `initiat setup run [setup-file]`
+
+Run a setup script from a YAML file. Defaults to `.initiat/setup.yml`. Works fully offline; no project context or Initiat account required. If the script declares `env.secrets`, those steps will fail unless you use `initiat project setup` (which uses project context and fetches secrets).
+
+**Arguments:**
+- `setup-file`: Path to the setup YAML file (optional; default: `.initiat/setup.yml`)
+
+**What it does:**
+1. Reads and parses the setup file
+2. Validates the configuration against the schema
+3. Executes phases in order (bootstrap → provision → setup → verify → post)
+4. Evaluates conditions (e.g. `cmd_ok("go version")`) and runs or prints steps accordingly
+
+**Examples:**
+```bash
+# Run default .initiat/setup.yml
+initiat setup run
+
+# Run a specific file
+initiat setup run .initiat/setup.yml
+initiat setup run custom-setup.yml
+```
+
+**Output:** Phases and steps are printed as they run; failed conditions may print messages (e.g. install instructions) without failing the run, depending on step configuration.
+
+**Related Documentation:** [Setup Scripts](SETUP_SCRIPTS.md).
 
 ---
 
@@ -632,31 +674,6 @@ initiat setup schema -o docs/schemas/setup-v1.json
 
 **Related Documentation:**
 - See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for complete syntax reference
-
-## Docs Generation
-
-### `initiat docs generate [--output DIR]`
-
-Generate onboarding docs (e.g. README fragments, runbook steps) from `.initiat/docs.yml` or `.initiat/onboard.yml`. Works offline; no account required.
-
-**Options:**
-- `--output, -o`: Output directory (default: current directory or a docs subdir)
-
-**What it does:**
-1. Reads `.initiat/docs.yml` (or `.initiat/onboard.yml`) if present
-2. Renders templates or structured content into markdown (e.g. "Time to first commit", runbook steps)
-3. Writes output files to the specified directory
-
-**Examples:**
-```bash
-# Generate docs (default output)
-initiat docs generate
-
-# Generate to specific directory
-initiat docs generate --output docs/onboarding
-```
-
-**Related:** Define runbook content and structure in `.initiat/docs.yml`. See the in-repo YAML contract documentation.
 
 ## Environment Management
 

@@ -1,0 +1,27 @@
+name: "Phoenix/Elixir Setup"
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+provision:
+  - name: "Verify Elixir is installed"
+    if: '!cmd_ok("elixir --version")'
+    print: |
+      Elixir is not installed. Install Erlang and Elixir (e.g. via asdf):
+        asdf plugin add erlang && asdf plugin add elixir
+        asdf install erlang 26.1.2 && asdf install elixir 1.16.1
+setup:
+  - name: "Get Mix dependencies"
+    if: file_exists("mix.exs")
+    run: mix deps.get
+  - name: "Compile"
+    if: file_exists("mix.exs")
+    run: mix compile
+verify:
+  - name: "Verify Elixir version"
+    run: elixir --version || exit 1
+post:
+  - name: "Phoenix setup complete"
+    print: |
+      Phoenix setup complete. Start server: mix phx.server

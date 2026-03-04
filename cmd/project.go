@@ -244,7 +244,7 @@ func checkProjectInitStatus(project *types.Project) bool {
 }
 
 func runProjectSetup(cmd *cobra.Command, args []string) error {
-	setupFile := ".initiat/setup.yml"
+	setupFile := defaultSetupFile
 
 	projectCtx, err := GetProjectContext()
 	if err != nil {

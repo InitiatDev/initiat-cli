@@ -1,0 +1,31 @@
+name: "Go Setup"
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+provision:
+  - name: "Verify Go is installed"
+    if: '!cmd_ok("go version")'
+    print: |
+      Go is not installed. Install it from https://go.dev/dl/ or use your package manager:
+        macOS: brew install go
+        Linux: sudo apt-get install golang-go  (or equivalent)
+        Windows: choco install golang
+setup:
+  - name: "Download Go dependencies"
+    if: file_exists("go.mod")
+    run: go mod download
+  - name: "Verify Go modules"
+    if: file_exists("go.mod")
+    run: go mod verify
+verify:
+  - name: "Verify Go version"
+    run: go version || exit 1
+  - name: "List modules"
+    if: file_exists("go.mod")
+    run: go list -m all || exit 1
+post:
+  - name: "Go setup complete"
+    print: |
+      Go setup complete. Build with: go build .

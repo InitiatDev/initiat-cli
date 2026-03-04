@@ -1,0 +1,26 @@
+name: "Docker Compose"
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+provision:
+  - name: "Verify Docker is installed"
+    if: '!cmd_ok("docker --version")'
+    print: |
+      Docker is not installed. Install from https://docs.docker.com/get-docker/
+  - name: "Verify Docker Compose is available"
+    if: '!cmd_ok("docker compose version")'
+    print: |
+      Docker Compose is not available. Use Docker Desktop or install docker-compose plugin.
+setup:
+  - name: "Start services with Docker Compose"
+    if: file_exists("docker-compose.yml") || file_exists("compose.yml")
+    run: docker compose up -d
+verify:
+  - name: "Verify Docker"
+    run: docker --version || exit 1
+post:
+  - name: "Docker setup complete"
+    print: |
+      Docker Compose services started. Stop with: docker compose down

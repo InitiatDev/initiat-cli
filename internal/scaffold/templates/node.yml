@@ -1,0 +1,27 @@
+name: "Node.js Setup"
+defaults:
+  timeout: "15m"
+  shell: auto
+  continue_on_error: false
+  cwd: "."
+provision:
+  - name: "Verify Node is installed"
+    if: '!cmd_ok("node --version")'
+    print: |
+      Node.js is not installed. Install LTS from https://nodejs.org/ or use nvm/asdf:
+        nvm: nvm install --lts
+        asdf: asdf plugin add nodejs && asdf install nodejs lts
+setup:
+  - name: "Install dependencies (npm ci)"
+    if: file_exists("package-lock.json")
+    run: npm ci
+  - name: "Install dependencies (npm install)"
+    if: file_exists("package.json") && !file_exists("package-lock.json")
+    run: npm install
+verify:
+  - name: "Verify Node version"
+    run: node --version || exit 1
+post:
+  - name: "Node setup complete"
+    print: |
+      Node setup complete. Run scripts with: npm run <script>

@@ -678,6 +678,66 @@ commands:
       difficulty: "beginner"
       estimated_time: "30 seconds"
 
+  setup.generate:
+    id: "setup.generate"
+    name: "generate"
+    category: "setup"
+    description: "Detect language/framework in the current directory and write .initiat/setup.yml and .initiat/config.yml from templates"
+    usage: "initiat setup generate [--force]"
+    arguments: []
+    options:
+      - name: "force"
+        short: "f"
+        description: "Overwrite existing .initiat/setup.yml"
+        required: false
+    examples:
+      - description: "Generate setup and config from detected project"
+        command: "initiat setup generate"
+      - description: "Overwrite existing setup file"
+        command: "initiat setup generate --force"
+    workflow_steps:
+      - "Scans current directory for stack markers (go.mod, package.json, mix.exs, Gemfile, etc.)"
+      - "Loads and merges matching templates (Go, Node, Python, Phoenix, Rails, Docker)"
+      - "Infers database/Redis steps from dependencies or Docker Compose"
+      - "Writes .initiat/setup.yml and .initiat/config.yml"
+    output: |
+      Wrote .initiat/setup.yml
+      Wrote .initiat/config.yml
+      Run: initiat setup validate && initiat setup run
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "10 seconds"
+      related_docs:
+        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md) and COMMANDS.md"
+
+  setup.run:
+    id: "setup.run"
+    name: "run"
+    category: "setup"
+    description: "Run .initiat/setup.yml (offline; no project context required). Fails if the script requires secrets."
+    usage: "initiat setup run [setup-file]"
+    arguments:
+      - name: "setup-file"
+        description: "Path to setup file (optional, defaults to .initiat/setup.yml)"
+        required: false
+    options: []
+    examples:
+      - description: "Run default setup file"
+        command: "initiat setup run"
+      - description: "Run specific file"
+        command: "initiat setup run .initiat/setup.yml"
+    workflow_steps:
+      - "Reads and parses the setup YAML file"
+      - "Validates the configuration against the schema"
+      - "Executes phases in order (bootstrap → provision → setup → verify → post)"
+    output: |
+      📋 Loading setup script from .initiat/setup.yml...
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "1-15 minutes"
+      related_docs:
+        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md)"
+
   setup.validate:
     id: "setup.validate"
     name: "validate"

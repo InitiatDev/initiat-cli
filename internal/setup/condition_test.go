@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"runtime"
 	"testing"
 )
 
@@ -321,6 +322,36 @@ func TestConditionEvaluator_ComplexConditions(t *testing.T) {
 				t.Errorf("Expected %v, got %v for condition: %s", tc.expected, result, tc.condition)
 			}
 		})
+	}
+}
+
+func TestConditionEvaluator_CmdOk_ShellExecution(t *testing.T) {
+	evaluator := NewConditionEvaluator("macos", "x86_64", nil)
+
+	ok, err := evaluator.Evaluate(`cmd_ok("true")`)
+	if err != nil {
+		t.Fatalf("cmd_ok(\"true\"): %v", err)
+	}
+	if !ok {
+		t.Error("cmd_ok(\"true\") should be true when run via shell")
+	}
+
+	ok, err = evaluator.Evaluate(`cmd_ok("false")`)
+	if err != nil {
+		t.Fatalf("cmd_ok(\"false\"): %v", err)
+	}
+	if ok {
+		t.Error("cmd_ok(\"false\") should be false when run via shell")
+	}
+
+	if runtime.GOOS != "windows" {
+		ok, err = evaluator.Evaluate(`cmd_ok("command -v true")`)
+		if err != nil {
+			t.Fatalf("cmd_ok(\"command -v true\"): %v", err)
+		}
+		if !ok {
+			t.Error("cmd_ok with shell builtin (command -v) should succeed on Unix")
+		}
 	}
 }
 

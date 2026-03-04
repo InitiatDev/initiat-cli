@@ -36,14 +36,12 @@ Define your development environment in `.initiat/setup.yml`. Same file works on 
 
 **Learn more:** [Setup Scripts](docs/SETUP_SCRIPTS.md)
 
-### Validation and Planning
+### Generate and Run Setup
 
+- `initiat setup generate` — detect language/framework in the repo and write `.initiat/setup.yml` and `.initiat/config.yml` from templates (use `--force` to overwrite)
+- `initiat setup run` — run `.initiat/setup.yml` offline (no project context or server required)
 - `initiat setup validate` — validate `.initiat/setup.yml` against the schema
 - `initiat setup schema` — output JSON Schema for autocomplete and tooling
-
-### Onboarding Docs from Repo
-
-Generate onboarding runbooks and README fragments from `.initiat/docs.yml` (or `.initiat/onboard.yml`). Keep "time-to-first-commit" steps in version control next to the setup that makes them possible.
 
 ### No Server Required
 
@@ -58,24 +56,21 @@ Install the Initiat CLI (e.g. from [releases](https://github.com/InitiatDev/init
 ### Basic Usage (No Login)
 
 ```bash
-# Scaffold .initiat/ in the current repo
-initiat init
+# Generate .initiat/setup.yml and .initiat/config.yml from detected project (Go, Node, Python, Phoenix, Rails, Docker)
+initiat setup generate
 
 # Validate setup config
 initiat setup validate
 
-# Run the setup script from .initiat/setup.yml
+# Run the setup script from .initiat/setup.yml (offline)
 initiat setup run
-
-# Generate onboarding docs from .initiat/docs.yml
-initiat docs generate
 ```
 
 All of the above work with no account and no connection to any Initiat server.
 
 ## Optional: Cloud Add-ons
 
-If your team wants hosted secret storage, device approval, or project management, those features are available as **opt-in** add-ons. They are not required for setup, validation, or docs.
+If your team wants hosted secret storage, device approval, or project management, those features are available as **opt-in** add-ons. They are not required for setup or validation.
 
 - **Hosted secrets (optional)**: Zero-knowledge secret storage with device approval. See [Security & Cloud](docs/SECURITY.md#optional-cloud-add-on).
 - **Team & project management (optional)**: Organize access by project; approve devices. See [Command Reference](docs/COMMANDS.md) under "Cloud commands (optional)".
@@ -86,7 +81,7 @@ You can use Initiat entirely without ever creating an account or sending secrets
 
 ### Core (Offline-First)
 
-- **[In-Repo YAML](docs/IN_REPO_YAML.md)**: Directory layout, `config.yml`, `setup.yml`, `docs.yml`, and provider-agnostic `env_from`
+- **[In-Repo YAML](docs/IN_REPO_YAML.md)**: Directory layout, `config.yml`, `setup.yml`, and provider-agnostic `env_from`
 - **[Setup Scripts](docs/SETUP_SCRIPTS.md)**: Complete guide to `.initiat/setup.yml`
 - **[Command Reference](docs/COMMANDS.md)**: All CLI commands (offline-first commands first)
 - **[Security](docs/SECURITY.md)**: Offline-first security model and optional cloud add-on
@@ -113,12 +108,13 @@ git clone https://github.com/yourusername/initiat-cli.git
 cd initiat-cli
 
 go mod tidy
-initiat setup run
+initiat setup generate   # optional: generate .initiat/ from detected stack
+initiat setup run       # run setup from .initiat/setup.yml
 make ci
 go build -o initiat .
 ```
 
-See [Setup Scripts](docs/SETUP_SCRIPTS.md) for the full development environment definition in `.initiat/setup.yml`.
+See [Setup Scripts](docs/SETUP_SCRIPTS.md) for the full development environment definition in `.initiat/setup.yml` and [Command Reference](docs/COMMANDS.md) for `initiat setup generate` and `initiat setup run`.
 
 ## License
 

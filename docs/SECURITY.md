@@ -8,14 +8,14 @@ This document explains Initiat's security model. The main point: **the core prod
 
 **What you need to know about the default experience:**
 
-- **No server required**: Setup, validation, and docs generation run locally. Nothing is sent to Initiat.
+- **No server required**: Setup and validation run locally. Nothing is sent to Initiat.
 - **No account required**: You do not need to sign up or log in to use the CLI for in-repo workflows.
 - **Secrets stay with you**: The core product does not store or transmit secrets. Use your own secret store (e.g. env files, 1Password CLI, Vault) and wire them into setup via provider-agnostic config.
 - **Reproducible and auditable**: All behavior is defined by YAML in the repo. You can review and version every step.
 
 **In practice (offline):**
-- You define setup in `.initiat/setup.yml` and optionally env/docs in other `.initiat/` files.
-- You run `initiat setup validate`, `initiat setup run`, `initiat docs generate` locally.
+- You define setup in `.initiat/setup.yml` and optionally env in other `.initiat/` files.
+- You run `initiat setup validate`, `initiat setup run`, and (optionally) `initiat setup generate` locally.
 - No network call to Initiat is made for these operations. Your code and secrets never leave your environment.
 
 ---
@@ -166,7 +166,7 @@ A: No. Core workflows (setup, validate, docs) run entirely locally. No account o
 A: No. Secrets are encrypted on your device before transmission; we don't have the keys to decrypt them.
 
 **Q: What if I only want in-repo setup and docs?**  
-A: Use `initiat init`, `initiat setup validate`, `initiat setup run`, and `initiat docs generate`. No signup, no cloud, no secret storage on our side.
+A: Use `initiat setup generate`, `initiat setup validate`, and `initiat setup run`. No signup, no cloud, no secret storage on our side.
 
 **Q: How do I know the core is secure?**  
 A: Core doesn't send your data anywhere. You run the binary and YAML locally; you can audit the code and the repo config.

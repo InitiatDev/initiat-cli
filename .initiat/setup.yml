@@ -1,108 +1,40 @@
 version: 1
-name: "Initiat CLI Development Setup"
-description: "Set up development environment for building Initiat CLI locally"
-
+name: initiat-cli
+description: Generated setup for this project
 matrix:
-  os: [macos, linux, windows]
-  arch: [x86_64, arm64]
-
+    os:
+        - macos
+        - linux
+        - windows
+    arch:
+        - x86_64
+        - arm64
 defaults:
-  timeout: "15m"
-  shell: auto
-  continue_on_error: false
-  cwd: "."
-
-bootstrap:
-  - name: "Install Homebrew (macOS)"
-    if: os("macos") && !cmd_ok("command -v brew")
-    run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-  - name: "Update apt (Linux)"
-    if: os("linux")
-    run: sudo apt-get update
-
-  - name: "Install Git (macOS)"
-    if: os("macos") && !cmd_ok("command -v git")
-    run: brew install git
-
-  - name: "Install Git (Linux)"
-    if: os("linux") && !cmd_ok("command -v git")
-    run: sudo apt-get install -y git
-
-  - name: "Install Git (Windows)"
-    if: os("windows") && !cmd_ok("where git")
-    run: choco install git -y
-
-  - name: "Install asdf (macOS/Linux)"
-    if: '!os("windows") && !cmd_ok("command -v asdf")'
-    run: |
-      git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 || true
-      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
-      echo '. "$HOME/.asdf/asdf.sh"' >> ~/.zshrc || true
-      . "$HOME/.asdf/asdf.sh"
-
+    timeout: 15m
+    shell: auto
+    cwd: .
 provision:
-  - name: "Install Go via asdf"
-    if: '!os("windows") && !cmd_ok("go --version")'
-    run: |
-      . "$HOME/.asdf/asdf.sh" || true
-      asdf plugin add golang || true
-      asdf install golang 1.25.7
-      asdf global golang 1.25.7
-
-  - name: "Install Go via Chocolatey (Windows)"
-    if: os("windows") && !cmd_ok("go --version")
-    run: choco install golang -y
-
+    - name: Verify Go is installed
+      if: '!cmd_ok("go version")'
+      print: |
+        Go is not installed. Install it from https://go.dev/dl/ or use your package manager:
+          macOS: brew install go
+          Linux: sudo apt-get install golang-go  (or equivalent)
+          Windows: choco install golang
 setup:
-  - name: "Download Go dependencies"
-    run: go mod download
-
-  - name: "Verify Go modules"
-    run: go mod verify
-
-  - name: "Install Linux X11 libraries for clipboard support"
-    if: os("linux")
-    run: |
-      if command -v apt-get &> /dev/null; then
-        sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
-      elif command -v yum &> /dev/null; then
-        sudo yum install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-      elif command -v dnf &> /dev/null; then
-        sudo dnf install -y libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-      elif command -v pacman &> /dev/null; then
-        sudo pacman -S --noconfirm libx11 libxrandr libxinerama libxcursor libxi
-      fi
-
+    - name: Download Go dependencies
+      if: file_exists("go.mod")
+      run: go mod download
+    - name: Verify Go modules
+      if: file_exists("go.mod")
+      run: go mod verify
 verify:
-  - name: "Verify Go version"
-    run: go version || exit 1
-
-  - name: "Verify Go modules are available"
-    run: go list -m all || exit 1
-
-  - name: "Build the project"
-    run: go build -o initiat .
-
-  - name: "Verify binary was created (Unix)"
-    if: '!os("windows")'
-    run: test -f initiat && echo "Binary created successfully"
-
-  - name: "Verify binary was created (Windows)"
-    if: os("windows")
-    run: if (Test-Path initiat.exe) { Write-Host "Binary created successfully" } else { exit 1 }
-
+    - name: Verify Go version
+      run: go version || exit 1
+    - name: List modules
+      if: file_exists("go.mod")
+      run: go list -m all || exit 1
 post:
-  - name: "Setup complete"
-    print: |
-      ✅ Development environment setup complete!
-
-      You can now build the project with:
-        • make build
-        • go build -o initiat .
-
-      Or run tests with:
-        • make test
-        • go test ./...
-
-      For more commands, see the Makefile or run 'make help'
+    - name: Go setup complete
+      print: |
+        Go setup complete. Build with: go build .

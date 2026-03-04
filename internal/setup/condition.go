@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -125,12 +126,19 @@ func (e *ConditionEvaluator) cmdOkFunction(params ...interface{}) (interface{}, 
 	if !ok {
 		return false, fmt.Errorf("cmd_ok() argument must be a string")
 	}
-	parts := strings.Fields(command)
-	if len(parts) == 0 {
+	command = strings.TrimSpace(command)
+	if command == "" {
 		return false, nil
 	}
-	// #nosec G204 -- command is user-provided from setup.yml, which is expected
-	cmd := exec.Command(parts[0], parts[1:]...)
+	var cmd *exec.Cmd
+	if runtime.GOOS == goOSWindows {
+		// #nosec G204 -- command is from repo's setup.yml (author-controlled), not external input
+		cmd = exec.Command("powershell", "-NoProfile", "-Command", command)
+	} else {
+		// #nosec G204 -- command is from repo's setup.yml (author-controlled), not external input
+		cmd = exec.Command("/bin/sh", "-c", command)
+	}
+	cmd.Env = os.Environ()
 	err := cmd.Run()
 	return err == nil, nil
 }

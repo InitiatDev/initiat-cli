@@ -7,18 +7,19 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [File Location](#file-location)
-3. [Top-Level Structure](#top-level-structure)
-4. [Execution Phases](#execution-phases)
-5. [Step Configuration](#step-configuration)
-6. [Actions](#actions)
-7. [Conditions DSL](#conditions-dsl)
-8. [Environment & Secrets](#environment--secrets)
-9. [Defaults & Overrides](#defaults--overrides)
-10. [Matrix Gating](#matrix-gating)
-11. [Execution Flow](#execution-flow)
-12. [Examples](#examples)
-13. [Best Practices](#best-practices)
+2. [Generating setup from your project](#generating-setup-from-your-project)
+3. [File Location](#file-location)
+4. [Top-Level Structure](#top-level-structure)
+5. [Execution Phases](#execution-phases)
+6. [Step Configuration](#step-configuration)
+7. [Actions](#actions)
+8. [Conditions DSL](#conditions-dsl)
+9. [Environment & Secrets](#environment--secrets)
+10. [Defaults & Overrides](#defaults--overrides)
+11. [Matrix Gating](#matrix-gating)
+12. [Execution Flow](#execution-flow)
+13. [Examples](#examples)
+14. [Best Practices](#best-practices)
 
 ---
 
@@ -39,6 +40,31 @@ Setup scripts define how to transform a bare system into a fully functional deve
 4. **Step Processing**: Each step's condition is evaluated, and if true, the action is executed
 5. **Secret Injection**: Secrets are fetched from Initiat, decrypted locally, and injected as environment variables
 6. **Command Execution**: Commands run with timeouts, retries, and error handling
+
+---
+
+## Generating setup from your project
+
+Instead of writing `.initiat/setup.yml` by hand, you can generate it from the current repository:
+
+```bash
+initiat setup generate
+```
+
+**What it does:**
+
+- **Detection:** Scans the current directory for stack markers and applies built-in templates:
+  - **Go**: `go.mod`
+  - **Node**: `package.json` or `assets/package.json` (e.g. Phoenix assets)
+  - **Python**: `pyproject.toml` or `requirements.txt`
+  - **Phoenix**: `mix.exs`
+  - **Rails**: `Gemfile`
+  - **Docker**: `docker-compose.yml` or `compose.yml`
+- **Templates:** Each template adds phase steps (provision, setup, verify, post) with verify-only or minimal commands. Multiple stacks can be combined (e.g. Phoenix + Node).
+- **Service inference:** If Docker Compose is present, steps for running `docker compose up -d` are added. Otherwise, dependency files (Gemfile, mix.exs, package.json, requirements.txt, pyproject.toml) are scanned for PostgreSQL, MySQL, SQLite, and Redis; corresponding verify steps (e.g. `psql --version`, `redis-cli --version`) are appended. When more than one database is detected, a post message suggests editing `.initiat/setup.yml` to remove unused steps.
+- **Output:** Writes `.initiat/setup.yml` and `.initiat/config.yml` (project name is derived from the directory). Does not overwrite an existing `setup.yml` unless you pass `--force`.
+
+After generating, run `initiat setup validate` and then `initiat setup run` (or `initiat project setup` if you use cloud secrets). See [Command Reference](COMMANDS.md#initiat-setup-generate---force) for details.
 
 ---
 
