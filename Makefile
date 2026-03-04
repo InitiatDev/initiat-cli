@@ -36,7 +36,7 @@ deps: ## Download and verify dependencies
 
 test: ## Run tests
 	@echo "🧪 Running tests..."
-	go test -v -race -coverprofile=coverage.out ./...
+	go test -race -coverprofile=coverage.out ./...
 
 test-coverage: test ## Run tests and show coverage
 	@echo "📊 Test coverage:"
@@ -74,7 +74,13 @@ security: ## Run security scan
 		echo "Installing gosec..."; \
 		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
 	fi
-	gosec ./...
+	@out=$$(mktemp); \
+	if ! gosec -quiet ./... >"$$out" 2>&1; then \
+		cat "$$out"; \
+		rm -f "$$out"; \
+		exit 1; \
+	fi; \
+	rm -f "$$out"
 
 vuln-check: ## Check for vulnerabilities
 	@echo "🛡️  Checking for vulnerabilities..."
