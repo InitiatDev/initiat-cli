@@ -239,16 +239,16 @@ var envInitCmd = &cobra.Command{
 			fmt.Printf("⚠️  Failed to check gitignore status: %v\n", err)
 		} else {
 			switch gitStatus {
-			case "not a git repository":
+			case env.GitStatusNotRepo:
 				fmt.Println("ℹ️  Not a git repository - skipping .gitignore setup")
-			case "missing":
+			case env.GitStatusMissing:
 				err = env.EnsureGitignore()
 				if err != nil {
 					fmt.Printf("⚠️  Failed to update .gitignore: %v\n", err)
 				} else {
 					fmt.Println("Updated .gitignore")
 				}
-			case "configured":
+			case env.GitStatusConfigured:
 				fmt.Println(".gitignore already configured")
 			}
 		}

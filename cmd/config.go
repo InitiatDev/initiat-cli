@@ -168,7 +168,20 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	}
 
 	actualKey := config.MapSimplifiedKey(key)
-	if err := config.Set(actualKey, value); err != nil {
+
+	typedValue := interface{}(value)
+	if configKey := config.FindConfigKey(key); configKey != nil {
+		if b, ok := configKey.Default.(bool); ok {
+			parsed, err := parseBool(value)
+			if err != nil {
+				return err
+			}
+			typedValue = parsed
+			_ = b
+		}
+	}
+
+	if err := config.Set(actualKey, typedValue); err != nil {
 		return fmt.Errorf("failed to set configuration: %w", err)
 	}
 
@@ -176,8 +189,19 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
-	fmt.Printf("✅ Set %s = %s\n", key, value)
+	fmt.Printf("✅ Set %s = %v\n", key, typedValue)
 	return nil
+}
+
+func parseBool(s string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "true", "t", "1", "y", "yes":
+		return true, nil
+	case "false", "f", "0", "n", "no":
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid boolean value %q (expected true/false)", s)
+	}
 }
 
 func runConfigGet(cmd *cobra.Command, args []string) error {
@@ -226,6 +250,18 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  project: (not set)\n")
 	}
 
+	fmt.Printf("  agent.enabled: %v\n", cfg.Agent.Enabled)
+	if cfg.Agent.Provider != "" {
+		fmt.Printf("  agent.provider: %s\n", cfg.Agent.Provider)
+	} else {
+		fmt.Printf("  agent.provider: (not set)\n")
+	}
+	if cfg.Agent.Model != "" {
+		fmt.Printf("  agent.model: %s\n", cfg.Agent.Model)
+	} else {
+		fmt.Printf("  agent.model: (not set)\n")
+	}
+
 	aliases := config.ListAliases()
 	if len(aliases) > 0 {
 		fmt.Println("\nProject aliases:")
@@ -245,6 +281,11 @@ func runConfigClear(cmd *cobra.Command, args []string) error {
 	}
 
 	key := args[0]
+
+	if !config.IsValidConfigKey(key) {
+		return fmt.Errorf("unknown configuration key: %s\nValid keys: %s",
+			key, strings.Join(config.GetAllConfigKeys(), ", "))
+	}
 
 	if err := config.EnsureConfigFileExists(); err != nil {
 		return err

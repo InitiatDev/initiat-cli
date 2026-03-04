@@ -217,3 +217,45 @@ func (s *Storage) ClearDeviceCredentials() error {
 
 	return nil
 }
+
+func (s *Storage) StoreAgentOpenAIAPIKey(apiKey string) error {
+	return s.keyring().Set(s.serviceName, "agent-openai-api-key", apiKey)
+}
+
+func (s *Storage) GetAgentOpenAIAPIKey() (string, error) {
+	apiKey, err := s.keyring().Get(s.serviceName, "agent-openai-api-key")
+	if err != nil {
+		return "", fmt.Errorf("failed to get OpenAI API key: %w", err)
+	}
+	return apiKey, nil
+}
+
+func (s *Storage) DeleteAgentOpenAIAPIKey() error {
+	return s.keyring().Delete(s.serviceName, "agent-openai-api-key")
+}
+
+func (s *Storage) HasAgentOpenAIAPIKey() bool {
+	_, err := s.GetAgentOpenAIAPIKey()
+	return err == nil
+}
+
+func (s *Storage) StoreAgentAnthropicAPIKey(apiKey string) error {
+	return s.keyring().Set(s.serviceName, "agent-anthropic-api-key", apiKey)
+}
+
+func (s *Storage) GetAgentAnthropicAPIKey() (string, error) {
+	apiKey, err := s.keyring().Get(s.serviceName, "agent-anthropic-api-key")
+	if err != nil {
+		return "", fmt.Errorf("failed to get Anthropic API key: %w", err)
+	}
+	return apiKey, nil
+}
+
+func (s *Storage) DeleteAgentAnthropicAPIKey() error {
+	return s.keyring().Delete(s.serviceName, "agent-anthropic-api-key")
+}
+
+func (s *Storage) HasAgentAnthropicAPIKey() bool {
+	_, err := s.GetAgentAnthropicAPIKey()
+	return err == nil
+}

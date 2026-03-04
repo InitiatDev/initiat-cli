@@ -26,11 +26,15 @@ var ConfigKeys = []ConfigKey{
 	{"service", "service_name", "initiat-cli"},
 	{"org", "project.default_org", ""},
 	{"project", "project.default_project", ""},
+	{"agent.enabled", "agent.enabled", false},
+	{"agent.provider", "agent.provider", ""},
+	{"agent.model", "agent.model", ""},
 }
 
 type Config struct {
 	API         APIConfig         `mapstructure:"api"`
 	Project     ProjectConfig     `mapstructure:"project"`
+	Agent       AgentConfig       `mapstructure:"agent"`
 	Aliases     map[string]string `mapstructure:"aliases"`
 	ServiceName string            `mapstructure:"service_name"`
 }
@@ -45,6 +49,12 @@ type ProjectConfig struct {
 	DefaultProject string `mapstructure:"default_project"`
 }
 
+type AgentConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Provider string `mapstructure:"provider"`
+	Model    string `mapstructure:"model"`
+}
+
 var globalConfig *Config
 
 func DefaultConfig() *Config {
@@ -56,6 +66,11 @@ func DefaultConfig() *Config {
 		Project: ProjectConfig{
 			DefaultOrg:     "",
 			DefaultProject: "",
+		},
+		Agent: AgentConfig{
+			Enabled:  false,
+			Provider: "",
+			Model:    "",
 		},
 		Aliases:     make(map[string]string),
 		ServiceName: "initiat-cli",
@@ -81,6 +96,9 @@ func InitConfig() error {
 	viper.SetDefault("service_name", defaults.ServiceName)
 	viper.SetDefault("project.default_org", defaults.Project.DefaultOrg)
 	viper.SetDefault("project.default_project", defaults.Project.DefaultProject)
+	viper.SetDefault("agent.enabled", defaults.Agent.Enabled)
+	viper.SetDefault("agent.provider", defaults.Agent.Provider)
+	viper.SetDefault("agent.model", defaults.Agent.Model)
 	viper.SetDefault("aliases", defaults.Aliases)
 
 	viper.SetEnvPrefix("INITIAT")

@@ -37,6 +37,20 @@ func PromptPassword() (string, error) {
 	return password, nil
 }
 
+func PromptHidden(promptText string) (string, error) {
+	fmt.Printf("%s: ", promptText)
+	valueBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", fmt.Errorf("failed to read input: %w", err)
+	}
+	fmt.Println()
+	value := string(valueBytes)
+	if value == "" {
+		return "", fmt.Errorf("input cannot be empty")
+	}
+	return value, nil
+}
+
 // PromptProject prompts the user for a project path
 func PromptProject() (string, error) {
 	fmt.Print("Project (org/project): ")

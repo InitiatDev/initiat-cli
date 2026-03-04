@@ -13,7 +13,10 @@ const (
 	gitignoreEntry = `# Initiat
 .initiat/environments/
 .initiat/active`
-	GitignorePerms = 0644
+	GitignorePerms      = 0644
+	GitStatusNotRepo    = "not a git repository"
+	GitStatusMissing    = "missing"
+	GitStatusConfigured = "configured"
 )
 
 var gitHandler = git.NewHandler()
@@ -79,7 +82,7 @@ func IsGitRepository() bool {
 
 func GetGitignoreStatus() (string, error) {
 	if !IsGitRepository() {
-		return "not a git repository", nil
+		return GitStatusNotRepo, nil
 	}
 
 	hasEntry, err := CheckGitignore()
@@ -88,8 +91,8 @@ func GetGitignoreStatus() (string, error) {
 	}
 
 	if hasEntry {
-		return "configured", nil
+		return GitStatusConfigured, nil
 	}
 
-	return "missing", nil
+	return GitStatusMissing, nil
 }

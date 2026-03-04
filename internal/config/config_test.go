@@ -18,7 +18,16 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, "initiat-cli", cfg.ServiceName)
 	assert.Equal(t, "", cfg.Project.DefaultOrg)
 	assert.Equal(t, "", cfg.Project.DefaultProject)
+	assert.False(t, cfg.Agent.Enabled)
+	assert.Equal(t, "", cfg.Agent.Provider)
+	assert.Equal(t, "", cfg.Agent.Model)
 	assert.NotNil(t, cfg.Aliases)
+}
+
+func TestIsValidConfigKey_IncludesAgentKeys(t *testing.T) {
+	assert.True(t, IsValidConfigKey("agent.enabled"))
+	assert.True(t, IsValidConfigKey("agent.provider"))
+	assert.True(t, IsValidConfigKey("agent.model"))
 }
 
 func TestInitConfig_WithDefaults(t *testing.T) {

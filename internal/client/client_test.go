@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,6 +18,12 @@ import (
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/types"
 )
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
 
 func TestNew(t *testing.T) {
 	client := New()
@@ -125,33 +132,15 @@ func TestLogin_ServerError(t *testing.T) {
 }
 
 func TestLogin_NetworkError(t *testing.T) {
-	client := NewWithBaseURL("http://192.0.2.0:1")
+	client := NewWithBaseURL("http://example.invalid")
+	client.httpClient.Transport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		return nil, errors.New("simulated network error")
+	})
 
 	resp, err := client.Login("test@example.com", "password123")
 	assert.Error(t, err)
 	assert.Nil(t, resp)
-
-	expectedErrors := []string{
-		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
-			"dial tcp 192.0.2.0:1: connect: connection refused",
-		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
-			"dial tcp 192.0.2.0:1: i/o timeout",
-		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
-			"dial tcp 192.0.2.0:1: i/o timeout (Client.Timeout exceeded while awaiting headers)",
-		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
-			"dial tcp 192.0.2.0:1: network is unreachable",
-		"failed to make request: Post \"http://192.0.2.0:1/api/v1/auth/login\": " +
-			"context deadline exceeded (Client.Timeout exceeded while awaiting headers)",
-	}
-
-	errorMatched := false
-	for _, expectedError := range expectedErrors {
-		if err.Error() == expectedError {
-			errorMatched = true
-			break
-		}
-	}
-	assert.True(t, errorMatched, "Expected a network error, got: %s", err.Error())
+	assert.Contains(t, err.Error(), "failed to make request")
 }
 
 func TestLogin_InvalidJSON(t *testing.T) {
@@ -298,7 +287,10 @@ func TestRegisterDevice_ServerError(t *testing.T) {
 }
 
 func TestRegisterDevice_NetworkError(t *testing.T) {
-	client := NewWithBaseURL("http://invalid-url-that-does-not-exist.local")
+	client := NewWithBaseURL("http://example.invalid")
+	client.httpClient.Transport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		return nil, errors.New("simulated network error")
+	})
 
 	signingPublic, _, err := ed25519.GenerateKey(rand.Reader)
 	require.NoError(t, err)
