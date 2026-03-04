@@ -1,8 +1,10 @@
 package setup
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -11,7 +13,7 @@ import (
 )
 
 type CommandExecutor interface {
-	Execute(ctx context.Context, req *CommandRequest) error
+	Execute(ctx context.Context, req *CommandRequest) (*CommandResult, error)
 }
 
 type CommandRequest struct {
@@ -22,15 +24,24 @@ type CommandRequest struct {
 	Timeout    time.Duration
 }
 
+type CommandResult struct {
+	ExitCode int
+	Stdout   string
+	Stderr   string
+	Duration time.Duration
+	TimedOut bool
+}
+
 type realCommandExecutor struct{}
 
 func NewRealCommandExecutor() CommandExecutor {
 	return &realCommandExecutor{}
 }
 
-func (e *realCommandExecutor) Execute(ctx context.Context, req *CommandRequest) error {
+func (e *realCommandExecutor) Execute(ctx context.Context, req *CommandRequest) (*CommandResult, error) {
 	var shellCmd *exec.Cmd
 	commandLine := buildCommandLine(req.Command, req.Args)
+	startedAt := time.Now()
 
 	if req.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -60,10 +71,62 @@ func (e *realCommandExecutor) Execute(ctx context.Context, req *CommandRequest) 
 	}
 	shellCmd.Env = env
 
-	shellCmd.Stdout = os.Stdout
-	shellCmd.Stderr = os.Stderr
+	const outputLimitBytes = 8 * 1024
+	stdoutBuf := newLimitedBuffer(outputLimitBytes)
+	stderrBuf := newLimitedBuffer(outputLimitBytes)
 
-	return shellCmd.Run()
+	shellCmd.Stdout = io.MultiWriter(os.Stdout, stdoutBuf)
+	shellCmd.Stderr = io.MultiWriter(os.Stderr, stderrBuf)
+
+	err := shellCmd.Run()
+	duration := time.Since(startedAt)
+
+	timedOut := ctx.Err() == context.DeadlineExceeded
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = -1
+		}
+	}
+
+	return &CommandResult{
+		ExitCode: exitCode,
+		Stdout:   stdoutBuf.String(),
+		Stderr:   stderrBuf.String(),
+		Duration: duration,
+		TimedOut: timedOut,
+	}, err
+}
+
+type limitedBuffer struct {
+	buf   bytes.Buffer
+	limit int
+}
+
+func newLimitedBuffer(limit int) *limitedBuffer {
+	return &limitedBuffer{limit: limit}
+}
+
+func (b *limitedBuffer) Write(p []byte) (int, error) {
+	if b.limit <= 0 {
+		return len(p), nil
+	}
+	remaining := b.limit - b.buf.Len()
+	if remaining <= 0 {
+		return len(p), nil
+	}
+	if len(p) > remaining {
+		_, _ = b.buf.Write(p[:remaining])
+		return len(p), nil
+	}
+	_, _ = b.buf.Write(p)
+	return len(p), nil
+}
+
+func (b *limitedBuffer) String() string {
+	return b.buf.String()
 }
 
 func buildCommandLine(command string, args []string) string {

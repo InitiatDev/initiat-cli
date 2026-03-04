@@ -9,12 +9,14 @@ import (
 type mockCommandExecutor struct {
 	executed []*CommandRequest
 	errors   map[string]error
+	results  map[string]*CommandResult
 }
 
 func newMockCommandExecutor() *mockCommandExecutor {
 	return &mockCommandExecutor{
 		executed: []*CommandRequest{},
 		errors:   make(map[string]error),
+		results:  make(map[string]*CommandResult),
 	}
 }
 
@@ -22,14 +24,26 @@ func (m *mockCommandExecutor) SetError(command string, err error) {
 	m.errors[command] = err
 }
 
-func (m *mockCommandExecutor) Execute(ctx context.Context, req *CommandRequest) error {
+func (m *mockCommandExecutor) SetResult(command string, res *CommandResult) {
+	m.results[command] = res
+}
+
+func (m *mockCommandExecutor) Execute(ctx context.Context, req *CommandRequest) (*CommandResult, error) {
 	m.executed = append(m.executed, req)
 
-	if err, ok := m.errors[req.Command]; ok {
-		return err
+	res := m.results[req.Command]
+	if res == nil {
+		res = &CommandResult{ExitCode: 0}
 	}
 
-	return nil
+	if err, ok := m.errors[req.Command]; ok {
+		if res.ExitCode == 0 {
+			res.ExitCode = 1
+		}
+		return res, err
+	}
+
+	return res, nil
 }
 
 func (m *mockCommandExecutor) GetExecuted() []*CommandRequest {
@@ -48,9 +62,15 @@ func TestRealCommandExecutor_Execute(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err := executor.Execute(ctx, req)
+	res, err := executor.Execute(ctx, req)
 	if err != nil {
 		t.Errorf("Execute() error = %v, want nil", err)
+	}
+	if res == nil {
+		t.Fatalf("expected result, got nil")
+	}
+	if res.ExitCode != 0 {
+		t.Fatalf("expected exit code 0, got %d", res.ExitCode)
 	}
 }
 
@@ -65,9 +85,15 @@ func TestRealCommandExecutor_Execute_Timeout(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err := executor.Execute(ctx, req)
+	res, err := executor.Execute(ctx, req)
 	if err == nil {
 		t.Error("Execute() expected timeout error, got nil")
+	}
+	if res == nil {
+		t.Fatalf("expected result, got nil")
+	}
+	if !res.TimedOut {
+		t.Fatalf("expected TimedOut=true")
 	}
 }
 

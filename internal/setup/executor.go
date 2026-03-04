@@ -27,6 +27,12 @@ func NewExecutorWithCommandExecutor(secrets map[string]string, executor CommandE
 }
 
 func (e *Executor) Execute(plan *ExecutionPlan) error {
+	report := &ExecutionReport{
+		StartedAt: time.Now(),
+		Summary:   plan.Summary,
+		Commands:  []CommandExecutionRecord{},
+	}
+
 	fmt.Printf("🚀 Executing setup script: %d phases, %d steps, %d commands\n\n",
 		len(plan.Summary.Phases), plan.Summary.TotalSteps, plan.Summary.TotalCommands)
 
@@ -37,21 +43,44 @@ func (e *Executor) Execute(plan *ExecutionPlan) error {
 		}
 		fmt.Println()
 
-		if err := e.executeCommand(cmd); err != nil {
+		record, err := e.executeCommandWithReport(cmd)
+		report.Commands = append(report.Commands, record)
+
+		if err != nil {
 			if cmd.ContinueOnError {
 				fmt.Printf("⚠️  Command failed but continuing: %v\n", err)
 				continue
 			}
-			return fmt.Errorf("command failed: %w", err)
+			report.FinishedAt = time.Now()
+			return &SetupExecutionError{
+				Report:        report,
+				FailedCommand: record,
+				Err:           fmt.Errorf("command failed: %w", err),
+			}
 		}
 	}
 
 	fmt.Println()
 	fmt.Println("✅ Setup script completed successfully!")
+	report.FinishedAt = time.Now()
 	return nil
 }
 
-func (e *Executor) executeCommand(cmd ExecutableCommand) error {
+func (e *Executor) executeCommandWithReport(cmd ExecutableCommand) (CommandExecutionRecord, error) {
+	record := CommandExecutionRecord{
+		Phase:           cmd.Phase,
+		StepName:        cmd.StepName,
+		StepIndex:       cmd.StepIndex,
+		Command:         cmd.Command,
+		Args:            cmd.Args,
+		WorkingDir:      cmd.WorkingDir,
+		Timeout:         cmd.Timeout,
+		ContinueOnError: cmd.ContinueOnError,
+		Retries:         cmd.Retries,
+		EnvRedacted:     e.redactEnv(cmd.Env),
+		Attempts:        []CommandAttemptRecord{},
+	}
+
 	var lastErr error
 	attempts := 1
 	if cmd.Retries != nil && cmd.Retries.Attempts > 0 {
@@ -66,12 +95,15 @@ func (e *Executor) executeCommand(cmd ExecutableCommand) error {
 			}
 		}
 
-		err := e.runCommand(cmd)
+		res, err := e.runCommand(cmd)
+		record.Attempts = append(record.Attempts, e.toAttemptRecord(attempt, res, err))
+
 		if err == nil {
 			if attempt > 1 {
 				fmt.Printf("  ✅ Command succeeded on retry\n")
 			}
-			return nil
+			record.Success = true
+			return record, nil
 		}
 
 		lastErr = err
@@ -80,29 +112,69 @@ func (e *Executor) executeCommand(cmd ExecutableCommand) error {
 		}
 	}
 
-	return fmt.Errorf("command failed after %d attempts: %w", attempts, lastErr)
+	record.Success = false
+	return record, fmt.Errorf("command failed after %d attempts: %w", attempts, lastErr)
 }
 
-func (e *Executor) runCommand(cmd ExecutableCommand) error {
-	env := make(map[string]string)
-	for k, v := range cmd.Env {
-		if e.shouldRedact(k) {
-			env[k] = "[REDACTED]"
-		} else {
-			env[k] = v
-		}
-	}
-
+func (e *Executor) runCommand(cmd ExecutableCommand) (*CommandResult, error) {
 	req := &CommandRequest{
 		Command:    cmd.Command,
 		Args:       cmd.Args,
-		Env:        env,
+		Env:        cmd.Env,
 		WorkingDir: cmd.WorkingDir,
 		Timeout:    cmd.Timeout,
 	}
 
 	ctx := context.Background()
 	return e.commandExecutor.Execute(ctx, req)
+}
+
+func (e *Executor) redactEnv(env map[string]string) map[string]string {
+	if env == nil {
+		return nil
+	}
+	out := make(map[string]string, len(env))
+	for k, v := range env {
+		if e.shouldRedact(k) {
+			out[k] = "[REDACTED]"
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func (e *Executor) toAttemptRecord(attempt int, res *CommandResult, err error) CommandAttemptRecord {
+	rec := CommandAttemptRecord{
+		Attempt: attempt,
+	}
+	if res != nil {
+		rec.Duration = res.Duration
+		rec.ExitCode = res.ExitCode
+		rec.Stdout = e.redactOutput(res.Stdout)
+		rec.Stderr = e.redactOutput(res.Stderr)
+		rec.TimedOut = res.TimedOut
+	} else {
+		rec.ExitCode = -1
+	}
+	if err != nil {
+		rec.ErrorText = err.Error()
+	}
+	return rec
+}
+
+func (e *Executor) redactOutput(s string) string {
+	if e.secrets == nil || s == "" {
+		return s
+	}
+	redacted := s
+	for _, v := range e.secrets {
+		if v == "" {
+			continue
+		}
+		redacted = strings.ReplaceAll(redacted, v, "[REDACTED]")
+	}
+	return redacted
 }
 
 func (e *Executor) shouldRedact(key string) bool {
