@@ -1,18 +1,25 @@
 # Initiat CLI Commands
 
-This document provides comprehensive documentation for all Initiat CLI commands, their options, and usage examples.
+This document lists all Initiat CLI commands. **Offline-first commands** (init, setup, docs) are documented first; they require no account or server. **Cloud commands** (auth, device, project, env, secret) are optional and only needed when using hosted features.
 
 ## Table of Contents
 
+### Offline-first (no account required)
+
 - [Global Options](#global-options)
+- [Init (scaffold)](#init-scaffold)
+- [Setup Script Management](#setup-script-management)
+- [Docs Generation](#docs-generation)
+- [Configuration Management](#configuration-management)
+- [Version Information](#version-information)
+
+### Cloud commands (optional)
+
 - [Authentication Commands](#authentication-commands)
 - [Device Management](#device-management)
 - [Project Management](#project-management)
-- [Setup Script Management](#setup-script-management)
 - [Environment Management](#environment-management)
 - [Secret Management](#secret-management)
-- [Configuration Management](#configuration-management)
-- [Version Information](#version-information)
 
 ## Global Options
 
@@ -83,6 +90,41 @@ initiat secret list
 - **Discovery**: See all available projects at a glance
 - **Flexible**: Can still enter custom projects when needed
 - **User-Friendly**: Clear guidance and helpful error messages
+
+**Note:** Project context is only required for cloud commands (secret, env sync, etc.). Offline-first commands (init, setup validate, setup run, docs generate) do not require project context.
+
+## Init (scaffold)
+
+### `initiat init`
+
+Scaffold the `.initiat/` directory in the current repository with default config and optional setup/docs templates. Works offline; no account required.
+
+**What it does:**
+- Ensures current directory is a git repository
+- Creates `.initiat/` if missing
+- Creates or updates `.initiat/config.yml` with local-only metadata (e.g. repo name)
+- Optionally creates `.initiat/setup.yml` and `.initiat/docs.yml` from templates
+- Idempotent: safe to run multiple times
+
+**Examples:**
+```bash
+# Scaffold .initiat/ in current repo
+initiat init
+```
+
+**Output:**
+```
+✅ Initialized .initiat/ in this repository.
+   Created: .initiat/config.yml
+   Created: .initiat/setup.yml (from template)
+   Next: Edit .initiat/setup.yml and run 'initiat setup validate'
+```
+
+---
+
+## Cloud commands (optional)
+
+The following commands require an Initiat account and device registration. They are used only when you opt in to hosted secrets, project management, or environment sync. Skip these if you use Initiat only for in-repo setup and docs.
 
 ## Authentication Commands
 
@@ -528,7 +570,7 @@ Validating .initiat/setup.yml...
 ❌ Validation failed:
   - version: must be 1
   - setup[0].ensure_runtime: install configuration is required
-  - env.secrets: 'DATABASE_URL' referenced in env_from_secrets but not declared in env.secrets
+  - setup[0].secrets: secret 'FOO' not declared in env.secrets
 ```
 
 **Use Cases:**
@@ -590,6 +632,31 @@ initiat setup schema -o docs/schemas/setup-v1.json
 
 **Related Documentation:**
 - See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for complete syntax reference
+
+## Docs Generation
+
+### `initiat docs generate [--output DIR]`
+
+Generate onboarding docs (e.g. README fragments, runbook steps) from `.initiat/docs.yml` or `.initiat/onboard.yml`. Works offline; no account required.
+
+**Options:**
+- `--output, -o`: Output directory (default: current directory or a docs subdir)
+
+**What it does:**
+1. Reads `.initiat/docs.yml` (or `.initiat/onboard.yml`) if present
+2. Renders templates or structured content into markdown (e.g. "Time to first commit", runbook steps)
+3. Writes output files to the specified directory
+
+**Examples:**
+```bash
+# Generate docs (default output)
+initiat docs generate
+
+# Generate to specific directory
+initiat docs generate --output docs/onboarding
+```
+
+**Related:** Define runbook content and structure in `.initiat/docs.yml`. See the in-repo YAML contract documentation.
 
 ## Environment Management
 

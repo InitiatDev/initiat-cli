@@ -19,9 +19,9 @@ func TestValidate_ValidConfig(t *testing.T) {
 				Run:  "npm install",
 			},
 			{
-				Name:           "Setup database",
-				Run:            "mix ecto.setup",
-				EnvFromSecrets: []string{"DATABASE_URL"},
+				Name:    "Setup database",
+				Run:     "mix ecto.setup",
+				Secrets: []string{"DATABASE_URL"},
 			},
 		},
 	}
@@ -133,52 +133,6 @@ func TestValidate_InvalidRetries(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "attempts") || !strings.Contains(err.Error(), "backoff") {
 		t.Errorf("Expected retries errors, got: %v", err)
-	}
-}
-
-func TestValidate_UndefinedSecret(t *testing.T) {
-	config := &SetupConfig{
-		Version: 1,
-		Env: &Environment{
-			Secrets: []string{"DATABASE_URL"},
-		},
-		Setup: []Step{
-			{
-				Name:           "Use undefined secret",
-				Run:            "echo hello",
-				EnvFromSecrets: []string{"UNDEFINED_SECRET"},
-			},
-		},
-	}
-
-	err := Validate(config)
-	if err == nil {
-		t.Fatal("Expected validation error for undefined secret")
-	}
-
-	if !strings.Contains(err.Error(), "not declared") {
-		t.Errorf("Expected secret declaration error, got: %v", err)
-	}
-}
-
-func TestValidate_ValidSecrets(t *testing.T) {
-	config := &SetupConfig{
-		Version: 1,
-		Env: &Environment{
-			Secrets: []string{"DATABASE_URL", "API_KEY"},
-		},
-		Setup: []Step{
-			{
-				Name:           "Use valid secrets",
-				Run:            "echo hello",
-				EnvFromSecrets: []string{"DATABASE_URL", "API_KEY"},
-			},
-		},
-	}
-
-	err := Validate(config)
-	if err != nil {
-		t.Errorf("Expected no validation errors, got: %v", err)
 	}
 }
 

@@ -27,8 +27,8 @@ func TestCollectSecretNames(t *testing.T) {
 				Version: 1,
 				Setup: []Step{
 					{
-						Run:            "echo test",
-						EnvFromSecrets: []string{"API_KEY"},
+						Run:     "echo test",
+						Secrets: []string{"API_KEY"},
 					},
 				},
 			},
@@ -40,12 +40,12 @@ func TestCollectSecretNames(t *testing.T) {
 				Version: 1,
 				Setup: []Step{
 					{
-						Run:            "echo test",
-						EnvFromSecrets: []string{"API_KEY", "DATABASE_URL"},
+						Run:     "echo test",
+						Secrets: []string{"API_KEY", "DATABASE_URL"},
 					},
 					{
-						Run:            "echo test2",
-						EnvFromSecrets: []string{"DATABASE_URL", "SECRET_TOKEN"},
+						Run:     "echo test2",
+						Secrets: []string{"DATABASE_URL", "SECRET_TOKEN"},
 					},
 				},
 			},
@@ -57,12 +57,12 @@ func TestCollectSecretNames(t *testing.T) {
 				Version: 1,
 				Setup: []Step{
 					{
-						Run:            "echo test",
-						EnvFromSecrets: []string{"API_KEY"},
+						Run:     "echo test",
+						Secrets: []string{"API_KEY"},
 					},
 					{
-						Run:            "echo test2",
-						EnvFromSecrets: []string{"API_KEY"},
+						Run:     "echo test2",
+						Secrets: []string{"API_KEY"},
 					},
 				},
 			},

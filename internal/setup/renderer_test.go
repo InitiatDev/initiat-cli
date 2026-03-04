@@ -349,8 +349,8 @@ func TestRender_WithSecrets(t *testing.T) {
 		Version: 1,
 		Bootstrap: []Step{
 			{
-				EnvFromSecrets: []string{"API_KEY"},
-				Run:            "test-command",
+				Secrets: []string{"API_KEY"},
+				Run:     "test-command",
 			},
 		},
 	}

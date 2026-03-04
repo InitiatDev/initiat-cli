@@ -506,11 +506,14 @@ func setupTestEnvironmentForSignedRequests(t *testing.T, serverURL string) {
 		t.Fatalf("Failed to set API URL: %v", err)
 	}
 
-	if err := config.Set("service_name", "initiat-cli-test-"+t.Name()); err != nil {
+	serviceName := "initiat-cli-test-" + t.Name()
+	if err := config.Set("service_name", serviceName); err != nil {
 		t.Fatalf("Failed to set service name: %v", err)
 	}
 
-	store := storage.New()
+	memKr := storage.NewMemKeyring()
+	storage.TestKeyring = memKr
+	store := storage.NewWithKeyring(serviceName, memKr)
 
 	signingPublic, signingPrivate, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -532,6 +535,7 @@ func setupTestEnvironmentForSignedRequests(t *testing.T, serverURL string) {
 	}
 
 	t.Cleanup(func() {
+		storage.TestKeyring = nil
 		store.DeleteSigningPrivateKey()
 		store.DeleteEncryptionPrivateKey()
 		store.DeleteDeviceID()

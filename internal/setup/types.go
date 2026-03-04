@@ -39,7 +39,7 @@ type Step struct {
 	Timeout         string            `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 	CWD             string            `yaml:"cwd,omitempty" json:"cwd,omitempty"`
 	Env             map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
-	EnvFromSecrets  []string          `yaml:"env_from_secrets,omitempty" json:"env_from_secrets,omitempty"`
+	Secrets         []string          `yaml:"secrets,omitempty" json:"secrets,omitempty"`
 	OptionalSecrets bool              `yaml:"optional_secrets,omitempty" json:"optional_secrets,omitempty"`
 	ContinueOnError bool              `yaml:"continue_on_error,omitempty" json:"continue_on_error,omitempty"`
 	Retries         *Retries          `yaml:"retries,omitempty" json:"retries,omitempty"`

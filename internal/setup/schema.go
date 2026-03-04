@@ -145,7 +145,7 @@ func getStepSchema() map[string]interface{} {
 					"type": "string",
 				},
 			},
-			"env_from_secrets": map[string]interface{}{
+			"secrets": map[string]interface{}{
 				"type": "array",
 				"items": map[string]interface{}{
 					"type": "string",

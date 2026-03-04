@@ -246,8 +246,8 @@ func buildStepContext(step Step, config *SetupConfig, ctx *RenderContext) (*Step
 		}
 	}
 
-	if step.EnvFromSecrets != nil {
-		for _, secretName := range step.EnvFromSecrets {
+	if step.Secrets != nil {
+		for _, secretName := range step.Secrets {
 			value, exists := secrets[secretName]
 			if !exists && !step.OptionalSecrets {
 				return nil, fmt.Errorf("required secret '%s' not found", secretName)

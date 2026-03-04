@@ -76,7 +76,7 @@ setup:
 
   - name: "Setup database"
     run: mix ecto.setup
-    env_from_secrets: [DATABASE_URL]
+    secrets: [DATABASE_URL]
 
 verify:
   - name: "Check Elixir version"

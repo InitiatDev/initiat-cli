@@ -69,6 +69,11 @@ func (r *SetupRunner) fetchRequiredSecrets(config *SetupConfig) (map[string]stri
 		return nil, nil
 	}
 
+	if r.projectCtx == nil {
+		return nil, fmt.Errorf(
+			"project context required for secrets; run 'initiat project init' or set org/project in .initiat/config.yml")
+	}
+
 	if !r.store.HasDeviceID() {
 		return nil, fmt.Errorf("device not registered. Please run 'initiat device register <name>' first")
 	}

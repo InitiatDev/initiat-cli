@@ -8,15 +8,29 @@ import (
 	"strings"
 
 	"github.com/InitiatDev/initiat-cli/internal/config"
-	"github.com/zalando/go-keyring"
 )
 
 const (
 	DefaultServiceName = "initiat-cli"
 )
 
+// TestKeyring is set by tests to inject an in-memory keyring so code that
+// calls storage.New() (e.g. httputil.SignRequest) uses it. Must be nil in production.
+var TestKeyring Keyring
+
 type Storage struct {
 	serviceName string
+	kr          Keyring
+}
+
+func (s *Storage) keyring() Keyring {
+	if s.kr != nil {
+		return s.kr
+	}
+	if TestKeyring != nil {
+		return TestKeyring
+	}
+	return systemKeyring{}
 }
 
 func generateServiceNameFromURL(apiURL string) string {
@@ -49,23 +63,34 @@ func New() *Storage {
 		serviceName = generateServiceNameFromURL(apiURL)
 	}
 
-	return &Storage{
-		serviceName: serviceName,
+	s := &Storage{serviceName: serviceName}
+	if TestKeyring != nil {
+		s.kr = TestKeyring
 	}
+	return s
 }
 
 func NewWithServiceName(serviceName string) *Storage {
+	s := &Storage{serviceName: serviceName}
+	if TestKeyring != nil {
+		s.kr = TestKeyring
+	}
+	return s
+}
+
+func NewWithKeyring(serviceName string, kr Keyring) *Storage {
 	return &Storage{
 		serviceName: serviceName,
+		kr:          kr,
 	}
 }
 
 func (s *Storage) StoreToken(token string) error {
-	return keyring.Set(s.serviceName, "registration-token", token)
+	return s.keyring().Set(s.serviceName, "registration-token", token)
 }
 
 func (s *Storage) GetToken() (string, error) {
-	token, err := keyring.Get(s.serviceName, "registration-token")
+	token, err := s.keyring().Get(s.serviceName, "registration-token")
 	if err != nil {
 		return "", fmt.Errorf("failed to get token: %w", err)
 	}
@@ -73,15 +98,15 @@ func (s *Storage) GetToken() (string, error) {
 }
 
 func (s *Storage) DeleteToken() error {
-	return keyring.Delete(s.serviceName, "registration-token")
+	return s.keyring().Delete(s.serviceName, "registration-token")
 }
 
 func (s *Storage) StoreDeviceID(deviceID string) error {
-	return keyring.Set(s.serviceName, "device-id", deviceID)
+	return s.keyring().Set(s.serviceName, "device-id", deviceID)
 }
 
 func (s *Storage) GetDeviceID() (string, error) {
-	deviceID, err := keyring.Get(s.serviceName, "device-id")
+	deviceID, err := s.keyring().Get(s.serviceName, "device-id")
 	if err != nil {
 		return "", fmt.Errorf("failed to get device ID: %w", err)
 	}
@@ -89,15 +114,15 @@ func (s *Storage) GetDeviceID() (string, error) {
 }
 
 func (s *Storage) DeleteDeviceID() error {
-	return keyring.Delete(s.serviceName, "device-id")
+	return s.keyring().Delete(s.serviceName, "device-id")
 }
 
 func (s *Storage) StoreDeviceName(deviceName string) error {
-	return keyring.Set(s.serviceName, "device-name", deviceName)
+	return s.keyring().Set(s.serviceName, "device-name", deviceName)
 }
 
 func (s *Storage) GetDeviceName() (string, error) {
-	deviceName, err := keyring.Get(s.serviceName, "device-name")
+	deviceName, err := s.keyring().Get(s.serviceName, "device-name")
 	if err != nil {
 		return "", fmt.Errorf("failed to get device name: %w", err)
 	}
@@ -105,7 +130,7 @@ func (s *Storage) GetDeviceName() (string, error) {
 }
 
 func (s *Storage) DeleteDeviceName() error {
-	return keyring.Delete(s.serviceName, "device-name")
+	return s.keyring().Delete(s.serviceName, "device-name")
 }
 
 func (s *Storage) HasDeviceName() bool {
@@ -124,11 +149,11 @@ func (s *Storage) HasDeviceID() bool {
 }
 
 func (s *Storage) StoreSigningPrivateKey(privateKey ed25519.PrivateKey) error {
-	return keyring.Set(s.serviceName, "signing-private-key", string(privateKey))
+	return s.keyring().Set(s.serviceName, "signing-private-key", string(privateKey))
 }
 
 func (s *Storage) GetSigningPrivateKey() (ed25519.PrivateKey, error) {
-	keyStr, err := keyring.Get(s.serviceName, "signing-private-key")
+	keyStr, err := s.keyring().Get(s.serviceName, "signing-private-key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get signing private key: %w", err)
 	}
@@ -136,15 +161,15 @@ func (s *Storage) GetSigningPrivateKey() (ed25519.PrivateKey, error) {
 }
 
 func (s *Storage) DeleteSigningPrivateKey() error {
-	return keyring.Delete(s.serviceName, "signing-private-key")
+	return s.keyring().Delete(s.serviceName, "signing-private-key")
 }
 
 func (s *Storage) StoreEncryptionPrivateKey(privateKey []byte) error {
-	return keyring.Set(s.serviceName, "encryption-private-key", string(privateKey))
+	return s.keyring().Set(s.serviceName, "encryption-private-key", string(privateKey))
 }
 
 func (s *Storage) GetEncryptionPrivateKey() ([]byte, error) {
-	keyStr, err := keyring.Get(s.serviceName, "encryption-private-key")
+	keyStr, err := s.keyring().Get(s.serviceName, "encryption-private-key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get encryption private key: %w", err)
 	}
@@ -152,7 +177,7 @@ func (s *Storage) GetEncryptionPrivateKey() ([]byte, error) {
 }
 
 func (s *Storage) DeleteEncryptionPrivateKey() error {
-	return keyring.Delete(s.serviceName, "encryption-private-key")
+	return s.keyring().Delete(s.serviceName, "encryption-private-key")
 }
 
 func (s *Storage) HasSigningPrivateKey() bool {

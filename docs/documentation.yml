@@ -1,11 +1,12 @@
 # Initiat CLI Documentation
 # Unified documentation structure with flexible content types
+# Offline-first commands (init, setup, docs) do not require an account. Cloud commands (auth, device, project, env, secret) are optional.
 
 metadata:
-  version: "0.6.1"
-  last_updated: "2025-10-26T20:00:00Z"
+  version: "0.7.0"
+  last_updated: "2025-03-04T00:00:00Z"
   author: "Initiat Team"
-  description: "Complete CLI documentation for Initiat"
+  description: "CLI documentation: offline-first (init, setup, docs) then optional cloud (auth, device, project, env, secret)"
 
 sections:
   commands:
@@ -39,6 +40,26 @@ sections:
       icon: "document-text"
 
 commands:
+  init:
+    id: "init"
+    name: "init"
+    category: "init"
+    description: "Scaffold .initiat/ in the current repository (offline, no account required)"
+    usage: "initiat init"
+    arguments: []
+    options: []
+    examples:
+      - description: "Scaffold .initiat/ in current repo"
+        command: "initiat init"
+    workflow_steps:
+      - "Ensures current directory is a git repository"
+      - "Creates .initiat/ with config.yml and optional setup/docs templates"
+      - "Idempotent; safe to run multiple times"
+    metadata:
+      difficulty: "beginner"
+      estimated_time: "10 seconds"
+      offline_first: true
+
   auth.login:
     id: "auth.login"
     name: "login"
@@ -688,7 +709,7 @@ commands:
       ❌ Validation failed:
         - version: must be 1
         - setup[0].ensure_runtime: install configuration is required
-        - env.secrets: 'DATABASE_URL' referenced in env_from_secrets but not declared in env.secrets
+        - setup[0].secrets: secret 'FOO' not declared in env.secrets
     use_cases:
       - "Validate setup scripts before committing"
       - "Check setup scripts in CI/CD pipelines"

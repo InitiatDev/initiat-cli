@@ -8,12 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Note: These tests use the actual keyring, which may require user interaction
-// on some systems. In a production environment, you might want to create
-// a mock keyring interface for more reliable testing.
-
 func TestStorage_TokenOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-token")
+	storage := NewWithKeyring("initiat-cli-test-token", NewMemKeyring())
 	testToken := "test-token-12345"
 
 	_ = storage.DeleteToken()
@@ -21,10 +17,7 @@ func TestStorage_TokenOperations(t *testing.T) {
 	assert.False(t, storage.HasToken())
 
 	err := storage.StoreToken(testToken)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasToken())
 
@@ -42,7 +35,7 @@ func TestStorage_TokenOperations(t *testing.T) {
 }
 
 func TestStorage_DeviceIDOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-device")
+	storage := NewWithKeyring("initiat-cli-test-device", NewMemKeyring())
 	testDeviceID := "device-abc123"
 
 	_ = storage.DeleteDeviceID()
@@ -50,10 +43,7 @@ func TestStorage_DeviceIDOperations(t *testing.T) {
 	assert.False(t, storage.HasDeviceID())
 
 	err := storage.StoreDeviceID(testDeviceID)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasDeviceID())
 
@@ -71,7 +61,7 @@ func TestStorage_DeviceIDOperations(t *testing.T) {
 }
 
 func TestStorage_MultipleOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-multi")
+	storage := NewWithKeyring("initiat-cli-test-multi", NewMemKeyring())
 	testToken := "multi-test-token"
 	testDeviceID := "multi-test-device"
 
@@ -79,16 +69,10 @@ func TestStorage_MultipleOperations(t *testing.T) {
 	_ = storage.DeleteDeviceID()
 
 	err := storage.StoreToken(testToken)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	err = storage.StoreDeviceID(testDeviceID)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasToken())
 	assert.True(t, storage.HasDeviceID())
@@ -106,19 +90,13 @@ func TestStorage_MultipleOperations(t *testing.T) {
 }
 
 func TestStorage_OverwriteValues(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-overwrite")
+	storage := NewWithKeyring("initiat-cli-test-overwrite", NewMemKeyring())
 
 	err := storage.StoreToken("initial-token")
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	err = storage.StoreDeviceID("initial-device")
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	newToken := "updated-token"
 	newDeviceID := "updated-device"
@@ -142,7 +120,7 @@ func TestStorage_OverwriteValues(t *testing.T) {
 }
 
 func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-signing")
+	storage := NewWithKeyring("initiat-cli-test-signing", NewMemKeyring())
 
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -154,10 +132,7 @@ func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
 	assert.False(t, storage.HasSigningPrivateKey())
 
 	err = storage.StoreSigningPrivateKey(privateKey)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasSigningPrivateKey())
 
@@ -179,7 +154,7 @@ func TestStorage_SigningPrivateKeyOperations(t *testing.T) {
 }
 
 func TestStorage_EncryptionPrivateKeyOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-encryption")
+	storage := NewWithKeyring("initiat-cli-test-encryption", NewMemKeyring())
 
 	testKey := make([]byte, 32)
 	_, err := rand.Read(testKey)
@@ -192,10 +167,7 @@ func TestStorage_EncryptionPrivateKeyOperations(t *testing.T) {
 	assert.False(t, storage.HasEncryptionPrivateKey())
 
 	err = storage.StoreEncryptionPrivateKey(testKey)
-	if err != nil {
-		t.Skipf("Skipping keyring test due to error: %v", err)
-		return
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasEncryptionPrivateKey())
 
@@ -258,7 +230,7 @@ func TestStorageNewWithDefaultServiceName(t *testing.T) {
 }
 
 func TestStorage_DeviceNameOperations(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-device-name")
+	storage := NewWithKeyring("initiat-cli-test-device-name", NewMemKeyring())
 	testDeviceName := "my-test-device"
 
 	_ = storage.DeleteDeviceName()
@@ -266,9 +238,7 @@ func TestStorage_DeviceNameOperations(t *testing.T) {
 	assert.False(t, storage.HasDeviceName())
 
 	err := storage.StoreDeviceName(testDeviceName)
-	if err != nil {
-		t.Fatalf("Failed to store device name: %v", err)
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasDeviceName())
 
@@ -286,7 +256,7 @@ func TestStorage_DeviceNameOperations(t *testing.T) {
 }
 
 func TestStorage_ClearDeviceCredentialsIncludesDeviceName(t *testing.T) {
-	storage := NewWithServiceName("initiat-cli-test-clear")
+	storage := NewWithKeyring("initiat-cli-test-clear", NewMemKeyring())
 
 	_ = storage.DeleteDeviceID()
 	_ = storage.DeleteDeviceName()
@@ -294,14 +264,10 @@ func TestStorage_ClearDeviceCredentialsIncludesDeviceName(t *testing.T) {
 	_ = storage.DeleteEncryptionPrivateKey()
 
 	err := storage.StoreDeviceID("test-device-id")
-	if err != nil {
-		t.Fatalf("Failed to store device ID: %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = storage.StoreDeviceName("test-device-name")
-	if err != nil {
-		t.Fatalf("Failed to store device name: %v", err)
-	}
+	assert.NoError(t, err)
 
 	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -309,9 +275,7 @@ func TestStorage_ClearDeviceCredentialsIncludesDeviceName(t *testing.T) {
 	}
 
 	err = storage.StoreSigningPrivateKey(privateKey)
-	if err != nil {
-		t.Fatalf("Failed to store signing key: %v", err)
-	}
+	assert.NoError(t, err)
 
 	testKey := make([]byte, 32)
 	_, err = rand.Read(testKey)
@@ -320,9 +284,7 @@ func TestStorage_ClearDeviceCredentialsIncludesDeviceName(t *testing.T) {
 	}
 
 	err = storage.StoreEncryptionPrivateKey(testKey)
-	if err != nil {
-		t.Fatalf("Failed to store encryption key: %v", err)
-	}
+	assert.NoError(t, err)
 
 	assert.True(t, storage.HasDeviceID())
 	assert.True(t, storage.HasDeviceName())

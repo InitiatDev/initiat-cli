@@ -72,7 +72,7 @@ defaults:
 
 env:
   PROJECT_NAME: "myproject"
-  secrets: [DATABASE_URL, OPENAI_API_KEY]
+  secrets: [DATABASE_URL]
 
 bootstrap:
   - ...steps...
@@ -95,7 +95,7 @@ post:
 | `description` | string | No       | Description of what this setup does          |
 | `matrix`      | object | No       | OS/architecture requirements (see [Matrix](#matrix-gating)) |
 | `defaults`    | object | No       | Default values for steps (see [Defaults](#defaults--overrides)) |
-| `env`         | object | No       | Global environment variables and secrets      |
+| `env`         | object | No       | Global environment variables; optional `env.secrets` for Initiat-hosted secrets |
 | `bootstrap`   | array  | No       | Base system prerequisites                    |
 | `provision`    | array  | No       | Runtimes, databases, system services         |
 | `setup`       | array  | No       | Project dependencies, migrations, seeding     |
@@ -136,8 +136,7 @@ Each step defines metadata and exactly one action.
   cwd: "frontend"
   env:
     NODE_ENV: development
-  env_from_secrets: [DATABASE_URL]
-  optional_secrets: false
+  secrets: [DATABASE_URL]
   continue_on_error: false
   retries:
     attempts: 3
@@ -154,8 +153,8 @@ Each step defines metadata and exactly one action.
 | `timeout`           | string  | No       | Step timeout (overrides default, e.g., `"10m"`)  |
 | `cwd`               | string  | No       | Working directory (relative to repo root)        |
 | `env`               | object  | No       | Static environment variables                     |
-| `env_from_secrets`  | array   | No       | Secret names to inject from Initiat              |
-| `optional_secrets` | bool    | No       | Don't fail if secret missing                      |
+| `secrets`  | array   | No       | Secret names to inject from Initiat (optional add-on; requires project context) |
+| `optional_secrets` | bool    | No       | Don't fail if secret missing |
 | `continue_on_error`  | bool    | No       | Continue even if step fails                      |
 | `retries`           | object  | No       | Retry policy (see [Retries](#retries--timeouts)) |
 | *one action*        | varies  | ✅ Yes   | Exactly one action field: `run` or `print`       |
@@ -168,7 +167,7 @@ Each step must define exactly one action. Actions are mutually exclusive.
 
 ### `run` — Execute Shell Command
 
-Run a shell command with environment variables and secrets injected.
+Run a shell command with environment variables from `env` and `secrets` (when using the cloud add-on) injected.
 
 ```yaml
 run: "npm ci && npm run build"
@@ -179,14 +178,14 @@ For multi-line commands, use YAML block scalars:
 ```yaml
 run: |
   asdf plugin add golang || true
-  asdf install golang 1.25.3
-  asdf global golang 1.25.3
+  asdf install golang 1.25.7
+  asdf global golang 1.25.7
 ```
 
 **Behavior:**
 - Uses the shell from `defaults.shell` (or `auto` → bash/sh/powershell)
-- Inherits all `env` variables and secrets
-- Secret values are redacted in logs
+- Inherits all `env` and (when project context exists) `secrets` values
+- Secret values are never logged in plaintext
 - Standard output/error are displayed
 - Commands are explicit and visible in the YAML
 
@@ -262,6 +261,8 @@ if: '!os("windows")'  # Unix-like systems
 
 ## Environment & Secrets
 
+Use static **env** for variables. Optionally use Initiat-hosted secrets via **env.secrets** and **secrets** when you use the cloud add-on (project context + device registration).
+
 ### Global Environment
 
 Define environment variables at the top level:
@@ -274,36 +275,26 @@ env:
 ```
 
 **Rules:**
-- Static variables are available to all steps
-- `secrets` declares which Initiat secrets to fetch
-- Secrets are encrypted and decrypted locally (zero-knowledge)
+- Static variables (e.g. `NODE_ENV`, `PROJECT_NAME`) are available to all steps.
+- **secrets** declares which Initiat secrets to fetch when using the optional cloud add-on (requires project context and device registration).
 
 ### Step-Level Environment
 
-Override or extend environment per step:
+Override or extend per step:
 
 ```yaml
 setup:
   - run: mix ecto.setup
     env:
       MIX_ENV: dev
-    env_from_secrets: [DATABASE_URL]
+    secrets: [DATABASE_URL]
 ```
 
-**Merging Rules:**
-- Step `env` overrides global `env`
-- `env_from_secrets` injects decrypted secrets
-- Secrets are never logged or written to disk
-- Secret values are redacted in command output
+**Merging rules:** Step `env` overrides global `env`. `secrets` injects decrypted secrets from Initiat when the cloud add-on is used. Secrets are never logged or written to disk.
 
-### Secret Workflow
+### Optional: Initiat-hosted secrets (env.secrets / secrets)
 
-1. Declare secret names in `env.secrets`
-2. Reference them in steps via `env_from_secrets`
-3. CLI fetches secrets from Initiat API
-4. Secrets are decrypted client-side using project keys
-5. Values are injected as environment variables
-6. Values are redacted in all logs
+When using Initiat's optional cloud add-on, you can declare secret names in **env.secrets** and inject them per step with **secrets**. Requires project context (`.initiat/config.yml` with org/project or `initiat project init`) and device registration. See [Security](SECURITY.md) and [In-Repo YAML](IN_REPO_YAML.md).
 
 ---
 
@@ -423,7 +414,7 @@ timeout: "10m"  # 10 minutes
 3. **Phase Loop**: For each phase (bootstrap, provision, setup, verify, post):
    a. **Step Loop**: For each step in the phase:
       - Evaluate `if` condition (skip if false)
-      - Fetch secrets if `env_from_secrets` is specified
+      - Load secrets from Initiat when `secrets` is used (requires project context)
       - Execute action with timeout and retries
       - Handle errors per `continue_on_error`
    b. **Phase Complete**: Move to next phase
@@ -509,8 +500,8 @@ provision:
     run: |
       . "$HOME/.asdf/asdf.sh" || true
       asdf plugin add golang || true
-      asdf install golang 1.25.3
-      asdf global golang 1.25.3
+      asdf install golang 1.25.7
+      asdf global golang 1.25.7
 
   - name: "Install Go via Chocolatey (Windows)"
     if: os("windows") && !cmd_ok("go --version")
@@ -577,7 +568,7 @@ setup:
     run: mix deps.get
 
   - name: "Setup database"
-    env_from_secrets: [DATABASE_URL]
+    secrets: [DATABASE_URL]
     run: mix ecto.setup
 
 verify:
@@ -603,15 +594,15 @@ verify:
 - **Quote conditions starting with `!`** — Use `'!os("windows")'` to avoid YAML tag syntax
 - **Use `|| exit 1` for assertions** — `go version || exit 1` fails if command fails
 - **Use `|| true` for idempotent operations** — `asdf plugin add golang || true` won't fail if already added
-- **Declare all secrets** in `env.secrets` upfront
+- **Use secrets** with Initiat when using the cloud add-on; declare names in `env.secrets`
 - **Use descriptive step names** for better logging
 - **Test on all target platforms**
 - **Keep setup scripts version-controlled**
 
 ### ❌ Don't
 
-- **Hard-code secret values** (use Initiat secrets)
-- **Write secrets to `.env` files** or commit them
+- **Hard-code secret values** (use secrets with Initiat or supply via env from your own store)
+- **Commit secret files** (use `.initiat/local/` and gitignore; never commit real secrets)
 - **Skip condition checks** — Always check if tools are installed before installing
 - **Assume OS-specific tools** without `if` conditions
 - **Create non-idempotent steps** — Always check before installing/creating

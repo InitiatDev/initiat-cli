@@ -1,160 +1,124 @@
 # Initiat CLI
 
-**The Developer Experience Platform that eliminates onboarding friction and accelerates time-to-productivity.**
+**In-repo developer onboarding: setup and docs from YAML. No server required.**
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Security](https://img.shields.io/badge/Security-Zero--Knowledge-red.svg)](docs/SECURITY.md)
+[![Security](https://img.shields.io/badge/Security-Offline--First-green.svg)](docs/SECURITY.md)
 
-> **For Engineering Leaders**: Stop losing weeks to environment setup, secret management, and onboarding friction. Initiat transforms your developer experience from days of setup to minutes of productivity.
+Define your project's setup and onboarding in `.initiat/` YAML committed to the repo. Run setup, validate configs, and generate docs locally. No account, no login, no sending code or secrets to any server.
 
 ## The Problem
 
 **Every engineering team faces the same productivity killers:**
 
 - **Onboarding Hell**: New developers spend days (sometimes weeks) setting up environments
-- **Secret Sprawl**: API keys scattered across Slack, emails, and sticky notes
 - **Environment Drift**: "Works on my machine" becomes "works on my machine, sometimes"
 - **Knowledge Silos**: Critical setup knowledge trapped in senior developers' heads
-- **Security Gaps**: Secrets shared via insecure channels, no audit trails
+- **Scattered Instructions**: READMEs, wikis, and Slack threads that go stale
 
-**The Cost**: Lost productivity, frustrated developers, delayed releases, and security vulnerabilities.
+**The Cost**: Lost productivity, frustrated developers, and delayed time-to-first-commit.
 
-## What Initiat Does
+## What Initiat Does (Offline First)
 
-Initiat solves these problems with three core capabilities:
+Initiat's core value is **in-repo workflows that run offline**:
 
-### 🔐 Zero-Knowledge Secret Management
+### Reproducible Setup from Repo YAML
 
-Manage team secrets with enterprise-grade security. Secrets are encrypted on your device before transmission, and we can never decrypt them - even with full server access.
+Define your development environment in `.initiat/setup.yml`. Same file works on macOS, Linux, and Windows. Explicit, GitHub Actions-style commands—no magic.
 
-**Key Features:**
-- Client-side encryption with Ed25519/X25519 cryptography
-- Team-based access control with device approval workflows
-- Audit trails for security and compliance
-- Cross-platform CLI for macOS, Linux, and Windows
-
-**Learn more:** [Security Documentation](docs/SECURITY.md)
-
-### 🚀 Automated Environment Setup
-
-Define your development environment in `.initiat/setup.yml` and let Initiat handle the rest. Works across macOS, Linux, and Windows with explicit, GitHub Actions-style commands.
-
-**Key Features:**
-- Explicit command-based setup (no magic, just clear commands)
-- Cross-platform support with OS-specific conditions
+**Key features:**
+- Explicit command-based setup (run exactly what you define)
+- Cross-platform support with OS/arch conditions
 - Idempotent operations (safe to run multiple times)
-- Integrates with secret management for secure configuration
+- Validate and generate JSON Schema for IDE support
+- Dry-run (plan) to see what would run without executing
 
-**Learn more:** [Setup Scripts Documentation](docs/SETUP_SCRIPTS.md)
+**Learn more:** [Setup Scripts](docs/SETUP_SCRIPTS.md)
 
-### 👥 Team & Project Management
+### Validation and Planning
 
-Organize secrets and environments by team and project. Control who can access what with device approval workflows and granular permissions.
+- `initiat setup validate` — validate `.initiat/setup.yml` against the schema
+- `initiat setup schema` — output JSON Schema for autocomplete and tooling
 
-**Key Features:**
-- Device registration and approval workflows
-- Project-based organization for teams and projects
-- Role-based access control
-- Secure key storage using OS keychain integration
+### Onboarding Docs from Repo
 
-**Learn more:** [Command Reference](docs/COMMANDS.md)
+Generate onboarding runbooks and README fragments from `.initiat/docs.yml` (or `.initiat/onboard.yml`). Keep "time-to-first-commit" steps in version control next to the setup that makes them possible.
 
-## Quick Start
+### No Server Required
+
+Core workflows need no account, no device registration, and no network. Clone the repo, run the CLI, and you're done.
+
+## Quick Start (Offline)
 
 ### Installation
 
-1. **Create account** at [initiat.dev](https://initiat.dev)
-2. **Follow the setup instructions** at [initiat.dev](https://initiat.dev/docs/setup)
-3. **Register your device**: `initiat device register "my-laptop"`
-4. **Get approved** by your team administrator
-5. **Start using secrets**: `initiat secret set API_KEY --value "sk-..."`
+Install the Initiat CLI (e.g. from [releases](https://github.com/InitiatDev/initiat-cli/releases) or your package manager). No signup required.
 
-### Basic Usage
+### Basic Usage (No Login)
 
 ```bash
-# Set a secret
-initiat secret set API_KEY --value "sk-1234567890abcdef"
+# Scaffold .initiat/ in the current repo
+initiat init
 
-# Get a secret
-initiat secret get API_KEY
+# Validate setup config
+initiat setup validate
 
-# List all secrets
-initiat secret list
+# Run the setup script from .initiat/setup.yml
+initiat setup run
 
-# Initialize a project
-initiat project init acme-corp/production
-
-# Run setup script
-initiat project setup
+# Generate onboarding docs from .initiat/docs.yml
+initiat docs generate
 ```
+
+All of the above work with no account and no connection to any Initiat server.
+
+## Optional: Cloud Add-ons
+
+If your team wants hosted secret storage, device approval, or project management, those features are available as **opt-in** add-ons. They are not required for setup, validation, or docs.
+
+- **Hosted secrets (optional)**: Zero-knowledge secret storage with device approval. See [Security & Cloud](docs/SECURITY.md#optional-cloud-add-on).
+- **Team & project management (optional)**: Organize access by project; approve devices. See [Command Reference](docs/COMMANDS.md) under "Cloud commands (optional)".
+
+You can use Initiat entirely without ever creating an account or sending secrets to our servers.
 
 ## Documentation
 
-### Core Documentation
+### Core (Offline-First)
 
-- **[Security & Secret Management](docs/SECURITY.md)**: How secrets are encrypted and protected
+- **[In-Repo YAML](docs/IN_REPO_YAML.md)**: Directory layout, `config.yml`, `setup.yml`, `docs.yml`, and provider-agnostic `env_from`
 - **[Setup Scripts](docs/SETUP_SCRIPTS.md)**: Complete guide to `.initiat/setup.yml`
-- **[Command Reference](docs/COMMANDS.md)**: All CLI commands and options
+- **[Command Reference](docs/COMMANDS.md)**: All CLI commands (offline-first commands first)
+- **[Security](docs/SECURITY.md)**: Offline-first security model and optional cloud add-on
 
-### Additional Resources
+### Additional
 
 - **[Release Process](docs/RELEASES.md)**: How to create and manage releases
-- **[Account Setup](https://initiat.dev)**: Create account and get started
 - **[Support](https://github.com/InitiatDev/initiat-cli/issues)**: GitHub Issues
 
-## Technical Foundation
-
-**Cryptographic Security**
-
-- **Ed25519 signatures** for device authentication
-- **X25519 key exchange** for project key wrapping
-- **XSalsa20Poly1305** for secret value encryption
-- **ChaCha20Poly1305** for project key encryption
-- **HKDF-SHA256** for key derivation
-
-**Zero-Knowledge Architecture**
-
-- Client-side encryption before transmission
-- Server cannot decrypt secrets or project keys
-- Private keys stored in OS keychain
-- Forward secrecy - compromising one device doesn't affect others
-
-**Learn more:** [Security Documentation](docs/SECURITY.md)
-
 ## Contributing
-
-We welcome contributions! Here's how to get started:
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
 3. **Make** your changes with tests
 4. **Run** the test suite (`make ci`)
 5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-6. **Push** to the branch (`git push origin feature/amazing-feature`)
+6. **Push** the branch (`git push origin feature/amazing-feature`)
 7. **Open** a Pull Request
 
 ### Development Setup
 
 ```bash
-# Clone your fork
 git clone https://github.com/yourusername/initiat-cli.git
 cd initiat-cli
 
-# Install dependencies
 go mod tidy
-
-# Run the setup script (installs dependencies, tools, etc.)
 initiat setup run
-
-# Run tests
 make ci
-
-# Build the CLI
 go build -o initiat .
 ```
 
-**Learn more:** See [Setup Scripts Documentation](docs/SETUP_SCRIPTS.md) for the complete development environment setup.
+See [Setup Scripts](docs/SETUP_SCRIPTS.md) for the full development environment definition in `.initiat/setup.yml`.
 
 ## License
 
@@ -167,8 +131,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 - **Documentation**: [GitHub Repository](https://github.com/InitiatDev/initiat-cli)
 - **Issues**: [GitHub Issues](https://github.com/InitiatDev/initiat-cli/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/InitiatDev/initiat-cli/discussions)
-- **Website**: [initiat.dev](https://initiat.dev)
 
 ---
 
-**Initiat CLI** - Transforming developer experience, one team at a time. 🚀
+**Initiat CLI** — In-repo onboarding, offline by default.

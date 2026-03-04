@@ -193,7 +193,7 @@ func TestFormatTime(t *testing.T) {
 }
 
 func TestGetDeviceInfo(t *testing.T) {
-	store := storage.NewWithServiceName("initiat-cli-test-get-info")
+	store := storage.NewWithKeyring("initiat-cli-test-get-info", storage.NewMemKeyring())
 
 	_ = store.DeleteDeviceID()
 	_ = store.DeleteDeviceName()

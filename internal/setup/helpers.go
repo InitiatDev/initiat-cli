@@ -10,8 +10,8 @@ func collectSecretNames(config *SetupConfig) []string {
 
 	for _, phase := range GetAllPhases(config) {
 		for _, step := range phase.Steps {
-			if step.EnvFromSecrets != nil {
-				for _, secretName := range step.EnvFromSecrets {
+			if step.Secrets != nil {
+				for _, secretName := range step.Secrets {
 					secretMap[secretName] = true
 				}
 			}

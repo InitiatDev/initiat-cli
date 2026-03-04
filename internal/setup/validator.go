@@ -163,10 +163,10 @@ func validateSecrets(config *SetupConfig) ValidationErrors {
 
 	for _, phase := range GetAllPhases(config) {
 		for i, step := range phase.Steps {
-			for j, secret := range step.EnvFromSecrets {
+			for j, secret := range step.Secrets {
 				if !declaredSecrets[secret] {
 					errors = append(errors, ValidationError{
-						Field:   fmt.Sprintf("%s[%d].env_from_secrets[%d]", phase.Name, i, j),
+						Field:   fmt.Sprintf("%s[%d].secrets[%d]", phase.Name, i, j),
 						Message: fmt.Sprintf("secret '%s' not declared in env.secrets", secret),
 					})
 				}

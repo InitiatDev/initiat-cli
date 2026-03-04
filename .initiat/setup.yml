@@ -47,8 +47,8 @@ provision:
     run: |
       . "$HOME/.asdf/asdf.sh" || true
       asdf plugin add golang || true
-      asdf install golang 1.25.3
-      asdf global golang 1.25.3
+      asdf install golang 1.25.7
+      asdf global golang 1.25.7
 
   - name: "Install Go via Chocolatey (Windows)"
     if: os("windows") && !cmd_ok("go --version")

@@ -1,20 +1,20 @@
 module github.com/InitiatDev/initiat-cli
 
-go 1.25.3
+go 1.25.7
 
 require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.19.0
 	github.com/zalando/go-keyring v0.2.5
-	golang.org/x/term v0.35.0
+	golang.org/x/term v0.37.0
 )
 
 require (
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.42.0
+	golang.org/x/crypto v0.45.0
 )
 
-require github.com/expr-lang/expr v1.17.6
+require github.com/expr-lang/expr v1.17.7
 
 require (
 	github.com/alessio/shellescape v1.4.1 // indirect
@@ -42,8 +42,8 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
