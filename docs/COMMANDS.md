@@ -7,6 +7,7 @@ This document lists all Initiat CLI commands. **Offline-first commands** (init, 
 ### Offline-first (no account required)
 
 - [Global Options](#global-options)
+- [Code Analysis](#code-analysis)
 - [Setup Generation and Run](#setup-generation-and-run)
 - [Setup Script Management](#setup-script-management)
 - [Configuration Management](#configuration-management)
@@ -163,6 +164,41 @@ initiat setup run custom-setup.yml
 **Related Documentation:** [Setup Scripts](SETUP_SCRIPTS.md).
 
 ---
+
+## Code Analysis
+
+### `initiat code analyze [path]`
+
+Parse source files using Tree-sitter and output a **generic AST (AST-v1)** in JSON/JSONL for later search/exploration. Works offline.
+
+**Arguments:**
+- `path`: File or directory to analyze (optional; default: current directory)
+
+**Options:**
+- `--lang`: `auto|go|javascript|typescript|python|ruby|elixir` (default: `auto`)
+- `--format`: `json|jsonl` (default: `jsonl`)
+- `--output, -o`: Write output to a file instead of stdout
+- `--recursive`: Recurse into subdirectories when `path` is a directory (default: `true`)
+- `--max-bytes`: Skip files larger than this many bytes (0 disables; default: 2MiB)
+- `--fail-on-error`: Exit non-zero if any parse errors are found
+
+**Behavior:**
+- Skips gitignored files within a repo
+- Skips common dependency/build directories (e.g. `node_modules`, `vendor`, `deps`, `_build`)
+- Skips test directories and language-specific test files
+
+**Examples:**
+
+```bash
+# Analyze current directory (auto-detect languages)
+initiat code analyze
+
+# Analyze a specific directory and write JSONL output to a file
+initiat code analyze . --format jsonl --output ast.jsonl
+
+# Analyze a single file
+initiat code analyze path/to/main.go --lang go
+```
 
 ## Cloud commands (optional)
 

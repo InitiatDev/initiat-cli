@@ -1,0 +1,657 @@
+{
+  "version": "ast-v1",
+  "language": "typescript",
+  "path": "testdata/fixtures/sample.ts",
+  "root": {
+    "type": "program",
+    "named": true,
+    "range": {
+      "start": {
+        "byte": 0,
+        "row": 0,
+        "col": 0
+      },
+      "end": {
+        "byte": 71,
+        "row": 4,
+        "col": 0
+      }
+    },
+    "children": [
+      {
+        "type": "export_statement",
+        "named": true,
+        "range": {
+          "start": {
+            "byte": 0,
+            "row": 0,
+            "col": 0
+          },
+          "end": {
+            "byte": 69,
+            "row": 2,
+            "col": 1
+          }
+        },
+        "children": [
+          {
+            "type": "export",
+            "named": false,
+            "range": {
+              "start": {
+                "byte": 0,
+                "row": 0,
+                "col": 0
+              },
+              "end": {
+                "byte": 6,
+                "row": 0,
+                "col": 6
+              }
+            }
+          },
+          {
+            "type": "function_declaration",
+            "named": true,
+            "range": {
+              "start": {
+                "byte": 7,
+                "row": 0,
+                "col": 7
+              },
+              "end": {
+                "byte": 69,
+                "row": 2,
+                "col": 1
+              }
+            },
+            "children": [
+              {
+                "type": "function",
+                "named": false,
+                "range": {
+                  "start": {
+                    "byte": 7,
+                    "row": 0,
+                    "col": 7
+                  },
+                  "end": {
+                    "byte": 15,
+                    "row": 0,
+                    "col": 15
+                  }
+                }
+              },
+              {
+                "type": "identifier",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 16,
+                    "row": 0,
+                    "col": 16
+                  },
+                  "end": {
+                    "byte": 19,
+                    "row": 0,
+                    "col": 19
+                  }
+                }
+              },
+              {
+                "type": "formal_parameters",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 19,
+                    "row": 0,
+                    "col": 19
+                  },
+                  "end": {
+                    "byte": 41,
+                    "row": 0,
+                    "col": 41
+                  }
+                },
+                "children": [
+                  {
+                    "type": "(",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 19,
+                        "row": 0,
+                        "col": 19
+                      },
+                      "end": {
+                        "byte": 20,
+                        "row": 0,
+                        "col": 20
+                      }
+                    }
+                  },
+                  {
+                    "type": "required_parameter",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 20,
+                        "row": 0,
+                        "col": 20
+                      },
+                      "end": {
+                        "byte": 29,
+                        "row": 0,
+                        "col": 29
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "identifier",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 20,
+                            "row": 0,
+                            "col": 20
+                          },
+                          "end": {
+                            "byte": 21,
+                            "row": 0,
+                            "col": 21
+                          }
+                        }
+                      },
+                      {
+                        "type": "type_annotation",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 21,
+                            "row": 0,
+                            "col": 21
+                          },
+                          "end": {
+                            "byte": 29,
+                            "row": 0,
+                            "col": 29
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": ":",
+                            "named": false,
+                            "range": {
+                              "start": {
+                                "byte": 21,
+                                "row": 0,
+                                "col": 21
+                              },
+                              "end": {
+                                "byte": 22,
+                                "row": 0,
+                                "col": 22
+                              }
+                            }
+                          },
+                          {
+                            "type": "predefined_type",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 23,
+                                "row": 0,
+                                "col": 23
+                              },
+                              "end": {
+                                "byte": 29,
+                                "row": 0,
+                                "col": 29
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "number",
+                                "named": false,
+                                "range": {
+                                  "start": {
+                                    "byte": 23,
+                                    "row": 0,
+                                    "col": 23
+                                  },
+                                  "end": {
+                                    "byte": 29,
+                                    "row": 0,
+                                    "col": 29
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "fields": {
+                      "pattern": [
+                        0
+                      ],
+                      "type": [
+                        1
+                      ]
+                    }
+                  },
+                  {
+                    "type": ",",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 29,
+                        "row": 0,
+                        "col": 29
+                      },
+                      "end": {
+                        "byte": 30,
+                        "row": 0,
+                        "col": 30
+                      }
+                    }
+                  },
+                  {
+                    "type": "required_parameter",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 31,
+                        "row": 0,
+                        "col": 31
+                      },
+                      "end": {
+                        "byte": 40,
+                        "row": 0,
+                        "col": 40
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "identifier",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 31,
+                            "row": 0,
+                            "col": 31
+                          },
+                          "end": {
+                            "byte": 32,
+                            "row": 0,
+                            "col": 32
+                          }
+                        }
+                      },
+                      {
+                        "type": "type_annotation",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 32,
+                            "row": 0,
+                            "col": 32
+                          },
+                          "end": {
+                            "byte": 40,
+                            "row": 0,
+                            "col": 40
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": ":",
+                            "named": false,
+                            "range": {
+                              "start": {
+                                "byte": 32,
+                                "row": 0,
+                                "col": 32
+                              },
+                              "end": {
+                                "byte": 33,
+                                "row": 0,
+                                "col": 33
+                              }
+                            }
+                          },
+                          {
+                            "type": "predefined_type",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 34,
+                                "row": 0,
+                                "col": 34
+                              },
+                              "end": {
+                                "byte": 40,
+                                "row": 0,
+                                "col": 40
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "number",
+                                "named": false,
+                                "range": {
+                                  "start": {
+                                    "byte": 34,
+                                    "row": 0,
+                                    "col": 34
+                                  },
+                                  "end": {
+                                    "byte": 40,
+                                    "row": 0,
+                                    "col": 40
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "fields": {
+                      "pattern": [
+                        0
+                      ],
+                      "type": [
+                        1
+                      ]
+                    }
+                  },
+                  {
+                    "type": ")",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 40,
+                        "row": 0,
+                        "col": 40
+                      },
+                      "end": {
+                        "byte": 41,
+                        "row": 0,
+                        "col": 41
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "type_annotation",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 41,
+                    "row": 0,
+                    "col": 41
+                  },
+                  "end": {
+                    "byte": 49,
+                    "row": 0,
+                    "col": 49
+                  }
+                },
+                "children": [
+                  {
+                    "type": ":",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 41,
+                        "row": 0,
+                        "col": 41
+                      },
+                      "end": {
+                        "byte": 42,
+                        "row": 0,
+                        "col": 42
+                      }
+                    }
+                  },
+                  {
+                    "type": "predefined_type",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 43,
+                        "row": 0,
+                        "col": 43
+                      },
+                      "end": {
+                        "byte": 49,
+                        "row": 0,
+                        "col": 49
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "number",
+                        "named": false,
+                        "range": {
+                          "start": {
+                            "byte": 43,
+                            "row": 0,
+                            "col": 43
+                          },
+                          "end": {
+                            "byte": 49,
+                            "row": 0,
+                            "col": 49
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "statement_block",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 50,
+                    "row": 0,
+                    "col": 50
+                  },
+                  "end": {
+                    "byte": 69,
+                    "row": 2,
+                    "col": 1
+                  }
+                },
+                "children": [
+                  {
+                    "type": "{",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 50,
+                        "row": 0,
+                        "col": 50
+                      },
+                      "end": {
+                        "byte": 51,
+                        "row": 0,
+                        "col": 51
+                      }
+                    }
+                  },
+                  {
+                    "type": "return_statement",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 54,
+                        "row": 1,
+                        "col": 2
+                      },
+                      "end": {
+                        "byte": 67,
+                        "row": 1,
+                        "col": 15
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "return",
+                        "named": false,
+                        "range": {
+                          "start": {
+                            "byte": 54,
+                            "row": 1,
+                            "col": 2
+                          },
+                          "end": {
+                            "byte": 60,
+                            "row": 1,
+                            "col": 8
+                          }
+                        }
+                      },
+                      {
+                        "type": "binary_expression",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 61,
+                            "row": 1,
+                            "col": 9
+                          },
+                          "end": {
+                            "byte": 66,
+                            "row": 1,
+                            "col": 14
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "identifier",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 61,
+                                "row": 1,
+                                "col": 9
+                              },
+                              "end": {
+                                "byte": 62,
+                                "row": 1,
+                                "col": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "+",
+                            "named": false,
+                            "range": {
+                              "start": {
+                                "byte": 63,
+                                "row": 1,
+                                "col": 11
+                              },
+                              "end": {
+                                "byte": 64,
+                                "row": 1,
+                                "col": 12
+                              }
+                            }
+                          },
+                          {
+                            "type": "identifier",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 65,
+                                "row": 1,
+                                "col": 13
+                              },
+                              "end": {
+                                "byte": 66,
+                                "row": 1,
+                                "col": 14
+                              }
+                            }
+                          }
+                        ],
+                        "fields": {
+                          "left": [
+                            0
+                          ],
+                          "operator": [
+                            1
+                          ],
+                          "right": [
+                            2
+                          ]
+                        }
+                      },
+                      {
+                        "type": ";",
+                        "named": false,
+                        "range": {
+                          "start": {
+                            "byte": 66,
+                            "row": 1,
+                            "col": 14
+                          },
+                          "end": {
+                            "byte": 67,
+                            "row": 1,
+                            "col": 15
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "}",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 68,
+                        "row": 2,
+                        "col": 0
+                      },
+                      "end": {
+                        "byte": 69,
+                        "row": 2,
+                        "col": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "fields": {
+              "body": [
+                4
+              ],
+              "name": [
+                1
+              ],
+              "parameters": [
+                2
+              ],
+              "return_type": [
+                3
+              ]
+            }
+          }
+        ],
+        "fields": {
+          "declaration": [
+            1
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "version": "ast-v1",
+  "language": "ruby",
+  "path": "testdata/fixtures/sample.rb",
+  "root": {
+    "type": "program",
+    "named": true,
+    "range": {
+      "start": {
+        "byte": 0,
+        "row": 0,
+        "col": 0
+      },
+      "end": {
+        "byte": 27,
+        "row": 4,
+        "col": 0
+      }
+    },
+    "children": [
+      {
+        "type": "method",
+        "named": true,
+        "range": {
+          "start": {
+            "byte": 0,
+            "row": 0,
+            "col": 0
+          },
+          "end": {
+            "byte": 25,
+            "row": 2,
+            "col": 3
+          }
+        },
+        "children": [
+          {
+            "type": "def",
+            "named": false,
+            "range": {
+              "start": {
+                "byte": 0,
+                "row": 0,
+                "col": 0
+              },
+              "end": {
+                "byte": 3,
+                "row": 0,
+                "col": 3
+              }
+            }
+          },
+          {
+            "type": "identifier",
+            "named": true,
+            "range": {
+              "start": {
+                "byte": 4,
+                "row": 0,
+                "col": 4
+              },
+              "end": {
+                "byte": 7,
+                "row": 0,
+                "col": 7
+              }
+            }
+          },
+          {
+            "type": "method_parameters",
+            "named": true,
+            "range": {
+              "start": {
+                "byte": 7,
+                "row": 0,
+                "col": 7
+              },
+              "end": {
+                "byte": 13,
+                "row": 0,
+                "col": 13
+              }
+            },
+            "children": [
+              {
+                "type": "(",
+                "named": false,
+                "range": {
+                  "start": {
+                    "byte": 7,
+                    "row": 0,
+                    "col": 7
+                  },
+                  "end": {
+                    "byte": 8,
+                    "row": 0,
+                    "col": 8
+                  }
+                }
+              },
+              {
+                "type": "identifier",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 8,
+                    "row": 0,
+                    "col": 8
+                  },
+                  "end": {
+                    "byte": 9,
+                    "row": 0,
+                    "col": 9
+                  }
+                }
+              },
+              {
+                "type": ",",
+                "named": false,
+                "range": {
+                  "start": {
+                    "byte": 9,
+                    "row": 0,
+                    "col": 9
+                  },
+                  "end": {
+                    "byte": 10,
+                    "row": 0,
+                    "col": 10
+                  }
+                }
+              },
+              {
+                "type": "identifier",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 11,
+                    "row": 0,
+                    "col": 11
+                  },
+                  "end": {
+                    "byte": 12,
+                    "row": 0,
+                    "col": 12
+                  }
+                }
+              },
+              {
+                "type": ")",
+                "named": false,
+                "range": {
+                  "start": {
+                    "byte": 12,
+                    "row": 0,
+                    "col": 12
+                  },
+                  "end": {
+                    "byte": 13,
+                    "row": 0,
+                    "col": 13
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "body_statement",
+            "named": true,
+            "range": {
+              "start": {
+                "byte": 16,
+                "row": 1,
+                "col": 2
+              },
+              "end": {
+                "byte": 21,
+                "row": 1,
+                "col": 7
+              }
+            },
+            "children": [
+              {
+                "type": "binary",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 16,
+                    "row": 1,
+                    "col": 2
+                  },
+                  "end": {
+                    "byte": 21,
+                    "row": 1,
+                    "col": 7
+                  }
+                },
+                "children": [
+                  {
+                    "type": "identifier",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 16,
+                        "row": 1,
+                        "col": 2
+                      },
+                      "end": {
+                        "byte": 17,
+                        "row": 1,
+                        "col": 3
+                      }
+                    }
+                  },
+                  {
+                    "type": "+",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 18,
+                        "row": 1,
+                        "col": 4
+                      },
+                      "end": {
+                        "byte": 19,
+                        "row": 1,
+                        "col": 5
+                      }
+                    }
+                  },
+                  {
+                    "type": "identifier",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 20,
+                        "row": 1,
+                        "col": 6
+                      },
+                      "end": {
+                        "byte": 21,
+                        "row": 1,
+                        "col": 7
+                      }
+                    }
+                  }
+                ],
+                "fields": {
+                  "left": [
+                    0
+                  ],
+                  "operator": [
+                    1
+                  ],
+                  "right": [
+                    2
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "end",
+            "named": false,
+            "range": {
+              "start": {
+                "byte": 22,
+                "row": 2,
+                "col": 0
+              },
+              "end": {
+                "byte": 25,
+                "row": 2,
+                "col": 3
+              }
+            }
+          }
+        ],
+        "fields": {
+          "body": [
+            3
+          ],
+          "name": [
+            1
+          ],
+          "parameters": [
+            2
+          ]
+        }
+      }
+    ]
+  }
+}

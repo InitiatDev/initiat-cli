@@ -1,0 +1,398 @@
+{
+  "version": "ast-v1",
+  "language": "javascript",
+  "path": "testdata/fixtures/sample.js",
+  "root": {
+    "type": "program",
+    "named": true,
+    "range": {
+      "start": {
+        "byte": 0,
+        "row": 0,
+        "col": 0
+      },
+      "end": {
+        "byte": 47,
+        "row": 4,
+        "col": 0
+      }
+    },
+    "children": [
+      {
+        "type": "export_statement",
+        "named": true,
+        "range": {
+          "start": {
+            "byte": 0,
+            "row": 0,
+            "col": 0
+          },
+          "end": {
+            "byte": 45,
+            "row": 2,
+            "col": 1
+          }
+        },
+        "children": [
+          {
+            "type": "export",
+            "named": false,
+            "range": {
+              "start": {
+                "byte": 0,
+                "row": 0,
+                "col": 0
+              },
+              "end": {
+                "byte": 6,
+                "row": 0,
+                "col": 6
+              }
+            }
+          },
+          {
+            "type": "function_declaration",
+            "named": true,
+            "range": {
+              "start": {
+                "byte": 7,
+                "row": 0,
+                "col": 7
+              },
+              "end": {
+                "byte": 45,
+                "row": 2,
+                "col": 1
+              }
+            },
+            "children": [
+              {
+                "type": "function",
+                "named": false,
+                "range": {
+                  "start": {
+                    "byte": 7,
+                    "row": 0,
+                    "col": 7
+                  },
+                  "end": {
+                    "byte": 15,
+                    "row": 0,
+                    "col": 15
+                  }
+                }
+              },
+              {
+                "type": "identifier",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 16,
+                    "row": 0,
+                    "col": 16
+                  },
+                  "end": {
+                    "byte": 19,
+                    "row": 0,
+                    "col": 19
+                  }
+                }
+              },
+              {
+                "type": "formal_parameters",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 19,
+                    "row": 0,
+                    "col": 19
+                  },
+                  "end": {
+                    "byte": 25,
+                    "row": 0,
+                    "col": 25
+                  }
+                },
+                "children": [
+                  {
+                    "type": "(",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 19,
+                        "row": 0,
+                        "col": 19
+                      },
+                      "end": {
+                        "byte": 20,
+                        "row": 0,
+                        "col": 20
+                      }
+                    }
+                  },
+                  {
+                    "type": "identifier",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 20,
+                        "row": 0,
+                        "col": 20
+                      },
+                      "end": {
+                        "byte": 21,
+                        "row": 0,
+                        "col": 21
+                      }
+                    }
+                  },
+                  {
+                    "type": ",",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 21,
+                        "row": 0,
+                        "col": 21
+                      },
+                      "end": {
+                        "byte": 22,
+                        "row": 0,
+                        "col": 22
+                      }
+                    }
+                  },
+                  {
+                    "type": "identifier",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 23,
+                        "row": 0,
+                        "col": 23
+                      },
+                      "end": {
+                        "byte": 24,
+                        "row": 0,
+                        "col": 24
+                      }
+                    }
+                  },
+                  {
+                    "type": ")",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 24,
+                        "row": 0,
+                        "col": 24
+                      },
+                      "end": {
+                        "byte": 25,
+                        "row": 0,
+                        "col": 25
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "statement_block",
+                "named": true,
+                "range": {
+                  "start": {
+                    "byte": 26,
+                    "row": 0,
+                    "col": 26
+                  },
+                  "end": {
+                    "byte": 45,
+                    "row": 2,
+                    "col": 1
+                  }
+                },
+                "children": [
+                  {
+                    "type": "{",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 26,
+                        "row": 0,
+                        "col": 26
+                      },
+                      "end": {
+                        "byte": 27,
+                        "row": 0,
+                        "col": 27
+                      }
+                    }
+                  },
+                  {
+                    "type": "return_statement",
+                    "named": true,
+                    "range": {
+                      "start": {
+                        "byte": 30,
+                        "row": 1,
+                        "col": 2
+                      },
+                      "end": {
+                        "byte": 43,
+                        "row": 1,
+                        "col": 15
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "return",
+                        "named": false,
+                        "range": {
+                          "start": {
+                            "byte": 30,
+                            "row": 1,
+                            "col": 2
+                          },
+                          "end": {
+                            "byte": 36,
+                            "row": 1,
+                            "col": 8
+                          }
+                        }
+                      },
+                      {
+                        "type": "binary_expression",
+                        "named": true,
+                        "range": {
+                          "start": {
+                            "byte": 37,
+                            "row": 1,
+                            "col": 9
+                          },
+                          "end": {
+                            "byte": 42,
+                            "row": 1,
+                            "col": 14
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "identifier",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 37,
+                                "row": 1,
+                                "col": 9
+                              },
+                              "end": {
+                                "byte": 38,
+                                "row": 1,
+                                "col": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "+",
+                            "named": false,
+                            "range": {
+                              "start": {
+                                "byte": 39,
+                                "row": 1,
+                                "col": 11
+                              },
+                              "end": {
+                                "byte": 40,
+                                "row": 1,
+                                "col": 12
+                              }
+                            }
+                          },
+                          {
+                            "type": "identifier",
+                            "named": true,
+                            "range": {
+                              "start": {
+                                "byte": 41,
+                                "row": 1,
+                                "col": 13
+                              },
+                              "end": {
+                                "byte": 42,
+                                "row": 1,
+                                "col": 14
+                              }
+                            }
+                          }
+                        ],
+                        "fields": {
+                          "left": [
+                            0
+                          ],
+                          "operator": [
+                            1
+                          ],
+                          "right": [
+                            2
+                          ]
+                        }
+                      },
+                      {
+                        "type": ";",
+                        "named": false,
+                        "range": {
+                          "start": {
+                            "byte": 42,
+                            "row": 1,
+                            "col": 14
+                          },
+                          "end": {
+                            "byte": 43,
+                            "row": 1,
+                            "col": 15
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "}",
+                    "named": false,
+                    "range": {
+                      "start": {
+                        "byte": 44,
+                        "row": 2,
+                        "col": 0
+                      },
+                      "end": {
+                        "byte": 45,
+                        "row": 2,
+                        "col": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "fields": {
+              "body": [
+                3
+              ],
+              "name": [
+                1
+              ],
+              "parameters": [
+                2
+              ]
+            }
+          }
+        ],
+        "fields": {
+          "declaration": [
+            1
+          ]
+        }
+      }
+    ]
+  }
+}

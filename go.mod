@@ -10,11 +10,22 @@ require (
 )
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.45.0
 )
 
-require github.com/expr-lang/expr v1.17.7
+require (
+	github.com/expr-lang/expr v1.17.7
+	github.com/tree-sitter/go-tree-sitter v0.25.0
+	github.com/tree-sitter/tree-sitter-elixir v0.0.0-00010101000000-000000000000
+	github.com/tree-sitter/tree-sitter-go v0.25.0
+	github.com/tree-sitter/tree-sitter-javascript v0.23.1
+	github.com/tree-sitter/tree-sitter-python v0.23.6
+	github.com/tree-sitter/tree-sitter-ruby v0.23.1
+	github.com/tree-sitter/tree-sitter-typescript v0.23.2
+)
+
+require github.com/mattn/go-pointer v0.0.1 // indirect
 
 require (
 	github.com/alessio/shellescape v1.4.1 // indirect
@@ -47,3 +58,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+replace github.com/tree-sitter/tree-sitter-elixir => github.com/elixir-lang/tree-sitter-elixir v0.3.5

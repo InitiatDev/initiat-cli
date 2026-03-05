@@ -20,8 +20,8 @@ build-dev: ## Build development version with localhost API URL
 	go build -tags dev -o initiat_dev .
 	@echo "✅ Built: ./initiat_dev"
 
-build-all: ## Build for all platforms
-	@echo "🏗️  Building for all platforms..."
+build-all: ## Build release binaries (native platform by default)
+	@echo "🏗️  Building release binaries..."
 	./scripts/build-release.sh
 
 install: build ## Install the CLI to /usr/local/bin

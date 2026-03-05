@@ -678,6 +678,51 @@ commands:
       difficulty: "beginner"
       estimated_time: "30 seconds"
 
+  code.analyze:
+    id: "code.analyze"
+    name: "analyze"
+    category: "code"
+    description: "Parse source files with Tree-sitter and output a generic AST (AST-v1)"
+    usage: "initiat code analyze [path]"
+    arguments:
+      - name: "path"
+        description: "File or directory to analyze (optional; default: current directory)"
+        required: false
+    options:
+      - name: "lang"
+        description: "Language to parse (auto, go, javascript, typescript, python, ruby, elixir)"
+        required: false
+      - name: "format"
+        description: "Output format (json or jsonl)"
+        required: false
+      - name: "output"
+        short: "o"
+        description: "Write output to file instead of stdout"
+        required: false
+      - name: "recursive"
+        description: "Recurse into subdirectories when path is a directory"
+        required: false
+      - name: "max-bytes"
+        description: "Skip files larger than this many bytes (0 disables)"
+        required: false
+      - name: "fail-on-error"
+        description: "Exit non-zero if any parse errors are found"
+        required: false
+    examples:
+      - description: "Analyze current directory (auto-detect languages)"
+        command: "initiat code analyze"
+      - description: "Analyze a directory and write JSONL to a file"
+        command: "initiat code analyze . --format jsonl --output ast.jsonl"
+      - description: "Analyze a single file"
+        command: "initiat code analyze path/to/main.go --lang go"
+    workflow_steps:
+      - "Walks files (skipping gitignored paths, deps/build dirs, and tests)"
+      - "Parses files with Tree-sitter and normalizes to AST-v1"
+      - "Streams JSON or JSONL to stdout or --output file"
+    metadata:
+      difficulty: "intermediate"
+      estimated_time: "seconds to minutes"
+
   setup.generate:
     id: "setup.generate"
     name: "generate"

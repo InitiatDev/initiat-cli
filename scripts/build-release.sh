@@ -48,16 +48,17 @@ fi
 rm -rf ${OUTPUT_DIR}
 mkdir -p ${OUTPUT_DIR}
 
-# Build for multiple platforms
+# Build binaries
 echo "📦 Building binaries..."
 
-platforms=(
-    "darwin/amd64"
-    "darwin/arm64" 
-    "linux/amd64"
-    "linux/arm64"
-    "windows/amd64"
-)
+host_goos="$(go env GOOS)"
+host_goarch="$(go env GOARCH)"
+
+if [ -n "${PLATFORMS}" ]; then
+    IFS=',' read -r -a platforms <<< "${PLATFORMS}"
+else
+    platforms=("${host_goos}/${host_goarch}")
+fi
 
 for platform in "${platforms[@]}"; do
     IFS='/' read -r GOOS GOARCH <<< "$platform"
@@ -69,7 +70,12 @@ for platform in "${platforms[@]}"; do
     
     echo "  → ${GOOS}/${GOARCH}"
     
-    GOOS=$GOOS GOARCH=$GOARCH go build \
+    if [ "${GOOS}/${GOARCH}" != "${host_goos}/${host_goarch}" ] && [ "${ALLOW_CROSS}" != "1" ]; then
+        echo "❌ Refusing to cross-compile ${GOOS}/${GOARCH} from ${host_goos}/${host_goarch} (set ALLOW_CROSS=1 to override)"
+        exit 1
+    fi
+
+    CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build \
         -ldflags "-X github.com/InitiatDev/initiat-cli/cmd.version=${VERSION}" \
         -o "${OUTPUT_DIR}/${output_name}" \
         .
