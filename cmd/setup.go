@@ -228,7 +228,8 @@ func runAgentOnce(
 
 	retryErr := retrySetupIfRequested(runner, setupConfig, decision)
 
-	_ = writeAgentSummary(ctx, llm, runtimeCfg.Model, wd, execErr, decision, retryErr)
+	buckets, _, _ := writeAgentSummary(ctx, llm, runtimeCfg.Model, wd, execErr, decision, retryErr)
+	_ = maybeOfferSetupFixPR(ctx, wd, buckets)
 	return retryErr
 }
 
@@ -305,32 +306,32 @@ func writeAgentSummary(
 	execErr *setup.SetupExecutionError,
 	decision *agent.Decision,
 	retryErr error,
-) error {
+) (*agent.IssueBuckets, string, error) {
 	if strings.TrimSpace(baseDir) == "" {
-		return nil
+		return nil, "", nil
 	}
 	if execErr == nil || execErr.Report == nil || decision == nil {
-		return nil
+		return nil, "", nil
 	}
 
 	buckets, err := agent.AssessIssues(ctx, llm, model, execErr.Report, decision)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 
 	summaryPath := filepath.Join(baseDir, ".initiat", "agent-summary.md")
 	if err := os.MkdirAll(filepath.Dir(summaryPath), agentSummaryDirPerm); err != nil {
-		return err
+		return nil, "", err
 	}
 
 	content := buildAgentSummaryMarkdown(execErr, decision, buckets, retryErr)
 	if err := os.WriteFile(summaryPath, []byte(content), agentSummaryFilePerm); err != nil {
-		return err
+		return nil, "", err
 	}
 
 	fmt.Println()
 	fmt.Println("Wrote agent summary to", summaryPath)
-	return nil
+	return buckets, summaryPath, nil
 }
 
 func buildAgentSummaryMarkdown(
