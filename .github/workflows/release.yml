@@ -73,6 +73,14 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
 
+      - name: Debug CGO env
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go env CGO_ENABLED CC
+
       - name: Build
         shell: bash
         env:
@@ -81,6 +89,12 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CC: ${{ matrix.cross_cc }}
         run: |
+          export CGO_ENABLED=1
+          if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "arm64" ]; then
+            export CC=aarch64-linux-gnu-gcc
+          else
+            unset CC
+          fi
           mkdir -p dist
           out="dist/initiat-${GOOS}-${GOARCH}"
           if [ "$GOOS" = "windows" ]; then
