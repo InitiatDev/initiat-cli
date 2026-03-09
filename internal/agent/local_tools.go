@@ -3,8 +3,10 @@ package agent
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,6 +22,8 @@ const (
 	defaultCommandTimeout             = 30 * time.Minute
 	defaultDirPerm        os.FileMode = 0o755
 	defaultFilePerm       os.FileMode = 0o644
+	defaultReadMaxBytes               = 64 * 1024
+	defaultMaxListEntries             = 200
 )
 
 func NewLocalToolRunner(baseDir string) (*LocalToolRunner, error) {
@@ -66,6 +70,103 @@ func (t *LocalToolRunner) RunCommand(ctx context.Context, action ProposedAction)
 		return fmt.Errorf("command failed (exit=%d timed_out=%t): %w", exitCode, timedOut, err)
 	}
 	return nil
+}
+
+func (t *LocalToolRunner) ListFiles(ctx context.Context, action ProposedAction) (string, error) {
+	_ = ctx
+	dir, err := t.resolvePathWithinBase(action.Path, true)
+	if err != nil {
+		return "", err
+	}
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return "", fmt.Errorf("stat: %w", err)
+	}
+	if !fi.IsDir() {
+		return "", fmt.Errorf("path is not a directory: %s", dir)
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("readdir: %w", err)
+	}
+
+	out := make([]string, 0, min(len(entries), defaultMaxListEntries))
+	for i, e := range entries {
+		if i >= defaultMaxListEntries {
+			break
+		}
+		suffix := ""
+		if e.IsDir() {
+			suffix = string(os.PathSeparator)
+		}
+		out = append(out, e.Name()+suffix)
+	}
+	sort.Strings(out)
+
+	return strings.Join(out, "\n"), nil
+}
+
+func (t *LocalToolRunner) ReadFiles(ctx context.Context, action ProposedAction) (string, error) {
+	_ = ctx
+	if len(action.Paths) == 0 {
+		return "", fmt.Errorf("paths are required")
+	}
+
+	var b strings.Builder
+	for i, p := range action.Paths {
+		if strings.TrimSpace(p) == "" {
+			return "", fmt.Errorf("paths[%d] is empty", i)
+		}
+		if t.isGitMetadataPath(p) {
+			return "", fmt.Errorf("paths[%d] %q is not allowed", i, p)
+		}
+
+		target, err := t.resolvePathWithinBase(p, false)
+		if err != nil {
+			return "", fmt.Errorf("paths[%d]: %w", i, err)
+		}
+		fi, err := os.Stat(target)
+		if err != nil {
+			return "", fmt.Errorf("paths[%d] stat: %w", i, err)
+		}
+		if !fi.Mode().IsRegular() {
+			return "", fmt.Errorf("paths[%d] is not a regular file: %s", i, target)
+		}
+
+		// #nosec G304 -- target is resolved within baseDir and symlinks are disallowed by resolvePathWithinBase.
+		f, err := os.Open(target)
+		if err != nil {
+			return "", fmt.Errorf("paths[%d] open: %w", i, err)
+		}
+		limited := io.LimitReader(f, defaultReadMaxBytes+1)
+		data, readErr := io.ReadAll(limited)
+		_ = f.Close()
+		if readErr != nil {
+			return "", fmt.Errorf("paths[%d] read: %w", i, readErr)
+		}
+
+		truncated := len(data) > defaultReadMaxBytes
+		if truncated {
+			data = data[:defaultReadMaxBytes]
+		}
+		if looksBinary(data) {
+			return "", fmt.Errorf("paths[%d] appears to be binary: %s", i, p)
+		}
+
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("==> ")
+		b.WriteString(p)
+		b.WriteString(" <==\n")
+		b.Write(data)
+		if truncated {
+			b.WriteString("\n\n... (truncated)\n")
+		}
+	}
+
+	return b.String(), nil
 }
 
 func (t *LocalToolRunner) EditFiles(ctx context.Context, action ProposedAction) error {
@@ -179,4 +280,24 @@ func (t *LocalToolRunner) isGitMetadataPath(p string) bool {
 	}
 	return strings.HasPrefix(clean, ".git"+string(os.PathSeparator)) ||
 		strings.Contains(clean, string(os.PathSeparator)+".git"+string(os.PathSeparator))
+}
+
+func looksBinary(b []byte) bool {
+	if len(b) == 0 {
+		return false
+	}
+	nul := 0
+	for _, c := range b {
+		if c == 0 {
+			nul++
+		}
+	}
+	return nul > 0
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

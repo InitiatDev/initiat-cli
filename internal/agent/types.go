@@ -35,10 +35,24 @@ const (
 	ActionRunCommand ProposedActionType = "run_command"
 	ActionEditFiles  ProposedActionType = "edit_files"
 	ActionAskUser    ProposedActionType = "ask_user"
+	ActionListFiles  ProposedActionType = "list_files"
+	ActionReadFiles  ProposedActionType = "read_files"
+)
+
+type DangerLevel string
+
+const (
+	DangerSafe      DangerLevel = "safe"
+	DangerCaution   DangerLevel = "caution"
+	DangerDangerous DangerLevel = "dangerous"
 )
 
 type ProposedAction struct {
 	Type ProposedActionType `json:"type"`
+
+	Summary      string      `json:"summary,omitempty"`
+	Danger       DangerLevel `json:"danger,omitempty"`
+	DangerReason string      `json:"danger_reason,omitempty"`
 
 	Reason string `json:"reason,omitempty"`
 
@@ -49,6 +63,9 @@ type ProposedAction struct {
 	Edits []FileEdit `json:"edits,omitempty"`
 
 	Prompt string `json:"prompt,omitempty"`
+
+	Path  string   `json:"path,omitempty"`
+	Paths []string `json:"paths,omitempty"`
 }
 
 type FileEdit struct {
@@ -59,4 +76,15 @@ type FileEdit struct {
 type Decision struct {
 	Explanation string           `json:"explanation"`
 	Actions     []ProposedAction `json:"actions"`
+}
+
+type AppliedActionResult struct {
+	Type    ProposedActionType `json:"type"`
+	Summary string             `json:"summary"`
+	OK      bool               `json:"ok"`
+	Error   string             `json:"error,omitempty"`
+}
+
+type ApplyResult struct {
+	Results []AppliedActionResult `json:"results"`
 }

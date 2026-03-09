@@ -4,7 +4,9 @@
 
 # Tree-sitter grammars + go-tree-sitter require CGO.
 CGO_ENABLED ?= 1
-GO ?= env CGO_ENABLED=$(CGO_ENABLED) go
+GOTOOLCHAIN ?= go1.25.8
+export GOTOOLCHAIN
+GO ?= env CGO_ENABLED=$(CGO_ENABLED) GOTOOLCHAIN=$(GOTOOLCHAIN) go
 
 cgo-check: ## Fail fast if CGO/toolchain missing
 	@if [ "$(CGO_ENABLED)" != "1" ]; then \
