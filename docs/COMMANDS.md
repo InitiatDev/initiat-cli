@@ -177,7 +177,7 @@ Parse source files using Tree-sitter and output a **generic AST (AST-v1)** in JS
 **Options:**
 - `--lang`: `auto|go|javascript|typescript|python|ruby|elixir` (default: `auto`)
 - `--format`: `json|jsonl` (default: `jsonl`)
-- `--output, -o`: Write output to a file instead of stdout
+- `--output, -o`: Output file path (default: `.initiat/code/ast-v1.jsonl`; use `-` for stdout)
 - `--recursive`: Recurse into subdirectories when `path` is a directory (default: `true`)
 - `--max-bytes`: Skip files larger than this many bytes (0 disables; default: 2MiB)
 - `--fail-on-error`: Exit non-zero if any parse errors are found

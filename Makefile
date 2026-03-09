@@ -1,6 +1,22 @@
 # Makefile for Initiat CLI
 
-.PHONY: help build test lint format clean install deps security vuln-check
+.PHONY: help build build-dev build-all install deps test test-coverage lint lint-fix format format-check security vuln-check clean tidy ci dev release-test release changelog install-tools docker-build docker-test cgo-check
+
+# Tree-sitter grammars + go-tree-sitter require CGO.
+CGO_ENABLED ?= 1
+GO ?= env CGO_ENABLED=$(CGO_ENABLED) go
+
+cgo-check: ## Fail fast if CGO/toolchain missing
+	@if [ "$(CGO_ENABLED)" != "1" ]; then \
+		echo "❌ CGO must be enabled for this project (Tree-sitter grammars require CGO)."; \
+		echo "   Set CGO_ENABLED=1 (e.g. 'make ci CGO_ENABLED=1')."; \
+		exit 1; \
+	fi
+	@if ! command -v cc >/dev/null 2>&1 && ! command -v gcc >/dev/null 2>&1 && ! command -v clang >/dev/null 2>&1; then \
+		echo "❌ No C compiler found (cc/gcc/clang)."; \
+		echo "   Install a compiler toolchain (e.g. build-essential / build-base) and rerun."; \
+		exit 1; \
+	fi
 
 # Default target
 help: ## Show this help message
@@ -10,14 +26,14 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Build targets
-build: ## Build the CLI binary
+build: cgo-check ## Build the CLI binary
 	@echo "🏗️  Building Initiat CLI..."
-	go build -o initiat .
+	$(GO) build -o initiat .
 
-build-dev: ## Build development version with localhost API URL
+build-dev: cgo-check ## Build development version with localhost API URL
 	@echo "🔧 Building Initiat CLI (dev mode)..."
 	@echo "   API URL: http://localhost:4000"
-	go build -tags dev -o initiat_dev .
+	$(GO) build -tags dev -o initiat_dev .
 	@echo "✅ Built: ./initiat_dev"
 
 build-all: ## Build release binaries (native platform by default)
@@ -31,37 +47,39 @@ install: build ## Install the CLI to /usr/local/bin
 # Development targets
 deps: ## Download and verify dependencies
 	@echo "📦 Downloading dependencies..."
-	go mod download
-	go mod verify
+	$(GO) mod download
+	$(GO) mod verify
 
-test: ## Run tests
+test: cgo-check ## Run tests
 	@echo "🧪 Running tests..."
-	go test -race -coverprofile=coverage.out ./...
+	$(GO) test -race -coverprofile=coverage.out ./...
 
 test-coverage: test ## Run tests and show coverage
 	@echo "📊 Test coverage:"
-	go tool cover -html=coverage.out -o coverage.html
+	$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
 # Code quality targets
 lint: ## Run linter
 	@echo "🔍 Running linter..."
-	golangci-lint run
+	env CGO_ENABLED=$(CGO_ENABLED) golangci-lint run
 
 lint-fix: ## Run linter with auto-fix
 	@echo "🔧 Running linter with auto-fix..."
-	golangci-lint run --fix
+	env CGO_ENABLED=$(CGO_ENABLED) golangci-lint run --fix
 
 format: ## Format code
 	@echo "🎨 Formatting code..."
-	gofmt -s -w .
-	goimports -w .
+	@dirs="$$( $(GO) list -f '{{.Dir}}' ./... )"; \
+	gofmt -s -w $$dirs; \
+	goimports -w $$dirs
 
 format-check: ## Check if code is formatted
 	@echo "🎨 Checking code formatting..."
-	@if [ "$$(gofmt -s -l . | wc -l)" -gt 0 ]; then \
+	@dirs="$$( $(GO) list -f '{{.Dir}}' ./... )"; \
+	if [ "$$(gofmt -s -l $$dirs | wc -l)" -gt 0 ]; then \
 		echo "❌ Code is not formatted. Run 'make format' to fix."; \
-		gofmt -s -l .; \
+		gofmt -s -l $$dirs; \
 		exit 1; \
 	else \
 		echo "✅ Code is properly formatted."; \
@@ -72,10 +90,13 @@ security: ## Run security scan
 	@echo "🔒 Running security scan..."
 	@if ! command -v gosec >/dev/null 2>&1; then \
 		echo "Installing gosec..."; \
-		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
+		$(GO) install github.com/securego/gosec/v2/cmd/gosec@latest; \
 	fi
 	@out=$$(mktemp); \
-	if ! gosec -quiet ./... >"$$out" 2>&1; then \
+	if ! gosec -quiet \
+		-exclude-dir=docs \
+		-exclude-dir=internal/codeanalysis/testdata \
+		./... >"$$out" 2>&1; then \
 		cat "$$out"; \
 		rm -f "$$out"; \
 		exit 1; \
@@ -95,7 +116,7 @@ clean: ## Clean build artifacts
 
 tidy: ## Tidy go modules
 	@echo "🧹 Tidying go modules..."
-	go mod tidy
+	$(GO) mod tidy
 
 # CI targets (run all checks)
 ci: deps format-check lint test security vuln-check build ## Run all CI checks locally
@@ -129,10 +150,10 @@ changelog: ## Update changelog for new version (usage: make changelog VERSION=v1
 # Tool installation targets
 install-tools: ## Install development tools
 	@echo "🔧 Installing development tools..."
-	go install golang.org/x/tools/cmd/goimports@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(GO) install golang.org/x/tools/cmd/goimports@latest
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	$(GO) install github.com/securego/gosec/v2/cmd/gosec@latest
+	$(GO) install golang.org/x/vuln/cmd/govulncheck@latest
 	@echo "✅ All development tools installed successfully!"
 
 # Docker targets (if you want to add Docker support later)

@@ -1,0 +1,13 @@
+---
+description: Never introduce local cache/module-cache folders in repo
+alwaysApply: true
+---
+
+# No local cache folders in repo
+
+- Do **not** introduce repository-local cache directories (e.g. `.cache/`, `.gomodcache/`, `.gocache/`, `.go-cache/`) or any other “cache” folders in the workspace.
+- Do **not** modify `Makefile`, scripts, or docs to set `GOMODCACHE`, `GOCACHE`, `GOMODCACHE=$PWD/...`, or similar paths that create cache directories under the repo.
+- Do **not** add new cache directories to `.gitignore` as a workaround.
+
+If caching is needed, use **CI-managed caching** (e.g. GitHub Actions cache) or the platform’s standard locations, without creating new directories in the repository.
+

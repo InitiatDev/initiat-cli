@@ -42,7 +42,7 @@ jobs:
       - name: Install X11 dependencies
         run: |
           sudo apt update
-          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+          sudo apt install -y build-essential libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Test Linux build
         run: |
@@ -91,11 +91,11 @@ jobs:
       - name: Install and setup GNOME Keyring for tests
         run: |
           sudo apt-get update
-          sudo apt-get install -y gnome-keyring dbus-x11
+          sudo apt-get install -y build-essential gnome-keyring dbus-x11
 
       - name: Install X11 dependencies from cache
         run: |
-          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+          sudo apt install -y build-essential libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Run tests
         run: |
@@ -106,6 +106,7 @@ jobs:
           if ! pgrep -f gnome-keyring-daemon > /dev/null; then
             echo "Warning: GNOME Keyring daemon not running - some tests may be skipped"
           fi
+          export CGO_ENABLED=1
           timeout 600 go test -v -race -coverprofile=coverage.out ./... || \
           timeout 600 go test -v -race ./...
 
@@ -140,7 +141,7 @@ jobs:
 
       - name: Install X11 dependencies from cache
         run: |
-          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+          sudo apt install -y build-essential libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
@@ -199,7 +200,11 @@ jobs:
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Run Gosec (SARIF)
-        run: gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
+        run: |
+          gosec -no-fail -fmt sarif -out gosec-results.sarif \
+            -exclude-dir=docs \
+            -exclude-dir=internal/codeanalysis/testdata \
+            ./...
 
       # --- Temporarily disabled: Code Scanning upload requires org/private entitlement ---
       # - name: Upload SARIF to Code Scanning
@@ -246,10 +251,12 @@ jobs:
         run: |
           # Tree-sitter requires CGO; cross-compiling from Linux is not reliable.
           # Validate native Linux build here; release workflow handles native macOS/Windows builds.
+          export CGO_ENABLED=1
           go build -o /tmp/initiat-linux-amd64 .
 
       - name: Test binary functionality
         run: |
+          export CGO_ENABLED=1
           go build -o initiat .
           ./initiat --help
           ./initiat auth --help

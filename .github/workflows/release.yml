@@ -63,7 +63,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev ${{ matrix.cross_pkgs }}
+          sudo apt install -y build-essential libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev ${{ matrix.cross_pkgs }}
 
       - name: Install MSYS2 (Windows CGO)
         if: runner.os == 'Windows'

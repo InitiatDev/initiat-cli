@@ -28,16 +28,35 @@ func TestRunAnalyzeAST_Go_JSONL(t *testing.T) {
 	capture := testutil.CaptureStdout()
 	defer capture.Restore()
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(cwd)
+	})
+
 	if err := runAnalyzeAST(analyzeCmd, []string{file}); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 
-	out := capture.GetOutput()
-	if !strings.Contains(out, `"version":"ast-v1"`) {
-		t.Fatalf("expected ast-v1 in output, got: %s", out)
+	if gotStdout := capture.GetOutput(); strings.TrimSpace(gotStdout) != "" {
+		t.Fatalf("expected no stdout output, got: %s", gotStdout)
 	}
-	if !strings.Contains(out, `"language":"go"`) {
-		t.Fatalf("expected go language in output, got: %s", out)
+
+	outPath := filepath.Join(dir, ".initiat", "code", "ast-v1.jsonl")
+	out, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	if !strings.Contains(string(out), `"version":"ast-v1"`) {
+		t.Fatalf("expected ast-v1 in file output, got: %s", string(out))
+	}
+	if !strings.Contains(string(out), `"language":"go"`) {
+		t.Fatalf("expected go language in file output, got: %s", string(out))
 	}
 }
 

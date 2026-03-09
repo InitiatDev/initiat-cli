@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -23,6 +24,21 @@ var (
 )
 
 const analyzeASTDefaultMaxBytes int64 = 2 << 20
+const (
+	analyzeASTDefaultDirPerm  = 0o700
+	analyzeASTDefaultFilePerm = 0o600
+)
+
+func defaultAnalyzeASTOutputPath(format ast.Format) string {
+	switch format {
+	case ast.FormatJSON:
+		return filepath.FromSlash(".initiat/code/ast-v1.json")
+	case ast.FormatJSONL:
+		return filepath.FromSlash(".initiat/code/ast-v1.jsonl")
+	default:
+		return filepath.FromSlash(".initiat/code/ast-v1.jsonl")
+	}
+}
 
 func init() {
 	analyzeCmd.Flags().StringVar(
@@ -42,7 +58,7 @@ func init() {
 		"output",
 		"o",
 		"",
-		"Write output to file instead of stdout",
+		"Output file path (default: .initiat/code/ast-v1.jsonl; use '-' for stdout)",
 	)
 	analyzeCmd.Flags().BoolVar(
 		&analyzeASTRecursive,
@@ -81,10 +97,19 @@ func runAnalyzeAST(cmd *cobra.Command, args []string) error {
 	}
 
 	var w *os.File
-	if strings.TrimSpace(analyzeASTOutput) == "" {
+	outPath := strings.TrimSpace(analyzeASTOutput)
+	if outPath == "" {
+		outPath = defaultAnalyzeASTOutputPath(format)
+	}
+
+	if outPath == "-" {
 		w = os.Stdout
 	} else {
-		f, err := os.Create(analyzeASTOutput) // #nosec G304 -- user-provided output path is intentional
+		if err := os.MkdirAll(filepath.Dir(outPath), analyzeASTDefaultDirPerm); err != nil {
+			return err
+		}
+		// #nosec G304 -- user-controlled output path is intentional
+		f, err := os.OpenFile(outPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, analyzeASTDefaultFilePerm)
 		if err != nil {
 			return err
 		}
@@ -96,7 +121,7 @@ func runAnalyzeAST(cmd *cobra.Command, args []string) error {
 		Lang:        strings.TrimSpace(analyzeASTLang),
 		Recursive:   analyzeASTRecursive,
 		Format:      format,
-		Output:      analyzeASTOutput,
+		Output:      outPath,
 		MaxBytes:    analyzeASTMaxBytes,
 		FailOnError: analyzeASTFailOnErr,
 	}, w)
