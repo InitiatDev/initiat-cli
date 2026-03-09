@@ -46,8 +46,6 @@ jobs:
 
       - name: Test Linux build
         run: |
-          # Tree-sitter requires CGO; cross-compiling from Linux is not reliable.
-          # Validate the native Linux build here; release handles target-specific builds.
           export CGO_ENABLED=1
           GOOS=linux GOARCH=amd64 go build -o /tmp/initiat-linux-amd64 .
 
