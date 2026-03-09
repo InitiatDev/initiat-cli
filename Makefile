@@ -85,27 +85,56 @@ format-check: ## Check if code is formatted
 		echo "✅ Code is properly formatted."; \
 	fi
 
-# Security targets
-security: ## Run security scan
+# QUICK=1: run gosec only on dirs with changed non-test .go files (vs HEAD~1), skip vuln-check unless go.mod/go.sum changed.
+QUICK ?= 0
+
+security: ## Run security scan (QUICK=1 for changed-only)
 	@echo "🔒 Running security scan..."
 	@if ! command -v gosec >/dev/null 2>&1; then \
 		echo "Installing gosec..."; \
 		$(GO) install github.com/securego/gosec/v2/cmd/gosec@latest; \
 	fi
 	@out=$$(mktemp); \
-	if ! gosec -quiet \
-		-exclude-dir=docs \
-		-exclude-dir=internal/codeanalysis/testdata \
-		./... >"$$out" 2>&1; then \
-		cat "$$out"; \
-		rm -f "$$out"; \
-		exit 1; \
+	if [ "$(QUICK)" = "1" ]; then \
+		base="HEAD~1"; \
+		if ! git rev-parse "$$base" >/dev/null 2>&1; then \
+			echo "⚠️  QUICK: $$base not found, running full gosec scan."; \
+			run_dirs="./..."; \
+		else \
+			changed=$$(git diff --name-only "$$base" HEAD -- '*.go' 2>/dev/null | grep -v '_test\.go$$' || true); \
+			if [ -z "$$changed" ]; then \
+				echo "✅ QUICK: no non-test Go files changed, skipping gosec."; \
+				rm -f "$$out"; exit 0; \
+			fi; \
+			run_dirs=$$(echo "$$changed" | xargs -I{} dirname {} | sort -u | while read d; do if [ "$$d" = "." ]; then echo "./..."; else echo "./$$d/..."; fi; done | tr '\n' ' '); \
+		fi; \
+		if [ -n "$$run_dirs" ]; then \
+			if ! gosec -quiet -exclude-dir=docs -exclude-dir=internal/codeanalysis/testdata $$run_dirs >"$$out" 2>&1; then \
+				cat "$$out"; rm -f "$$out"; exit 1; \
+			fi; \
+		fi; \
+	else \
+		if ! gosec -quiet -exclude-dir=docs -exclude-dir=internal/codeanalysis/testdata ./... >"$$out" 2>&1; then \
+			cat "$$out"; rm -f "$$out"; exit 1; \
+		fi; \
 	fi; \
 	rm -f "$$out"
 
-vuln-check: ## Check for vulnerabilities
-	@echo "🛡️  Checking for vulnerabilities..."
-	govulncheck ./...
+vuln-check: ## Check for vulnerabilities (QUICK=1 skips unless go.mod/go.sum changed)
+	@if [ "$(QUICK)" = "1" ]; then \
+		if ! git rev-parse "HEAD~1" >/dev/null 2>&1; then \
+			echo "🛡️  QUICK: HEAD~1 not found, running full vuln-check."; \
+			govulncheck ./...; \
+		elif git diff --name-only HEAD~1 HEAD -- go.mod go.sum | grep -q .; then \
+			echo "🛡️  Checking for vulnerabilities (go.mod/go.sum changed)..."; \
+			govulncheck ./...; \
+		else \
+			echo "✅ QUICK: go.mod/go.sum unchanged, skipping vuln-check."; \
+		fi; \
+	else \
+		echo "🛡️  Checking for vulnerabilities..."; \
+		govulncheck ./...; \
+	fi
 
 # Utility targets
 clean: ## Clean build artifacts
