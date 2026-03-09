@@ -441,58 +441,6 @@ commands:
       difficulty: "beginner"
       estimated_time: "1 minute"
 
-  project.setup:
-    id: "project.setup"
-    name: "setup"
-    category: "project"
-    description: "Run the setup script from .initiat/setup.yml to configure the development environment"
-    usage: "initiat project setup"
-    arguments: []
-    options: []
-    examples:
-      - description: "Run setup script"
-        command: "initiat project setup"
-    workflow_steps:
-      - "Reads and parses .initiat/setup.yml"
-      - "Validates the setup configuration against the schema"
-      - "Fetches required secrets from Initiat (if needed)"
-      - "Executes the setup script (installs tools, runtimes, databases, etc.)"
-      - "Runs all phases sequentially (bootstrap → provision → setup → verify → post)"
-    prerequisites:
-      - "Must be inside a git repository"
-      - "Project context must be initialized (.initiat/config.yml must exist)"
-      - "Device must be registered and approved for the project"
-    output: |
-      📋 Loading setup script from .initiat/setup.yml...
-      🔍 Validating setup configuration...
-      ✅ Setup configuration is valid
-      🚀 Executing setup script...
-
-      [bootstrap phase]
-        ✓ Ensuring package manager...
-        ✓ Ensuring git...
-
-      [provision phase]
-        ✓ Installing Node.js runtime...
-        ✓ Ensuring PostgreSQL database...
-
-      [setup phase]
-        ✓ Installing dependencies...
-        ✓ Running migrations...
-
-      [verify phase]
-        ✓ Verifying installation...
-
-      [post phase]
-        ✓ Setup complete!
-
-      ✅ Setup completed successfully!
-    metadata:
-      difficulty: "intermediate"
-      estimated_time: "5-15 minutes"
-      related_docs:
-        - "See Setup Scripts Documentation (SETUP_SCRIPTS.md) for complete syntax reference"
-
   env.init:
     id: "env.init"
     name: "init"

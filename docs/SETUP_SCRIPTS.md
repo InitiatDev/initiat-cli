@@ -64,7 +64,7 @@ initiat setup generate
 - **Service inference:** If Docker Compose is present, steps for running `docker compose up -d` are added. Otherwise, dependency files (Gemfile, mix.exs, package.json, requirements.txt, pyproject.toml) are scanned for PostgreSQL, MySQL, SQLite, and Redis; corresponding verify steps (e.g. `psql --version`, `redis-cli --version`) are appended. When more than one database is detected, a post message suggests editing `.initiat/setup.yml` to remove unused steps.
 - **Output:** Writes `.initiat/setup.yml` and `.initiat/config.yml` (project name is derived from the directory). Does not overwrite an existing `setup.yml` unless you pass `--force`.
 
-After generating, run `initiat setup validate` and then `initiat setup run` (or `initiat project setup` if you use cloud secrets). See [Command Reference](COMMANDS.md#initiat-setup-generate---force) for details.
+After generating, run `initiat setup validate` and then `initiat setup run`. Use `-p`/`-P` or run from a directory with `.initiat/config.yml` when the script uses cloud secrets. See [Command Reference](COMMANDS.md#initiat-setup-generate---force) for details.
 
 ---
 

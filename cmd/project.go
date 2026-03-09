@@ -12,7 +12,6 @@ import (
 	"github.com/InitiatDev/initiat-cli/internal/env"
 	"github.com/InitiatDev/initiat-cli/internal/project"
 	"github.com/InitiatDev/initiat-cli/internal/prompt"
-	"github.com/InitiatDev/initiat-cli/internal/setup"
 	"github.com/InitiatDev/initiat-cli/internal/storage"
 	"github.com/InitiatDev/initiat-cli/internal/table"
 	"github.com/InitiatDev/initiat-cli/internal/types"
@@ -55,26 +54,10 @@ Examples:
 	RunE: runProjectInit,
 }
 
-var projectSetupCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Run project setup script",
-	Long: `Run the setup script from .initiat/setup.yml to configure the development environment.
-
-This command will:
-- Read and parse .initiat/setup.yml
-- Validate the setup configuration
-- Execute the setup script (install tools, runtimes, databases, etc.)
-
-Examples:
-  initiat project setup`,
-	RunE: runProjectSetup,
-}
-
 func init() {
 	rootCmd.AddCommand(projectCmd)
 	projectCmd.AddCommand(projectListCmd)
 	projectCmd.AddCommand(projectInitCmd)
-	projectCmd.AddCommand(projectSetupCmd)
 }
 
 func runProjectList(cmd *cobra.Command, args []string) error {
@@ -241,48 +224,4 @@ func checkProjectInitStatus(project *types.Project) bool {
 		return false
 	}
 	return true
-}
-
-func runProjectSetup(cmd *cobra.Command, args []string) error {
-	setupFile := defaultSetupFile
-
-	projectCtx, err := GetProjectContext()
-	if err != nil {
-		return fmt.Errorf("❌ Failed to get project context: %w", err)
-	}
-
-	fmt.Printf("📋 Loading setup script from %s...\n", setupFile)
-	config, err := setup.ParseFile(setupFile)
-	if err != nil {
-		return fmt.Errorf("❌ Failed to parse setup file: %w", err)
-	}
-
-	fmt.Println("🔍 Validating setup configuration...")
-	if err := setup.Validate(config); err != nil {
-		fmt.Println("❌ Validation failed:")
-		if validationErrs, ok := err.(setup.ValidationErrors); ok {
-			for _, validationErr := range validationErrs {
-				fmt.Printf("  - %s\n", validationErr.Error())
-			}
-		} else {
-			fmt.Printf("  - %s\n", err.Error())
-		}
-		return fmt.Errorf("validation failed")
-	}
-
-	fmt.Println("✅ Setup configuration is valid")
-
-	fmt.Println("🔧 Creating execution context...")
-	fmt.Println("📝 Generating execution plan...")
-
-	runner := setup.NewSetupRunner(projectCtx)
-	if err := runner.Run(config); err != nil {
-		if errors.Is(err, setup.ErrNoCommandsToExecute) {
-			fmt.Println("ℹ️  No commands to execute (all steps skipped due to conditions)")
-			return nil
-		}
-		return fmt.Errorf("❌ Setup execution failed: %w", err)
-	}
-
-	return nil
 }

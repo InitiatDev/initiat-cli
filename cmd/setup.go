@@ -37,8 +37,8 @@ and .initiat/config.yml. Use --force to overwrite existing setup.yml.`,
 var setupRunCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run the setup script",
-	Long: `Run .initiat/setup.yml (offline; no project context required).
-Fails if the script requires secrets.`,
+	Long: `Run .initiat/setup.yml. Uses project context when available (-p/-P, or .initiat/config.yml)
+so steps that need secrets can run; otherwise runs offline. Agent recovery may run on failure if enabled.`,
 	RunE: runSetupRun,
 }
 
@@ -138,7 +138,8 @@ func runSetupRun(cmd *cobra.Command, args []string) error {
 		}
 		return fmt.Errorf("validation failed")
 	}
-	runner := setup.NewSetupRunner(nil)
+	projectCtx, _ := initiatconfig.ResolveProjectContext(projectPath, org, projectName)
+	runner := setup.NewSetupRunner(projectCtx)
 	if err := runner.Run(setupConfig); err != nil {
 		if errors.Is(err, setup.ErrNoCommandsToExecute) {
 			fmt.Println("No commands to execute (all steps skipped by conditions).")

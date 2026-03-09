@@ -138,7 +138,7 @@ Run: initiat setup validate && initiat setup run
 
 ### `initiat setup run [setup-file]`
 
-Run a setup script from a YAML file. Defaults to `.initiat/setup.yml`. Works fully offline; no project context or Initiat account required. If the script declares `env.secrets`, those steps will fail unless you use `initiat project setup` (which uses project context and fetches secrets).
+Run a setup script from a YAML file. Defaults to `.initiat/setup.yml`. Uses project context when available (e.g. `-p`/`-P` or `.initiat/config.yml`) so steps that need secrets can run; otherwise runs offline. Agent recovery may run on failure if enabled.
 
 **Arguments:**
 - `setup-file`: Path to the setup YAML file (optional; default: `.initiat/setup.yml`)
@@ -550,64 +550,9 @@ Next steps:
   • Invite devices: initiat project invite-device
 ```
 
-### `initiat project setup`
+### Running setup (use `initiat setup run`)
 
-Run the setup script from `.initiat/setup.yml` to configure the development environment.
-
-**What it does:**
-1. Reads and parses `.initiat/setup.yml`
-2. Validates the setup configuration against the schema
-3. Fetches required secrets from Initiat (if needed)
-4. Executes the setup script (installs tools, runtimes, databases, etc.)
-5. Runs all phases sequentially (bootstrap → provision → setup → verify → post)
-
-**Prerequisites:**
-- Must be inside a git repository
-- Project context must be initialized (`.initiat/config.yml` must exist)
-- Device must be registered and approved for the project
-
-**Examples:**
-```bash
-# Run setup script (requires project context)
-initiat project setup
-```
-
-**Output:**
-```
-📋 Loading setup script from .initiat/setup.yml...
-🔍 Validating setup configuration...
-✅ Setup configuration is valid
-🚀 Executing setup script...
-
-[bootstrap phase]
-  ✓ Ensuring package manager...
-  ✓ Ensuring git...
-
-[provision phase]
-  ✓ Installing Node.js runtime...
-  ✓ Ensuring PostgreSQL database...
-
-[setup phase]
-  ✓ Installing dependencies...
-  ✓ Running migrations...
-
-[verify phase]
-  ✓ Verifying installation...
-
-[post phase]
-  ✓ Setup complete!
-
-✅ Setup completed successfully!
-```
-
-**Error Handling:**
-- If setup file is not found, returns an error
-- If validation fails, shows detailed validation errors
-- If secrets are required but device is not registered, prompts for device registration
-- If any step fails (and `continue_on_error` is false), execution stops
-
-**Related Documentation:**
-- See [Setup Scripts Documentation](SETUP_SCRIPTS.md) for complete syntax reference
+Setup execution is done with **`initiat setup run`**. When you are in a project directory (`.initiat/config.yml` present) or pass `-p`/`-P`, project context is used and steps that need secrets from Initiat will work. Otherwise setup runs offline. See [initiat setup run](#initiat-setup-run-setup-file) for full details and example output.
 
 ## Setup Script Management
 
