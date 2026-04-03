@@ -32,7 +32,9 @@ func NewExecutorWithCommandExecutor(secrets map[string]string, executor CommandE
 	}
 }
 
-func NewExecutorWithFormatter(secrets map[string]string, executor CommandExecutor, formatter *output.Formatter) *Executor {
+func NewExecutorWithFormatter(
+	secrets map[string]string, executor CommandExecutor, formatter *output.Formatter,
+) *Executor {
 	return &Executor{
 		secrets:         secrets,
 		commandExecutor: executor,
