@@ -93,6 +93,22 @@ func TestCollectSecretNames(t *testing.T) {
 	}
 }
 
+func containsString(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 &&
+			(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+				indexOfString(s, substr) >= 0)))
+}
+
+func indexOfString(s, substr string) int {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
+}
+
 func TestDetectShell(t *testing.T) {
 	originalShell := os.Getenv("SHELL")
 

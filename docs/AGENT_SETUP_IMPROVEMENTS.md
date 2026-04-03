@@ -57,10 +57,10 @@ Replace raw `fmt.Println` calls with a structured, visually clear output format 
 
 ### 2.2 Apply formatter to setup execution
 
-- [ ] Update `Executor.Execute` in `internal/setup/executor.go` to use the formatter instead of raw `fmt.Printf`
-- [ ] Show per-command durations on the same line as the step name
-- [ ] On failure, show the failing command's stderr indented beneath the step
-- [ ] Show skipped phases (phases that never ran due to early failure) at the bottom
+- [x] Update `Executor.Execute` in `internal/setup/executor.go` to use the formatter instead of raw `fmt.Printf`
+- [x] Show per-command durations on the same line as the step name
+- [x] On failure, show the failing command's stderr indented beneath the step
+- [x] Show skipped phases (phases that never ran due to early failure) at the bottom
 
 ### 2.3 Apply formatter to agent mode
 

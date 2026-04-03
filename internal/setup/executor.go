@@ -3,19 +3,24 @@ package setup
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/InitiatDev/initiat-cli/internal/output"
 )
 
 type Executor struct {
 	secrets         map[string]string
 	commandExecutor CommandExecutor
+	formatter       *output.Formatter
 }
 
 func NewExecutor(secrets map[string]string) *Executor {
 	return &Executor{
 		secrets:         secrets,
 		commandExecutor: NewRealCommandExecutor(),
+		formatter:       output.NewFormatter(os.Stdout),
 	}
 }
 
@@ -23,6 +28,17 @@ func NewExecutorWithCommandExecutor(secrets map[string]string, executor CommandE
 	return &Executor{
 		secrets:         secrets,
 		commandExecutor: executor,
+		formatter:       output.NewFormatter(os.Stdout),
+	}
+}
+
+func NewExecutorWithFormatter(
+	secrets map[string]string, executor CommandExecutor, formatter *output.Formatter,
+) *Executor {
+	return &Executor{
+		secrets:         secrets,
+		commandExecutor: executor,
+		formatter:       formatter,
 	}
 }
 
@@ -33,24 +49,44 @@ func (e *Executor) Execute(plan *ExecutionPlan) error {
 		Commands:  []CommandExecutionRecord{},
 	}
 
-	fmt.Printf("🚀 Executing setup script: %d phases, %d steps, %d commands\n\n",
-		len(plan.Summary.Phases), plan.Summary.TotalSteps, plan.Summary.TotalCommands)
+	f := e.formatter
+	currentPhase := ""
+	completedPhases := map[string]bool{}
 
 	for _, cmd := range plan.Commands {
-		fmt.Printf("[%s] %s", cmd.Phase, cmd.StepName)
-		if cmd.Description != "" {
-			fmt.Printf(": %s", cmd.Description)
+		if cmd.Phase != currentPhase {
+			if currentPhase != "" {
+				f.PhaseEnd()
+			}
+			currentPhase = cmd.Phase
+			f.PhaseStart(currentPhase)
 		}
-		fmt.Println()
 
 		record, err := e.executeCommandWithReport(cmd)
 		report.Commands = append(report.Commands, record)
 
+		duration := lastAttemptDuration(record)
+		stepLabel := cmd.StepName
+		if stepLabel == "" {
+			stepLabel = cmd.Description
+		}
+
 		if err != nil {
+			stderr := lastAttemptStderr(record)
+			f.StepFailure(stepLabel, duration, stderr)
+
 			if cmd.ContinueOnError {
-				fmt.Printf("⚠️  Command failed but continuing: %v\n", err)
 				continue
 			}
+
+			f.PhaseEnd()
+			completedPhases[currentPhase] = true
+
+			skipped := skippedPhaseNames(plan.Summary.Phases, completedPhases)
+			if len(skipped) > 0 {
+				f.PhasesSkipped(skipped)
+			}
+
 			report.FinishedAt = time.Now()
 			return &SetupExecutionError{
 				Report:        report,
@@ -58,12 +94,41 @@ func (e *Executor) Execute(plan *ExecutionPlan) error {
 				Err:           fmt.Errorf("command failed: %w", err),
 			}
 		}
+
+		f.StepSuccess(stepLabel, duration)
+		completedPhases[cmd.Phase] = true
 	}
 
-	fmt.Println()
-	fmt.Println("✅ Setup script completed successfully!")
+	if currentPhase != "" {
+		f.PhaseEnd()
+	}
+
 	report.FinishedAt = time.Now()
 	return nil
+}
+
+func lastAttemptDuration(record CommandExecutionRecord) time.Duration {
+	if len(record.Attempts) == 0 {
+		return 0
+	}
+	return record.Attempts[len(record.Attempts)-1].Duration
+}
+
+func lastAttemptStderr(record CommandExecutionRecord) string {
+	if len(record.Attempts) == 0 {
+		return ""
+	}
+	return record.Attempts[len(record.Attempts)-1].Stderr
+}
+
+func skippedPhaseNames(phases []PhaseSummary, completed map[string]bool) []string {
+	var skipped []string
+	for _, p := range phases {
+		if !completed[p.Name] {
+			skipped = append(skipped, p.Name)
+		}
+	}
+	return skipped
 }
 
 func (e *Executor) executeCommandWithReport(cmd ExecutableCommand) (CommandExecutionRecord, error) {
@@ -89,7 +154,6 @@ func (e *Executor) executeCommandWithReport(cmd ExecutableCommand) (CommandExecu
 
 	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
-			fmt.Printf("  ↻ Retry attempt %d/%d...\n", attempt, attempts)
 			if cmd.Retries != nil && cmd.Retries.Backoff > 0 {
 				time.Sleep(cmd.Retries.Backoff)
 			}
@@ -99,17 +163,11 @@ func (e *Executor) executeCommandWithReport(cmd ExecutableCommand) (CommandExecu
 		record.Attempts = append(record.Attempts, e.toAttemptRecord(attempt, res, err))
 
 		if err == nil {
-			if attempt > 1 {
-				fmt.Printf("  ✅ Command succeeded on retry\n")
-			}
 			record.Success = true
 			return record, nil
 		}
 
 		lastErr = err
-		if attempt < attempts {
-			fmt.Printf("  ⚠️  Command failed, will retry: %v\n", err)
-		}
 	}
 
 	record.Success = false
