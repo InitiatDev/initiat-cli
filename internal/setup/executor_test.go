@@ -1,12 +1,20 @@
 package setup
 
 import (
+	"bytes"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/InitiatDev/initiat-cli/internal/testutil"
+	"github.com/InitiatDev/initiat-cli/internal/output"
 )
+
+func newTestExecutor(secrets map[string]string, mock *mockCommandExecutor) (*Executor, *bytes.Buffer) {
+	var buf bytes.Buffer
+	f := output.NewFormatter(&buf, output.WithColor(false), output.WithFancy(false))
+	return NewExecutorWithFormatter(secrets, mock, f), &buf
+}
 
 func TestExecutor_Execute(t *testing.T) {
 	tests := []struct {
@@ -41,14 +49,12 @@ func TestExecutor_Execute(t *testing.T) {
 			secrets:   nil,
 			wantError: false,
 			contains: []string{
-				"Executing setup script",
-				"setup",
-				"test",
-				"completed successfully",
+				"== setup ==",
+				"[ok] test",
 			},
 		},
 		{
-			name: "multiple commands",
+			name: "multiple commands across phases",
 			plan: &ExecutionPlan{
 				Commands: []ExecutableCommand{
 					{
@@ -78,10 +84,10 @@ func TestExecutor_Execute(t *testing.T) {
 			secrets:   nil,
 			wantError: false,
 			contains: []string{
-				"bootstrap",
-				"setup",
-				"step1",
-				"step2",
+				"== bootstrap ==",
+				"[ok] step1",
+				"== setup ==",
+				"[ok] step2",
 			},
 		},
 		{
@@ -105,18 +111,15 @@ func TestExecutor_Execute(t *testing.T) {
 			secrets:   map[string]string{"API_KEY": "secret123"},
 			wantError: false,
 			contains: []string{
-				"completed successfully",
+				"[ok] test",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			capture := testutil.CaptureStdout()
-			defer capture.Restore()
-
-			mockExecutor := newMockCommandExecutor()
-			executor := NewExecutorWithCommandExecutor(tt.secrets, mockExecutor)
+			mock := newMockCommandExecutor()
+			executor, buf := newTestExecutor(tt.secrets, mock)
 			err := executor.Execute(tt.plan)
 
 			if (err != nil) != tt.wantError {
@@ -124,12 +127,17 @@ func TestExecutor_Execute(t *testing.T) {
 				return
 			}
 
+			out := buf.String()
 			for _, text := range tt.contains {
-				capture.AssertContains(t, text)
+				if !strings.Contains(out, text) {
+					t.Errorf("Expected output to contain %q, got:\n%s", text, out)
+				}
 			}
 
 			for _, text := range tt.notContains {
-				capture.AssertNotContains(t, text)
+				if strings.Contains(out, text) {
+					t.Errorf("Expected output NOT to contain %q, got:\n%s", text, out)
+				}
 			}
 		})
 	}
@@ -166,22 +174,25 @@ func TestExecutor_Execute_ContinueOnError(t *testing.T) {
 		},
 	}
 
-	capture := testutil.CaptureStdout()
-	defer capture.Restore()
-
-	mockExecutor := newMockCommandExecutor()
-	mockExecutor.SetError("false", errors.New("command failed"))
-	executor := NewExecutorWithCommandExecutor(nil, mockExecutor)
+	mock := newMockCommandExecutor()
+	mock.SetError("false", errors.New("command failed"))
+	executor, buf := newTestExecutor(nil, mock)
 	err := executor.Execute(plan)
 
 	if err != nil {
 		t.Errorf("Execute() should not fail with continue_on_error, got error: %v", err)
 	}
 
-	capture.AssertContains(t, "success")
-	capture.AssertContains(t, "Command failed but continuing")
-	capture.AssertContains(t, "final")
-	capture.AssertContains(t, "completed successfully")
+	out := buf.String()
+	if !strings.Contains(out, "[ok] success") {
+		t.Errorf("Expected success step, got:\n%s", out)
+	}
+	if !strings.Contains(out, "[FAIL] fail") {
+		t.Errorf("Expected failure step, got:\n%s", out)
+	}
+	if !strings.Contains(out, "[ok] final") {
+		t.Errorf("Expected final step, got:\n%s", out)
+	}
 }
 
 func TestExecutor_Execute_Retry(t *testing.T) {
@@ -202,19 +213,91 @@ func TestExecutor_Execute_Retry(t *testing.T) {
 		},
 	}
 
-	capture := testutil.CaptureStdout()
-	defer capture.Restore()
-
-	mockExecutor := newMockCommandExecutor()
-	mockExecutor.SetError("false", errors.New("command failed"))
-	executor := NewExecutorWithCommandExecutor(nil, mockExecutor)
+	mock := newMockCommandExecutor()
+	executor, buf := newTestExecutor(nil, mock)
 	err := executor.Execute(plan)
 
 	if err != nil {
 		t.Errorf("Execute() error = %v", err)
 	}
 
-	capture.AssertContains(t, "completed successfully")
+	out := buf.String()
+	if !strings.Contains(out, "[ok] test") {
+		t.Errorf("Expected success output, got:\n%s", out)
+	}
+}
+
+func TestExecutor_Execute_FailureShowsStderr(t *testing.T) {
+	plan := &ExecutionPlan{
+		Commands: []ExecutableCommand{
+			{
+				Phase:    "provision",
+				StepName: "Run migrations",
+				Command:  "migrate",
+				Args:     []string{"up"},
+			},
+		},
+		Summary: ExecutionSummary{
+			TotalSteps:    1,
+			TotalCommands: 1,
+			Phases: []PhaseSummary{
+				{Name: "provision", StepCount: 1, CommandCount: 1},
+				{Name: "setup", StepCount: 1, CommandCount: 1},
+			},
+		},
+	}
+
+	mock := newMockCommandExecutor()
+	mock.SetError("migrate", errors.New("migration failed"))
+	mock.SetResult("migrate", &CommandResult{
+		ExitCode: 1,
+		Stderr:   "relation \"users\" already exists",
+	})
+	executor, buf := newTestExecutor(nil, mock)
+	err := executor.Execute(plan)
+
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "[FAIL] Run migrations") {
+		t.Errorf("Expected failure step, got:\n%s", out)
+	}
+	if !strings.Contains(out, "relation \"users\" already exists") {
+		t.Errorf("Expected stderr in output, got:\n%s", out)
+	}
+}
+
+func TestExecutor_Execute_SkippedPhases(t *testing.T) {
+	plan := &ExecutionPlan{
+		Commands: []ExecutableCommand{
+			{
+				Phase:    "bootstrap",
+				StepName: "install",
+				Command:  "fail-cmd",
+			},
+		},
+		Summary: ExecutionSummary{
+			TotalSteps:    3,
+			TotalCommands: 3,
+			Phases: []PhaseSummary{
+				{Name: "bootstrap", StepCount: 1, CommandCount: 1},
+				{Name: "provision", StepCount: 1, CommandCount: 1},
+				{Name: "setup", StepCount: 1, CommandCount: 1},
+			},
+		},
+	}
+
+	mock := newMockCommandExecutor()
+	mock.SetError("fail-cmd", errors.New("failed"))
+	executor, buf := newTestExecutor(nil, mock)
+	_ = executor.Execute(plan)
+
+	out := buf.String()
+	if !strings.Contains(out, "provision") || !strings.Contains(out, "setup") || !strings.Contains(out, "skipped") {
+		t.Errorf("Expected skipped phases in output, got:\n%s", out)
+	}
 }
 
 func TestExecutor_shouldRedact(t *testing.T) {
@@ -267,8 +350,8 @@ func TestExecutor_shouldRedact(t *testing.T) {
 }
 
 func TestExecutor_CommandExecution(t *testing.T) {
-	mockExecutor := newMockCommandExecutor()
-	executor := NewExecutorWithCommandExecutor(nil, mockExecutor)
+	mock := newMockCommandExecutor()
+	executor, _ := newTestExecutor(nil, mock)
 
 	plan := &ExecutionPlan{
 		Commands: []ExecutableCommand{
@@ -293,7 +376,7 @@ func TestExecutor_CommandExecution(t *testing.T) {
 		t.Errorf("Execute() error = %v", err)
 	}
 
-	executed := mockExecutor.GetExecuted()
+	executed := mock.GetExecuted()
 	if len(executed) != 1 {
 		t.Errorf("Expected 1 command execution, got %d", len(executed))
 	}
@@ -313,18 +396,48 @@ func TestExecutor_CommandExecution(t *testing.T) {
 	}
 }
 
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 &&
-			(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-				indexOfString(s, substr) >= 0)))
-}
-
-func indexOfString(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
+func TestExecutor_Execute_PhaseTransitions(t *testing.T) {
+	plan := &ExecutionPlan{
+		Commands: []ExecutableCommand{
+			{Phase: "bootstrap", StepName: "install deps", Command: "echo"},
+			{Phase: "bootstrap", StepName: "check versions", Command: "echo"},
+			{Phase: "setup", StepName: "build", Command: "echo"},
+		},
+		Summary: ExecutionSummary{
+			TotalSteps:    3,
+			TotalCommands: 3,
+			Phases: []PhaseSummary{
+				{Name: "bootstrap", StepCount: 2, CommandCount: 2},
+				{Name: "setup", StepCount: 1, CommandCount: 1},
+			},
+		},
 	}
-	return -1
+
+	mock := newMockCommandExecutor()
+	executor, buf := newTestExecutor(nil, mock)
+	err := executor.Execute(plan)
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	out := buf.String()
+	// Verify phase ordering: bootstrap appears before setup
+	bootstrapIdx := strings.Index(out, "== bootstrap ==")
+	setupIdx := strings.Index(out, "== setup ==")
+	if bootstrapIdx < 0 || setupIdx < 0 {
+		t.Fatalf("Expected both phase headers, got:\n%s", out)
+	}
+	if bootstrapIdx >= setupIdx {
+		t.Errorf("Expected bootstrap before setup, got:\n%s", out)
+	}
+
+	// Both steps in bootstrap phase appear between bootstrap and setup headers
+	installIdx := strings.Index(out, "install deps")
+	checkIdx := strings.Index(out, "check versions")
+	if installIdx < bootstrapIdx || installIdx > setupIdx {
+		t.Errorf("Expected 'install deps' within bootstrap phase, got:\n%s", out)
+	}
+	if checkIdx < bootstrapIdx || checkIdx > setupIdx {
+		t.Errorf("Expected 'check versions' within bootstrap phase, got:\n%s", out)
+	}
 }

@@ -42,7 +42,7 @@ func TestSetupRunner_Run(t *testing.T) {
 		return
 	}
 
-	capture.AssertContains(t, "completed successfully")
+	capture.AssertContains(t, "[ok] test-step")
 }
 
 func TestSetupRunner_Run_NoCommands(t *testing.T) {
@@ -200,6 +200,6 @@ setup:
 			t.Logf("Run error (may be expected): %v", err)
 		}
 	} else {
-		capture.AssertContains(t, "completed successfully")
+		capture.AssertContains(t, "[ok] test")
 	}
 }
