@@ -215,6 +215,7 @@ func runAgentIterative(
 		return err
 	}
 	orchestrator.SetDebugWriter(os.Stdout)
+	orchestrator.SetPromptInput(prompt.PromptInput)
 
 	var lastDecision *agent.Decision
 	var lastApply *agent.ApplyResult
@@ -445,6 +446,8 @@ func buildAgentContextMsg(
 	return strings.TrimSpace(b.String())
 }
 
+const maxOutputInContext = 4096
+
 func formatApplyResults(r *agent.ApplyResult) string {
 	if r == nil || len(r.Results) == 0 {
 		return "(none)"
@@ -465,6 +468,14 @@ func formatApplyResults(r *agent.ApplyResult) string {
 			b.WriteString(" (")
 			b.WriteString(it.Error)
 			b.WriteString(")")
+		}
+		if strings.TrimSpace(it.Output) != "" {
+			out := it.Output
+			if len(out) > maxOutputInContext {
+				out = out[:maxOutputInContext] + "\n... (truncated)"
+			}
+			b.WriteString("\n  output: ")
+			b.WriteString(out)
 		}
 		b.WriteString("\n")
 	}
