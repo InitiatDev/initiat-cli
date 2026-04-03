@@ -40,15 +40,15 @@ func NewLocalToolRunner(baseDir string) (*LocalToolRunner, error) {
 	}, nil
 }
 
-func (t *LocalToolRunner) RunCommand(ctx context.Context, action ProposedAction) error {
+func (t *LocalToolRunner) RunCommand(ctx context.Context, action ProposedAction) (string, error) {
 	command := strings.TrimSpace(action.Command)
 	if command == "" {
-		return fmt.Errorf("command is required")
+		return "", fmt.Errorf("command is required")
 	}
 
 	wd, err := t.resolvePathWithinBase(action.CWD, true)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req := &setup.CommandRequest{
@@ -63,13 +63,15 @@ func (t *LocalToolRunner) RunCommand(ctx context.Context, action ProposedAction)
 	if err != nil {
 		exitCode := -1
 		timedOut := false
+		stderr := ""
 		if res != nil {
 			exitCode = res.ExitCode
 			timedOut = res.TimedOut
+			stderr = res.Stderr
 		}
-		return fmt.Errorf("command failed (exit=%d timed_out=%t): %w", exitCode, timedOut, err)
+		return stderr, fmt.Errorf("command failed (exit=%d timed_out=%t): %w", exitCode, timedOut, err)
 	}
-	return nil
+	return res.Stdout, nil
 }
 
 func (t *LocalToolRunner) ListFiles(ctx context.Context, action ProposedAction) (string, error) {

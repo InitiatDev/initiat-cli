@@ -65,7 +65,7 @@ func TestLocalToolRunner_RunCommand_BadExit(t *testing.T) {
 		t.Fatalf("new: %v", err)
 	}
 
-	err = runner.RunCommand(context.Background(), ProposedAction{
+	_, err = runner.RunCommand(context.Background(), ProposedAction{
 		Type:    ActionRunCommand,
 		Command: "sh -c 'exit 7'",
 		CWD:     dir,

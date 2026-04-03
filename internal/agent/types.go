@@ -83,6 +83,7 @@ type AppliedActionResult struct {
 	Summary string             `json:"summary"`
 	OK      bool               `json:"ok"`
 	Error   string             `json:"error,omitempty"`
+	Output  string             `json:"output,omitempty"`
 }
 
 type ApplyResult struct {

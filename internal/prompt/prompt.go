@@ -110,6 +110,17 @@ type ProjectOption struct {
 	Slug string
 }
 
+// PromptInput prompts the user with the given text and returns their response.
+func PromptInput(promptText string) (string, error) {
+	fmt.Printf("%s: ", promptText)
+	reader := bufio.NewReader(os.Stdin)
+	answer, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("failed to read input: %w", err)
+	}
+	return strings.TrimSpace(answer), nil
+}
+
 // PromptYesNo prompts the user for a yes/no answer
 func PromptYesNo(promptText string) (bool, error) {
 	fmt.Printf("%s (y/n): ", promptText)

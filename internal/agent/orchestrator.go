@@ -11,7 +11,7 @@ import (
 )
 
 type ToolRunner interface {
-	RunCommand(ctx context.Context, action ProposedAction) error
+	RunCommand(ctx context.Context, action ProposedAction) (string, error)
 	EditFiles(ctx context.Context, action ProposedAction) error
 	ListFiles(ctx context.Context, action ProposedAction) (string, error)
 	ReadFiles(ctx context.Context, action ProposedAction) (string, error)
@@ -23,6 +23,7 @@ type Orchestrator struct {
 	approver Approver
 	tools    ToolRunner
 
+	promptInput func(prompt string) (string, error)
 	debugWriter io.Writer
 }
 
@@ -55,6 +56,11 @@ func NewOrchestrator(llm LLM, model string, approver Approver, tools ToolRunner)
 
 func (o *Orchestrator) SetDebugWriter(w io.Writer) *Orchestrator {
 	o.debugWriter = w
+	return o
+}
+
+func (o *Orchestrator) SetPromptInput(fn func(prompt string) (string, error)) *Orchestrator {
+	o.promptInput = fn
 	return o
 }
 
@@ -122,35 +128,58 @@ func (o *Orchestrator) ApplyWithResults(ctx context.Context, decision *Decision)
 
 func (o *Orchestrator) applyOne(ctx context.Context, action ProposedAction, r *AppliedActionResult) error {
 	switch action.Type {
-	case ActionAskUser, ActionStop:
+	case ActionAskUser:
+		if o.promptInput != nil {
+			resp, err := o.promptInput(action.Prompt)
+			if err != nil {
+				r.OK = false
+				r.Error = err.Error()
+			} else {
+				r.Output = resp
+			}
+		}
+		return nil
+	case ActionStop:
 		return nil
 	case ActionListFiles:
 		if o.tools == nil {
 			return fmt.Errorf("no tool runner configured")
 		}
-		_, err := o.tools.ListFiles(ctx, action)
+		out, err := o.tools.ListFiles(ctx, action)
 		if err != nil {
 			r.OK = false
 			r.Error = err.Error()
+		} else {
+			r.Output = out
 		}
 		return nil
 	case ActionReadFiles:
 		if o.tools == nil {
 			return fmt.Errorf("no tool runner configured")
 		}
-		_, err := o.tools.ReadFiles(ctx, action)
+		out, err := o.tools.ReadFiles(ctx, action)
 		if err != nil {
 			r.OK = false
 			r.Error = err.Error()
+		} else {
+			r.Output = out
 		}
 		return nil
 	case ActionRunCommand:
 		if o.tools == nil {
 			return fmt.Errorf("no tool runner configured")
 		}
-		if err := callSafely(func() error { return o.tools.RunCommand(ctx, action) }); err != nil {
+		var cmdOut string
+		if err := callSafely(func() error {
+			out, err := o.tools.RunCommand(ctx, action)
+			cmdOut = out
+			return err
+		}); err != nil {
 			r.OK = false
 			r.Error = err.Error()
+			r.Output = cmdOut // stderr on failure
+		} else {
+			r.Output = cmdOut // stdout on success
 		}
 		return nil
 	case ActionEditFiles:

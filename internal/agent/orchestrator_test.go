@@ -45,9 +45,9 @@ type mockTools struct {
 	edits int
 }
 
-func (t *mockTools) RunCommand(ctx context.Context, action ProposedAction) error {
+func (t *mockTools) RunCommand(ctx context.Context, action ProposedAction) (string, error) {
 	t.ran++
-	return nil
+	return "", nil
 }
 
 func (t *mockTools) EditFiles(ctx context.Context, action ProposedAction) error {
