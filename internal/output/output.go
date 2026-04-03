@@ -157,6 +157,191 @@ func (f *Formatter) PhasesSkipped(names []string) {
 	}
 }
 
+// --- Agent mode ---
+
+// AgentHeader prints the agent-mode banner with the failure context.
+//
+// Fancy:
+//
+//	╔══ Agent Mode ═══════════════════════════════════════╗
+//	║ Diagnosing failure in provision → "Run migrations"  ║
+//	╚═════════════════════════════════════════════════════╝
+//
+// Plain:
+//
+//	=== Agent Mode ===
+//	Diagnosing failure in <phase> -> "<step>"
+func (f *Formatter) AgentHeader(phase, step string) {
+	desc := fmt.Sprintf("Diagnosing failure in %s", phase)
+	if step != "" {
+		desc += fmt.Sprintf(" → %q", step)
+	}
+
+	if !f.fancy {
+		fmt.Fprintf(f.w, "=== Agent Mode ===\n%s\n\n", desc)
+		return
+	}
+
+	const (
+		minWidth     = 50
+		sidePadding  = 2 // 1 space padding each side
+		rightPadding = 1 // space before closing ║
+	)
+	contentWidth := len(desc) + sidePadding
+	if contentWidth < minWidth {
+		contentWidth = minWidth
+	}
+
+	top := "╔══ Agent Mode " + strings.Repeat("═", contentWidth-len("══ Agent Mode ")) + "╗"
+	padded := "║ " + desc + strings.Repeat(" ", contentWidth-len(desc)-rightPadding) + "║"
+	bottom := "╚" + strings.Repeat("═", contentWidth) + "╝"
+
+	fmt.Fprintln(f.w, f.bold(top))
+	fmt.Fprintln(f.w, f.bold(padded))
+	fmt.Fprintln(f.w, f.bold(bottom))
+	fmt.Fprintln(f.w)
+}
+
+// RoundSeparator prints a visual separator between agent rounds.
+//
+// Fancy:  ── Round 1 ──────────────────
+// Plain:  -- Round 1 --
+func (f *Formatter) RoundSeparator(round int) {
+	label := fmt.Sprintf("Round %d", round)
+	const roundLineWidth = 40
+	if f.fancy {
+		line := "── " + label + " " + strings.Repeat("─", roundLineWidth-len(label))
+		fmt.Fprintln(f.w, f.dim(line))
+	} else {
+		fmt.Fprintf(f.w, "-- %s --\n", label)
+	}
+}
+
+// Explanation prints the agent's diagnosis explanation in a visually
+// distinct block (indented/quoted).
+//
+// Fancy:  │ The migration failed because …
+// Plain:  > The migration failed because …
+func (f *Formatter) Explanation(text string) {
+	if strings.TrimSpace(text) == "" {
+		return
+	}
+	fmt.Fprintln(f.w)
+	for _, line := range strings.Split(text, "\n") {
+		if f.fancy {
+			fmt.Fprintf(f.w, "  %s %s\n", f.dim("│"), line)
+		} else {
+			fmt.Fprintf(f.w, "  > %s\n", line)
+		}
+	}
+	fmt.Fprintln(f.w)
+}
+
+// ActionItem describes a single proposed action for display purposes.
+type ActionItem struct {
+	Summary string
+	Danger  string // "safe", "caution", or "dangerous"
+	Type    string // action type like "run_command", "edit_files", etc.
+	Detail  string // command string, file path, prompt, etc.
+}
+
+// ActionList prints proposed actions as a numbered list with danger-level badges.
+//
+// Fancy:
+//
+//	Proposed actions:
+//	  1. [safe]    Read db/migrate/ directory listing
+//	  2. [caution] Run: rails db:migrate:status
+//
+// Plain:
+//
+//	Proposed actions:
+//	  1. [safe] Read db/migrate/ directory listing
+//	  2. [caution] Run: rails db:migrate:status
+func (f *Formatter) ActionList(actions []ActionItem) {
+	if len(actions) == 0 {
+		return
+	}
+	fmt.Fprintln(f.w, "Proposed actions:")
+	for i, a := range actions {
+		badge := f.dangerBadge(a.Danger)
+		fmt.Fprintf(f.w, "  %d. %s %s\n", i+1, badge, a.Summary)
+	}
+	fmt.Fprintln(f.w)
+}
+
+// ActionResult prints the result of an executed action inline.
+//
+// Fancy:
+//
+//  1. [safe]    Read db/migrate/ directory listing  ✓
+//  2. [caution] Run: rails db:migrate:status        ✓ (exit 0)
+//  3. [caution] Run: rails db:drop                  ✗ (permission denied)
+//
+// Plain:
+//
+//  1. [safe] Read db/migrate/ directory listing  [ok]
+//  2. [caution] Run: rails db:migrate:status  [ok] (exit 0)
+//  3. [caution] Run: rails db:drop  [FAIL] (permission denied)
+func (f *Formatter) ActionResult(index int, action ActionItem, ok bool, detail string) {
+	badge := f.dangerBadge(action.Danger)
+	suffix := ""
+	if detail != "" {
+		suffix = " (" + detail + ")"
+	}
+	if ok {
+		if f.fancy {
+			fmt.Fprintf(f.w, "  %d. %s %s  %s%s\n",
+				index+1, badge, action.Summary, f.green("✓"), f.dim(suffix))
+		} else {
+			fmt.Fprintf(f.w, "  %d. %s %s  [ok]%s\n",
+				index+1, badge, action.Summary, suffix)
+		}
+	} else {
+		if f.fancy {
+			fmt.Fprintf(f.w, "  %d. %s %s  %s%s\n",
+				index+1, badge, action.Summary, f.red("✗"), f.red(suffix))
+		} else {
+			fmt.Fprintf(f.w, "  %d. %s %s  [FAIL]%s\n",
+				index+1, badge, action.Summary, suffix)
+		}
+	}
+}
+
+const (
+	dangerBadgeWidth = 11 // len("[dangerous]")
+)
+
+func (f *Formatter) dangerBadge(danger string) string {
+	var raw string
+	switch danger {
+	case "safe":
+		raw = "[safe]"
+	case "caution":
+		raw = "[caution]"
+	case "dangerous":
+		raw = "[dangerous]"
+	default:
+		raw = "[" + danger + "]"
+	}
+
+	if !f.fancy {
+		return raw
+	}
+
+	padded := raw + strings.Repeat(" ", dangerBadgeWidth-len(raw))
+	switch danger {
+	case "safe":
+		return f.green(padded)
+	case "caution":
+		return f.yellow(padded)
+	case "dangerous":
+		return f.red(padded)
+	default:
+		return padded
+	}
+}
+
 // --- ANSI helpers ---
 
 const (

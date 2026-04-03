@@ -235,6 +235,208 @@ func TestNewFormatter_NO_COLOR_Env(t *testing.T) {
 	}
 }
 
+// --- Agent mode tests ---
+
+func TestAgentHeader_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.AgentHeader("provision", "Run migrations")
+	got := buf.String()
+	if !strings.Contains(got, "=== Agent Mode ===") {
+		t.Fatalf("missing header: %q", got)
+	}
+	if !strings.Contains(got, "provision") || !strings.Contains(got, "Run migrations") {
+		t.Fatalf("missing phase/step info: %q", got)
+	}
+}
+
+func TestAgentHeader_Fancy(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.AgentHeader("provision", "Run migrations")
+	got := buf.String()
+	if !strings.Contains(got, "╔") || !strings.Contains(got, "Agent Mode") {
+		t.Fatalf("missing fancy header: %q", got)
+	}
+	if !strings.Contains(got, "provision") || !strings.Contains(got, "Run migrations") {
+		t.Fatalf("missing phase/step info: %q", got)
+	}
+}
+
+func TestAgentHeader_NoStep(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.AgentHeader("bootstrap", "")
+	got := buf.String()
+	if !strings.Contains(got, "Diagnosing failure in bootstrap") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+	if strings.Contains(got, "→") {
+		t.Fatalf("should not contain arrow when step is empty: %q", got)
+	}
+}
+
+func TestRoundSeparator_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.RoundSeparator(3)
+	got := buf.String()
+	if got != "-- Round 3 --\n" {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestRoundSeparator_Fancy(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.RoundSeparator(1)
+	got := buf.String()
+	if !strings.Contains(got, "──") || !strings.Contains(got, "Round 1") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestExplanation_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.Explanation("The migration failed.\nCheck the DB connection.")
+	got := buf.String()
+	if !strings.Contains(got, "> The migration failed.") {
+		t.Fatalf("missing first line: %q", got)
+	}
+	if !strings.Contains(got, "> Check the DB connection.") {
+		t.Fatalf("missing second line: %q", got)
+	}
+}
+
+func TestExplanation_Fancy(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.Explanation("The migration failed.")
+	got := buf.String()
+	if !strings.Contains(got, "│") || !strings.Contains(got, "The migration failed.") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestExplanation_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.Explanation("   ")
+	if buf.Len() != 0 {
+		t.Fatalf("expected no output for blank explanation, got: %q", buf.String())
+	}
+}
+
+func TestActionList_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.ActionList([]ActionItem{
+		{Summary: "Read db/migrate/ directory listing", Danger: "safe"},
+		{Summary: "Run: rails db:migrate:status", Danger: "caution"},
+	})
+	got := buf.String()
+	if !strings.Contains(got, "Proposed actions:") {
+		t.Fatalf("missing header: %q", got)
+	}
+	if !strings.Contains(got, "1. [safe] Read db/migrate/") {
+		t.Fatalf("missing first action: %q", got)
+	}
+	if !strings.Contains(got, "2. [caution] Run: rails") {
+		t.Fatalf("missing second action: %q", got)
+	}
+}
+
+func TestActionList_Fancy(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.ActionList([]ActionItem{
+		{Summary: "Read db/migrate/ directory listing", Danger: "safe"},
+		{Summary: "Run: rails db:migrate:status", Danger: "dangerous"},
+	})
+	got := buf.String()
+	if !strings.Contains(got, "Proposed actions:") {
+		t.Fatalf("missing header: %q", got)
+	}
+	if !strings.Contains(got, "Read db/migrate/") {
+		t.Fatalf("missing first action: %q", got)
+	}
+}
+
+func TestActionList_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.ActionList(nil)
+	if buf.Len() != 0 {
+		t.Fatalf("expected no output for empty actions, got: %q", buf.String())
+	}
+}
+
+func TestActionResult_Success_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.ActionResult(0, ActionItem{Summary: "Read directory", Danger: "safe"}, true, "")
+	got := buf.String()
+	if !strings.Contains(got, "[ok]") || !strings.Contains(got, "Read directory") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestActionResult_Success_WithDetail(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.ActionResult(1, ActionItem{Summary: "Run: migrate", Danger: "caution"}, true, "exit 0")
+	got := buf.String()
+	if !strings.Contains(got, "[ok]") || !strings.Contains(got, "(exit 0)") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestActionResult_Failure_Plain(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	f.ActionResult(2, ActionItem{Summary: "Run: db:drop", Danger: "dangerous"}, false, "permission denied")
+	got := buf.String()
+	if !strings.Contains(got, "[FAIL]") || !strings.Contains(got, "(permission denied)") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestActionResult_Fancy_Success(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.ActionResult(0, ActionItem{Summary: "Read directory", Danger: "safe"}, true, "")
+	got := buf.String()
+	if !strings.Contains(got, "✓") || !strings.Contains(got, "Read directory") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestActionResult_Fancy_Failure(t *testing.T) {
+	var buf bytes.Buffer
+	f := newFancyFormatter(&buf)
+	f.ActionResult(0, ActionItem{Summary: "Run: migrate", Danger: "caution"}, false, "exit 1")
+	got := buf.String()
+	if !strings.Contains(got, "✗") || !strings.Contains(got, "(exit 1)") {
+		t.Fatalf("unexpected output: %q", got)
+	}
+}
+
+func TestDangerBadge_Alignment(t *testing.T) {
+	var buf bytes.Buffer
+	f := newPlainFormatter(&buf)
+	// Plain mode should not pad
+	f.ActionList([]ActionItem{
+		{Summary: "A", Danger: "safe"},
+		{Summary: "B", Danger: "caution"},
+		{Summary: "C", Danger: "dangerous"},
+	})
+	got := buf.String()
+	if !strings.Contains(got, "[safe]") || !strings.Contains(got, "[caution]") || !strings.Contains(got, "[dangerous]") {
+		t.Fatalf("missing badges: %q", got)
+	}
+}
+
 func TestFullPhaseSequence(t *testing.T) {
 	var buf bytes.Buffer
 	f := newPlainFormatter(&buf)

@@ -64,21 +64,21 @@ Replace raw `fmt.Println` calls with a structured, visually clear output format 
 
 ### 2.3 Apply formatter to agent mode
 
-- [ ] Add agent-mode header output:
+- [x] Add agent-mode header output:
   ```
   ╔══ Agent Mode ═══════════════════════════════════════╗
   ║ Diagnosing failure in provision → "Run migrations"  ║
   ╚═════════════════════════════════════════════════════╝
   ```
-- [ ] Add round separator: `── Round 1 ──────────────────`
-- [ ] Format the diagnosis explanation in a visually distinct block (indented or quoted)
-- [ ] Format proposed actions as a numbered list with danger-level badges:
+- [x] Add round separator: `── Round 1 ──────────────────`
+- [x] Format the diagnosis explanation in a visually distinct block (indented or quoted)
+- [x] Format proposed actions as a numbered list with danger-level badges:
   ```
   Proposed actions:
     1. [safe]    Read db/migrate/ directory listing
     2. [caution] Run: rails db:migrate:status
   ```
-- [ ] Show action results inline after execution:
+- [x] Show action results inline after execution:
   ```
     1. [safe]    Read db/migrate/ directory listing  ✓
     2. [caution] Run: rails db:migrate:status        ✓ (exit 0)
