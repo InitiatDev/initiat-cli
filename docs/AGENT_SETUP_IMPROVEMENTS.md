@@ -44,16 +44,16 @@ Replace raw `fmt.Println` calls with a structured, visually clear output format 
 
 ### 2.1 Create an output formatter
 
-- [ ] Create `internal/agent/output.go` (or `internal/output/output.go` if shared with setup)
-- [ ] Define a `Formatter` struct with methods for each output type:
+- [x] Create `internal/agent/output.go` (or `internal/output/output.go` if shared with setup)
+- [x] Define a `Formatter` struct with methods for each output type:
   - `PhaseStart(name string)` — e.g. `┌─ bootstrap`
   - `StepSuccess(name string, duration time.Duration)` — e.g. `│  ✓ Install deps  2.3s`
   - `StepFailure(name string, duration time.Duration, err string)` — e.g. `│  ✗ Run migrations  0.8s`
   - `StepSkipped(name string)` — e.g. `│  ○ Skipped (condition not met)`
   - `PhaseEnd()`
   - `PhasesSkipped(names []string)` — e.g. `└─ (setup, verify, post skipped)`
-- [ ] Support a `--no-color` / `NO_COLOR` env var fallback for CI/non-TTY environments
-- [ ] Detect non-TTY output and disable box-drawing characters automatically
+- [x] Support a `--no-color` / `NO_COLOR` env var fallback for CI/non-TTY environments
+- [x] Detect non-TTY output and disable box-drawing characters automatically
 
 ### 2.2 Apply formatter to setup execution
 
