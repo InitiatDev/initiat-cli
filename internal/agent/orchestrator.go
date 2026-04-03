@@ -130,13 +130,8 @@ func (o *Orchestrator) applyOne(ctx context.Context, action ProposedAction, r *A
 	switch action.Type {
 	case ActionAskUser:
 		if o.promptInput != nil {
-			resp, err := o.promptInput(action.Prompt)
-			if err != nil {
-				r.OK = false
-				r.Error = err.Error()
-			} else {
-				r.Output = resp
-			}
+			out, err := o.promptInput(action.Prompt)
+			setResultOutput(r, out, err)
 		}
 		return nil
 	case ActionStop:
@@ -146,41 +141,26 @@ func (o *Orchestrator) applyOne(ctx context.Context, action ProposedAction, r *A
 			return fmt.Errorf("no tool runner configured")
 		}
 		out, err := o.tools.ListFiles(ctx, action)
-		if err != nil {
-			r.OK = false
-			r.Error = err.Error()
-		} else {
-			r.Output = out
-		}
+		setResultOutput(r, out, err)
 		return nil
 	case ActionReadFiles:
 		if o.tools == nil {
 			return fmt.Errorf("no tool runner configured")
 		}
 		out, err := o.tools.ReadFiles(ctx, action)
-		if err != nil {
-			r.OK = false
-			r.Error = err.Error()
-		} else {
-			r.Output = out
-		}
+		setResultOutput(r, out, err)
 		return nil
 	case ActionRunCommand:
 		if o.tools == nil {
 			return fmt.Errorf("no tool runner configured")
 		}
 		var cmdOut string
-		if err := callSafely(func() error {
-			out, err := o.tools.RunCommand(ctx, action)
+		err := callSafely(func() error {
+			out, e := o.tools.RunCommand(ctx, action)
 			cmdOut = out
-			return err
-		}); err != nil {
-			r.OK = false
-			r.Error = err.Error()
-			r.Output = cmdOut // stderr on failure
-		} else {
-			r.Output = cmdOut // stdout on success
-		}
+			return e
+		})
+		setResultOutput(r, cmdOut, err)
 		return nil
 	case ActionEditFiles:
 		if o.tools == nil {
@@ -193,6 +173,14 @@ func (o *Orchestrator) applyOne(ctx context.Context, action ProposedAction, r *A
 		return nil
 	}
 	return fmt.Errorf("unknown action type: %s", action.Type)
+}
+
+func setResultOutput(r *AppliedActionResult, out string, err error) {
+	r.Output = out
+	if err != nil {
+		r.OK = false
+		r.Error = err.Error()
+	}
 }
 
 func callSafely(fn func() error) (err error) {
