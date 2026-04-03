@@ -13,6 +13,7 @@ import (
 
 	"github.com/InitiatDev/initiat-cli/internal/agent"
 	initiatconfig "github.com/InitiatDev/initiat-cli/internal/config"
+	"github.com/InitiatDev/initiat-cli/internal/output"
 	"github.com/InitiatDev/initiat-cli/internal/prompt"
 	"github.com/InitiatDev/initiat-cli/internal/scaffold"
 	"github.com/InitiatDev/initiat-cli/internal/setup"
@@ -217,10 +218,15 @@ func runAgentIterative(
 	orchestrator.SetDebugWriter(os.Stdout)
 	orchestrator.SetPromptInput(prompt.PromptInput)
 
+	fmtr := output.NewFormatter(os.Stdout)
+	fmtr.AgentHeader(execErr.FailedCommand.Phase, execErr.FailedCommand.StepName)
+
 	var lastDecision *agent.Decision
 	var lastApply *agent.ApplyResult
 
 	for round := 1; round <= 10; round++ {
+		fmtr.RoundSeparator(round)
+
 		next, done, err := runAgentRound(
 			ctx,
 			runner,
@@ -232,7 +238,7 @@ func runAgentIterative(
 			setupConfig,
 			execErr,
 			lastApply,
-			round,
+			fmtr,
 		)
 		if err != nil {
 			return err
@@ -275,7 +281,7 @@ func runAgentRound(
 	setupConfig *setup.SetupConfig,
 	execErr *setup.SetupExecutionError,
 	lastApply *agent.ApplyResult,
-	round int,
+	fmtr *output.Formatter,
 ) (*agentRoundResult, bool, error) {
 	decision, applyRes, updatedSetup, changedSomething, err := diagnoseApplyReload(
 		ctx,
@@ -285,7 +291,7 @@ func runAgentRound(
 		setupConfig,
 		execErr,
 		lastApply,
-		round,
+		fmtr,
 	)
 	if err != nil {
 		return nil, false, err
@@ -320,7 +326,7 @@ func diagnoseApplyReload(
 	setupConfig *setup.SetupConfig,
 	execErr *setup.SetupExecutionError,
 	lastApply *agent.ApplyResult,
-	round int,
+	fmtr *output.Formatter,
 ) (*agent.Decision, *agent.ApplyResult, *setup.SetupConfig, bool, error) {
 	snapshotJSON, snapshot, snapErr := agent.BuildProjectSnapshot(wd)
 	if snapErr != nil {
@@ -333,16 +339,31 @@ func diagnoseApplyReload(
 		return nil, nil, nil, false, err
 	}
 
-	fmt.Println()
-	fmt.Printf("Agent round %d diagnosis:\n", round)
-	fmt.Println(decision.Explanation)
-	fmt.Println()
+	fmtr.Explanation(decision.Explanation)
+
+	actionItems := decisionToActionItems(decision)
+	fmtr.ActionList(actionItems)
 
 	beforeSetupFP, _ := fileFingerprint(setupPath)
 	applyRes, err := orchestrator.ApplyWithResults(ctx, decision)
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
+
+	for i, r := range applyRes.Results {
+		var item output.ActionItem
+		if i < len(actionItems) {
+			item = actionItems[i]
+		} else {
+			item = output.ActionItem{Summary: r.Summary, Danger: "safe"}
+		}
+		detail := ""
+		if !r.OK && r.Error != "" {
+			detail = r.Error
+		}
+		fmtr.ActionResult(i, item, r.OK, detail)
+	}
+	fmt.Fprintln(os.Stdout)
 
 	afterSetupFP, _ := fileFingerprint(setupPath)
 	setupConfig, err = reloadSetupIfChanged(setupPath, setupConfig, beforeSetupFP, afterSetupFP)
@@ -356,12 +377,49 @@ func diagnoseApplyReload(
 	}
 
 	if !decisionLikelyChangedSomething(decision, applyRes) {
-		fmt.Println()
 		fmt.Println("No changes applied that warrant re-running setup. Continuing agent mode...")
 		return decision, applyRes, setupConfig, false, nil
 	}
 
 	return decision, applyRes, setupConfig, true, nil
+}
+
+func decisionToActionItems(decision *agent.Decision) []output.ActionItem {
+	items := make([]output.ActionItem, len(decision.Actions))
+	for i, a := range decision.Actions {
+		items[i] = output.ActionItem{
+			Summary: a.Summary,
+			Danger:  string(a.Danger),
+			Type:    string(a.Type),
+			Detail:  actionDetail(a),
+		}
+	}
+	return items
+}
+
+func actionDetail(a agent.ProposedAction) string {
+	switch a.Type {
+	case agent.ActionRunCommand:
+		return a.Command
+	case agent.ActionEditFiles:
+		paths := make([]string, len(a.Edits))
+		for i, e := range a.Edits {
+			paths[i] = e.Path
+		}
+		return strings.Join(paths, ", ")
+	case agent.ActionListFiles:
+		if a.Path != "" {
+			return a.Path
+		}
+		return "."
+	case agent.ActionReadFiles:
+		return strings.Join(a.Paths, ", ")
+	case agent.ActionAskUser:
+		return a.Prompt
+	case agent.ActionStop:
+		return ""
+	}
+	return ""
 }
 
 func rerunSetupAndMaybeContinue(
